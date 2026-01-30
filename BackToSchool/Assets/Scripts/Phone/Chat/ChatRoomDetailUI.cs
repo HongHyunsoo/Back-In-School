@@ -6,7 +6,10 @@ using TMPro;
 
 public class ChatRoomDetailUI : MonoBehaviour
 {
+  
+
     [Header("Screens")]
+    [SerializeField] private ScrollRect scrollRect;
     [SerializeField] private GameObject screenRoomList;
     [SerializeField] private GameObject screenRoomDetail;
 
@@ -271,8 +274,15 @@ public class ChatRoomDetailUI : MonoBehaviour
         var avatar = SpeakerAvatarProvider.GetAvatar(line.speakerID);
 
         var item = Instantiate(prefab, contentRoot);
+        item.transform.SetParent(contentRoot, false); // ✅ 좌표 꼬임 방지
         item.Set(displayName, avatar, body, true);
+
+        // ✅ 레이아웃 갱신 + 맨 아래로 스크롤
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)contentRoot);
+        if (scrollRect) scrollRect.verticalNormalizedPosition = 0f;
     }
+
 
 
 

@@ -22,5 +22,8 @@ public class ChatMessageItem : MonoBehaviour
         // 내 말풍선이면 header 숨기는 식으로 사용
         if (nameText) nameText.gameObject.SetActive(showHeader);
         if (avatarImage) avatarImage.gameObject.SetActive(showHeader);
+
+        Debug.Log($"[ChatMsgItem] bodyText={(bodyText ? bodyText.name : "NULL")} body='{body}'");
+
     }
 }
