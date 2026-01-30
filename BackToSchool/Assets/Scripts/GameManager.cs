@@ -21,11 +21,36 @@ public class GameManager : MonoBehaviour
     public PlayerController playerController;
     public DialogueManager dialogueManager;
 
-    void Start()
+
+
+    private IEnumerator Start()
     {
-        // (v1.3) 'LoadDialogueFileForState' ȣ�� ����
+        // 1) inspector 미할당이면 자동으로 찾기 (지하철 씬에서는 없을 수 있음 - 정상)
+        if (playerController == null)
+            playerController = FindAnyObjectByType<PlayerController>();
+
+        if (dialogueManager == null)
+            dialogueManager = FindAnyObjectByType<DialogueManager>();
+
+        // 2) LocalizationManager 준비될 때까지 대기 (최대 2초 정도)
+        float t = 0f;
+        while (LocalizationManager.Instance == null && t < 2f)
+        {
+            t += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (LocalizationManager.Instance == null)
+        {
+            Debug.LogError("[GameManager] LocalizationManager.Instance가 준비되지 않았습니다. 상태 전환을 건너뜁니다.");
+            yield break;
+        }
+
+        // 3) 상태 진입
         ChangeState(currentState);
     }
+
+
 
     // =============================================================
     // (v1.4) ���� ���¸� �����ϴ� �ٽ� �Լ� (������)
@@ -33,115 +58,216 @@ public class GameManager : MonoBehaviour
     public void ChangeState(GameState newState)
     {
         currentState = newState;
-        UnityEngine.Debug.Log("���ο� ���·� ����: " + newState.ToString());
+
+        // PlayerController와 DialogueManager는 맵 씬에서만 필요 (지하철 씬에서는 선택사항)
+        if (playerController == null) playerController = FindAnyObjectByType<PlayerController>();
+        if (dialogueManager == null) dialogueManager = FindAnyObjectByType<DialogueManager>();
+
+        // Subway 상태가 아닐 때만 경고 (지하철 씬에서는 정상적으로 없을 수 있음)
+        if (newState != GameState.Subway)
+        {
+            if (playerController == null)
+            {
+                Debug.LogWarning("[GameManager] PlayerController를 찾을 수 없습니다. (상태: " + newState.ToString() + ")");
+            }
+
+            if (dialogueManager == null)
+            {
+                Debug.LogWarning("[GameManager] DialogueManager를 찾을 수 없습니다. (상태: " + newState.ToString() + ")");
+            }
+        }
+
+        UnityEngine.Debug.Log("새로운 상태로 전환: " + newState.ToString());
 
         switch (currentState)
         {
-            // --- 1~4���� ���� ---
+            // --- 1~4일차 아침 ---
+            // 지하철 씬: 폰 앱 채팅만 사용, DialogueManager 말풍선 사용 안 함
             case GameState.Subway:
-                playerController.enabled = false;
-                // (���丮 ��) 1���� ����ö �� ���� ��� (�뺻 ID ����)
-                if (currentDay == 1) dialogueManager.StartDialogue("SUBWAY_DAY1_INTRO", null);
-                // (2~4������ �ٸ� �뺻 ID ���)
+                // PlayerController가 있으면 비활성화 (지하철에서는 이동 불가)
+                if (playerController != null) 
+                {
+                    playerController.enabled = false;
+                }
+                // DialogueManager는 지하철 씬에서 사용 안 함 (채팅은 폰 앱으로만)
+                // ChatService.ActivateSegmentsFor()가 자동으로 채팅 세그먼트를 활성화함
+                if (ChatService.Instance != null)
+                {
+                    ChatService.Instance.ActivateSegmentsFor(currentDay, GameState.Subway);
+                }
+                // 지하철 씬에서는 폰을 자동으로 열어줌 (기획서: 지하철 안에서 휴대폰으로 친구들과 단체 메신저)
+                if (PhoneSystem.Instance != null)
+                {
+                    PhoneSystem.Instance.Open();
+                    // 채팅 앱으로 바로 이동
+                    var phoneAppMgr = FindAnyObjectByType<PhoneAppManager>();
+                    if (phoneAppMgr != null)
+                    {
+                        phoneAppMgr.OpenApp(PhoneAppId.Chat);
+                    }
+                }
                 break;
 
+
             case GameState.Morning_Slippers:
-                playerController.enabled = true; // �ǳ�ȭ ���ƽ����� ���� ��
+                if (playerController != null)
+                    playerController.enabled = true; // �ǳ�ȭ ���ƽ����� ���� ��
+                else
+                    Debug.LogWarning("[GameManager] playerController가 null (Morning_Slippers)");
                 // (���߿�) '�ǳ�ȭ' Ʈ���ſ� ������ ���� ���·�
                 break;
 
             case GameState.Morning_Assembly:
-                playerController.enabled = false;
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Morning_Assembly)");
                 // (���丮 ��) ��¥�� �´� ���� �뺻 ID ���� ���
-                dialogueManager.StartDialogue("ASSEMBLY_DAY" + currentDay, null); // ��: "ASSEMBLY_DAY1"
+                if (dialogueManager != null)
+                    dialogueManager.StartDialogue("ASSEMBLY_DAY" + currentDay, null); // ��: "ASSEMBLY_DAY1"
+                else
+                    Debug.LogWarning("[GameManager] dialogueManager가 null (Morning_Assembly StartDialogue 못함)");
                 break;
 
             // --- 1~4���� ��ƾ ---
             case GameState.Class_Intro_1:
-                playerController.enabled = false;
-                dialogueManager.StartDialogue("CLASS1_INTRO_DAY" + currentDay, null);
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Class_Intro_1)");
+
+                if (dialogueManager != null)
+                    dialogueManager.StartDialogue("CLASS1_INTRO_DAY" + currentDay, null);
+                else
+                    Debug.LogWarning("[GameManager] dialogueManager가 null (Class_Intro_1 StartDialogue 못함)");
                 break;
             case GameState.Class_Minigame_1:
-                playerController.enabled = false;
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Class_Minigame_1)");
                 // (���߿�) '���� �̴ϰ��� 1' �Ŵ��� Ȱ��ȭ
                 break;
             case GameState.Class_Outro_1:
-                playerController.enabled = false;
-                dialogueManager.StartDialogue("CLASS1_OUTRO_DAY" + currentDay, null);
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Class_Outro_1)");
+
+                if (dialogueManager != null)
+                    dialogueManager.StartDialogue("CLASS1_OUTRO_DAY" + currentDay, null);
+                else
+                    Debug.LogWarning("[GameManager] dialogueManager가 null (Class_Outro_1 StartDialogue 못함)");
                 break;
 
             case GameState.Lunch_Run:
-                playerController.enabled = false;
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Lunch_Run)");
                 // (���߿�) '�޽Ľ� �޸���' �̴ϰ��� Ȱ��ȭ
                 break;
             case GameState.Lunch_Tetris:
-                playerController.enabled = false;
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Lunch_Tetris)");
                 // (���߿�) '���� ��Ʈ����' �̴ϰ��� Ȱ��ȭ
                 break;
             case GameState.Lunch_FreeTime:
-                playerController.enabled = true; // ���� �ð�
+                if (playerController != null)
+                    playerController.enabled = true; // ���� �ð�
+                else
+                    Debug.LogWarning("[GameManager] playerController가 null (Lunch_FreeTime)");
                 break;
 
             case GameState.Class_Intro_2:
-                playerController.enabled = false;
-                dialogueManager.StartDialogue("CLASS2_INTRO_DAY" + currentDay, null);
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Class_Intro_2)");
+
+                if (dialogueManager != null)
+                    dialogueManager.StartDialogue("CLASS2_INTRO_DAY" + currentDay, null);
+                else
+                    Debug.LogWarning("[GameManager] dialogueManager가 null (Class_Intro_2 StartDialogue 못함)");
                 break;
             case GameState.Class_Minigame_2:
-                playerController.enabled = false;
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Class_Minigame_2)");
                 // (���߿�) '���� �̴ϰ��� 2' �Ŵ��� Ȱ��ȭ
                 break;
             case GameState.Class_Outro_2:
-                playerController.enabled = false;
-                dialogueManager.StartDialogue("CLASS2_OUTRO_DAY" + currentDay, null);
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Class_Outro_2)");
+
+                if (dialogueManager != null)
+                    dialogueManager.StartDialogue("CLASS2_OUTRO_DAY" + currentDay, null);
+                else
+                    Debug.LogWarning("[GameManager] dialogueManager가 null (Class_Outro_2 StartDialogue 못함)");
                 break;
 
             case GameState.Closing_Assembly:
-                playerController.enabled = false;
-                dialogueManager.StartDialogue("CLOSING_DAY" + currentDay, null);
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Closing_Assembly)");
+
+                if (dialogueManager != null)
+                    dialogueManager.StartDialogue("CLOSING_DAY" + currentDay, null);
+                else
+                    Debug.LogWarning("[GameManager] dialogueManager가 null (Closing_Assembly StartDialogue 못함)");
                 break;
             case GameState.AfterSchool:
-                playerController.enabled = true; // ���� �ð�
+                if (playerController != null)
+                    playerController.enabled = true; // ���� �ð�
+                else
+                    Debug.LogWarning("[GameManager] playerController가 null (AfterSchool)");
                 break;
             case GameState.GoHome:
-                playerController.enabled = false;
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (GoHome)");
                 currentDay++; // ��¥ +1
                 ChangeState(GameState.Subway); // (�ӽ�)
                 // (���߿�) SceneManager.LoadScene("SubwayScene");
                 break;
 
-            // --- 5���� (�ݿ���) ��ƾ ---
+            // --- 5일차 (특별) 수업 ---
             case GameState.Day5_BigCleaning:
-                playerController.enabled = false;
-                // (���߿�) '�ٴ� ����' �̴ϰ��� Ȱ��ȭ
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Day5_BigCleaning)");
+                // (추후) '대청소' 미니게임 활성화
                 break;
             case GameState.Day5_LockerCleaning:
-                playerController.enabled = false;
-                // (���߿�) '�繰�� ����' �̴ϰ���/�� Ȱ��ȭ
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Day5_LockerCleaning)");
+                // (추후) '사물함 정리' 미니게임/씬 활성화
                 break;
             case GameState.Day5_BagPacking:
-                playerController.enabled = false;
-                // (���߿�) '���� �α� ����' �̴ϰ��� Ȱ��ȭ
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Day5_BagPacking)");
+                // (추후) '가방 싸기' 미니게임 활성화
                 break;
             case GameState.Day5_FreeTime:
-                playerController.enabled = true; // 5���� ���� �ð�
+                if (playerController != null)
+                    playerController.enabled = true; // 5일차 방과후 시간
+                else
+                    Debug.LogWarning("[GameManager] playerController가 null (Day5_FreeTime)");
                 break;
             case GameState.Day5_ClosingAssembly:
-                playerController.enabled = false;
-                dialogueManager.StartDialogue("CLOSING_DAY5", null); // 5���� ����
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Day5_ClosingAssembly)");
+                
+                if (dialogueManager != null)
+                    dialogueManager.StartDialogue("CLOSING_DAY5", null); // 5일차 종례
+                else
+                    Debug.LogWarning("[GameManager] dialogueManager가 null (Day5_ClosingAssembly StartDialogue 못함)");
                 break;
             case GameState.Day5_LunchChoice:
-                playerController.enabled = false;
-                dialogueManager.StartDialogue("LUNCH_CHOICE_DAY5", null); // (���߿� '������' ��� �ʿ�)
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Day5_LunchChoice)");
+                
+                if (dialogueManager != null)
+                    dialogueManager.StartDialogue("LUNCH_CHOICE_DAY5", null); // (추후 '선택지' 분기 필요)
+                else
+                    Debug.LogWarning("[GameManager] dialogueManager가 null (Day5_LunchChoice StartDialogue 못함)");
                 break;
             case GameState.Day5_EndingCredits:
-                playerController.enabled = false;
-                // (���߿�) ���� ũ���� �� �ε�
+                if (playerController != null) playerController.enabled = false;
+                else Debug.LogWarning("[GameManager] playerController가 null (Day5_EndingCredits)");
+                // (추후) 엔딩 크레딧 씬 로드
                 break;
         }
     }
 
     // (DialogueFinished, MinigameFinished �Լ��� v1.3�� ����)
     // 대화 종료 시 다음 상태로 전환
+    // 주의: Subway 상태에서는 DialogueManager가 없으므로 이 함수가 호출되지 않음
+    //       지하철 씬에서는 채팅 완료 시 별도로 다음 상태로 전환해야 함
     public void DialogueFinished()
     {
         UnityEngine.Debug.Log("대화가 종료되었습니다. 현재 상태: " + currentState.ToString());
@@ -149,6 +275,8 @@ public class GameManager : MonoBehaviour
         switch (currentState)
         {
             // --- 1~4일차 아침 ---
+            // 주의: Subway 상태에서는 DialogueManager가 없으므로 이 케이스는 실행되지 않음
+            //       채팅 완료 시 ChatService나 ChatRoomDetailUI에서 직접 호출 필요
             case GameState.Subway:
                 ChangeState(GameState.Morning_Slippers);
                 break;
@@ -226,6 +354,19 @@ public class GameManager : MonoBehaviour
 
             default:
                 break;
+        }
+    }
+
+    /// <summary>
+    /// 지하철 씬에서 채팅 완료 시 호출하는 함수
+    /// ChatService나 ChatRoomDetailUI에서 호출 가능
+    /// </summary>
+    public void SubwayChatFinished()
+    {
+        if (currentState == GameState.Subway)
+        {
+            UnityEngine.Debug.Log("[GameManager] 지하철 채팅 완료, 다음 상태로 전환");
+            ChangeState(GameState.Morning_Slippers);
         }
     }
 

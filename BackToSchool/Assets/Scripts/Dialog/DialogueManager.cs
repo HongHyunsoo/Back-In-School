@@ -58,7 +58,14 @@ public class DialogueManager : MonoBehaviour
     void Start()
     {
         lines = new Queue<DialogueLine>();
-        speechBubbleObject.SetActive(false);
+        if (speechBubbleObject == null)
+        {
+            Debug.LogError("[DialogueManager] speechBubbleObject가 인스펙터에 연결되지 않았습니다.");
+        }
+        else
+        {
+            speechBubbleObject.SetActive(false);
+        }
         IsDialogueActive = false;
         gameManager = FindObjectOfType<GameManager>();
         if (gameManager == null) UnityEngine.Debug.LogError("GameManager를 찾을 수 없습니다!");
@@ -98,9 +105,17 @@ public class DialogueManager : MonoBehaviour
     {
         if (IsDialogueActive && currentSpeaker != null && speechBubbleObject != null)
         {
-            Vector3 targetPos = currentSpeaker.position + worldOffset;
-            Vector3 screenPos = Camera.main.WorldToScreenPoint(targetPos);
-            speechBubbleObject.transform.position = screenPos;
+            var cam = Camera.main;
+            if (cam != null)
+            {
+                Vector3 targetPos = currentSpeaker.position + worldOffset;
+                Vector3 screenPos = cam.WorldToScreenPoint(targetPos);
+                speechBubbleObject.transform.position = screenPos;
+            }
+            else
+            {
+                Debug.LogWarning("[DialogueManager] Camera.main 이 null 입니다. 말풍선 위치를 갱신할 수 없습니다.");
+            }
         }
         inputConsumedThisFrame = false;
     }
@@ -122,6 +137,12 @@ public class DialogueManager : MonoBehaviour
     // 대화 시작
     public void StartDialogue(string conversationID, Transform npcSpeaker)
     {
+        if (LocalizationManager.Instance == null)
+        {
+            Debug.LogError("[DialogueManager] LocalizationManager.Instance가 없습니다. 대화를 시작할 수 없습니다. (conversationID=" + conversationID + ")");
+            return;
+        }
+
         List<DialogueLine> dialogueLines = LocalizationManager.Instance.GetConversation(conversationID);
 
         if (dialogueLines.Count == 0)

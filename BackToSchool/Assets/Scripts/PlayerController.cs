@@ -6,12 +6,12 @@ using Cinemachine;
 
 /*
  * ===================================================================================
- * PlayerController (v2.0 - Á¡ÇÁ ·ÎÁ÷, ½ºÅÂ¹Ì³ª, ¾Ö´Ï¸ÞÀÌÅÍ ÅëÇÕ)
+ * PlayerController (v2.0 - ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½Â¹Ì³ï¿½, ï¿½Ö´Ï¸ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
  * ===================================================================================
- * [v2.0 º¯°æÁ¡]
- * - (¹®Á¦ 1 ÇØ°á) ¿¬¼Ó Á¡ÇÁ ¹æÁö: isGrounded Ã¼Å©¸¦ FixedUpdate -> Update·Î ÀÌµ¿.
- * - (¹®Á¦ 2 ÇØ°á) Á¡ÇÁ ½ºÅÂ¹Ì³ª: Á¡ÇÁ ½Ã staminaCostForJump ¸¸Å­ ½ºÅÂ¹Ì³ª ¼Ò¸ð.
- * - (¹®Á¦ 3 Àû¿ë) ¾Ö´Ï¸ÞÀÌ¼Ç: Animator¿Í ¿¬µ¿. 'moveSpeed', 'isGrounded', 'yVelocity' ÆÄ¶ó¹ÌÅÍ Àü¼Û.
+ * [v2.0 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½]
+ * - (ï¿½ï¿½ï¿½ï¿½ 1 ï¿½Ø°ï¿½) ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½: isGrounded Ã¼Å©ï¿½ï¿½ FixedUpdate -> Updateï¿½ï¿½ ï¿½Ìµï¿½.
+ * - (ï¿½ï¿½ï¿½ï¿½ 2 ï¿½Ø°ï¿½) ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â¹Ì³ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ staminaCostForJump ï¿½ï¿½Å­ ï¿½ï¿½ï¿½Â¹Ì³ï¿½ ï¿½Ò¸ï¿½.
+ * - (ï¿½ï¿½ï¿½ï¿½ 3 ï¿½ï¿½ï¿½ï¿½) ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½: Animatorï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½. 'moveSpeed', 'isGrounded', 'yVelocity' ï¿½Ä¶ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½.
  * ===================================================================================
  */
 public class PlayerController : MonoBehaviour
@@ -23,9 +23,9 @@ public class PlayerController : MonoBehaviour
 
     [Header("Stamina System")]
     public float maxStamina = 100f;
-    public float staminaDrainRate = 25f;  // ´Þ¸± ¶§ ÃÊ´ç ¼Ò¸ð
-    public float staminaRegenRate = 15f;  // ½¯ ¶§ ÃÊ´ç È¸º¹
-    public float staminaCostForJump = 10f; // Á¡ÇÁ 1È¸´ç ¼Ò¸ð
+    public float staminaDrainRate = 25f;  // ï¿½Þ¸ï¿½ ï¿½ï¿½ ï¿½Ê´ï¿½ ï¿½Ò¸ï¿½
+    public float staminaRegenRate = 15f;  // ï¿½ï¿½ ï¿½ï¿½ ï¿½Ê´ï¿½ È¸ï¿½ï¿½
+    public float staminaCostForJump = 10f; // ï¿½ï¿½ï¿½ï¿½ 1È¸ï¿½ï¿½ ï¿½Ò¸ï¿½
     private float currentStamina;
     public Slider staminaSlider;
 
@@ -36,14 +36,14 @@ public class PlayerController : MonoBehaviour
     private bool isGrounded;
 
     [Header("Animation")]
-    private Animator anim; // ¾Ö´Ï¸ÞÀÌ¼Ç Á¦¾î±â
+    private Animator anim; // ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
 
     [Header("Camera Control")]
-    public CinemachineVirtualCamera virtualCamera; // 2. ÀÎ½ºÆåÅÍ¿¡¼­ Virtual Camera¸¦ ¿¬°áÇÒ ½½·Ô
-    public float groundScreenY = 0.4f; // ¹Ù´Ú¿¡ ÀÖÀ» ¶§ Y À§Ä¡
-    public float airScreenY = 0.5f;    // °øÁß¿¡ ÀÖÀ» ¶§ Y À§Ä¡
-    public float cameraYBlendSpeed = 5f; // Ä«¸Þ¶ó Y À§Ä¡°¡ ¹Ù²î´Â ¼Óµµ
-    private CinemachineFramingTransposer framingTransposer; // 3. Ä«¸Þ¶ó ¼³Á¤°ªÀ» Á÷Á¢ Á¦¾îÇÒ º¯¼ö
+    public CinemachineVirtualCamera virtualCamera; // 2. ï¿½Î½ï¿½ï¿½ï¿½ï¿½Í¿ï¿½ï¿½ï¿½ Virtual Cameraï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    public float groundScreenY = 0.4f; // ï¿½Ù´Ú¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Y ï¿½ï¿½Ä¡
+    public float airScreenY = 0.5f;    // ï¿½ï¿½ï¿½ß¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ Y ï¿½ï¿½Ä¡
+    public float cameraYBlendSpeed = 5f; // Ä«ï¿½Þ¶ï¿½ Y ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½Ù²ï¿½ï¿½ ï¿½Óµï¿½
+    private CinemachineFramingTransposer framingTransposer; // 3. Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
     // Private components and state
     private Rigidbody2D rb;
@@ -56,7 +56,7 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-        anim = GetComponent<Animator>(); // Animator ÄÄÆ÷³ÍÆ® °¡Á®¿À±â
+        anim = GetComponent<Animator>(); // Animator ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
         currentStamina = maxStamina;
 
         if (staminaSlider != null)
@@ -73,7 +73,7 @@ public class PlayerController : MonoBehaviour
             staminaSlider.value = currentStamina;
         }
 
-        // 4. virtualCamera¿¡¼­ FramingTransposer ÄÄÆ÷³ÍÆ® Ã£¾Æ¿À±â
+        // 4. virtualCameraï¿½ï¿½ï¿½ï¿½ FramingTransposer ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® Ã£ï¿½Æ¿ï¿½ï¿½ï¿½
         if (virtualCamera != null)
         {
             framingTransposer = virtualCamera.GetCinemachineComponent<CinemachineFramingTransposer>();
@@ -82,53 +82,66 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        // --- 1. ¹Ù´Ú Ã¼Å© (v2.1 ·ÎÁ÷: ¹æ¾î¸· 1) ---
-        // YÃà ¼Óµµ°¡ 0.1f (¾ÆÁÖ ¾à°£ÀÌ¶óµµ) º¸´Ù Å©¸é(»ó½Â ÁßÀÌ¸é) ¹«Á¶°Ç '°øÁß' »óÅÂ·Î °£ÁÖ
+        // --- 1. ï¿½Ù´ï¿½ Ã¼Å© (v2.1 ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½î¸· 1) ---
+        // groundCheck ? rb ? ??? ? ???? ?? ??? ??
+        if (rb == null)
+        {
+            Debug.LogError("[PlayerController] Rigidbody2D ????? ?? ? ????.");
+            return;
+        }
+
+        if (groundCheck == null)
+        {
+            Debug.LogError("[PlayerController] groundCheck ? ????? ???? ?????.");
+            return;
+        }
+
+        // Yï¿½ï¿½ ï¿½Óµï¿½ï¿½ï¿½ 0.1f (ï¿½ï¿½ï¿½ï¿½ ï¿½à°£ï¿½Ì¶ï¿½) ï¿½ï¿½ï¿½ï¿½ Å©ï¿½ï¿½(ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ì¸ï¿½) ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 'ï¿½ï¿½ï¿½ï¿½' ï¿½ï¿½ï¿½Â·ï¿½ ï¿½ï¿½ï¿½ï¿½
         if (rb.velocity.y > 0.1f)
         {
             isGrounded = false;
         }
         else
         {
-            // °¡¸¸È÷ ÀÖ°Å³ª ÇÏ°­ ÁßÀÏ ¶§¸¸ ¹Ù´Ú ¹°¸® Ã¼Å©
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ö°Å³ï¿½ ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ù´ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã¼Å©
             isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
         }
 
-        // --- 2. ÀÔ·Â Ã¼Å© ---
+        // --- 2. ï¿½Ô·ï¿½ Ã¼Å© ---
         moveInput = Input.GetAxisRaw("Horizontal");
         isRunning = Input.GetKey(KeyCode.LeftShift);
 
-        // --- 3. Á¡ÇÁ (v2.6 ¼öÁ¤: ¹æ¾î¸· 2, 3) ---
-        // 1. Á¡ÇÁ Å° ´©¸§
-        // 2. (¹æ¾î¸· 1·Î °ËÁõµÈ) isGrounded°¡ true
-        // 3. ½ºÅÂ¹Ì³ª ÃæºÐ
-        // 4. (¹æ¾î¸· 2) Y¼ÓµµÀÇ 'Àý´ë°ª'ÀÌ 0.1f ¹Ì¸¸ (°ÅÀÇ ¸ØÃçÀÖÀ½)
+        // --- 3. ï¿½ï¿½ï¿½ï¿½ (v2.6 ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½î¸· 2, 3) ---
+        // 1. ï¿½ï¿½ï¿½ï¿½ Å° ï¿½ï¿½ï¿½ï¿½
+        // 2. (ï¿½ï¿½î¸· 1ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½) isGroundedï¿½ï¿½ true
+        // 3. ï¿½ï¿½ï¿½Â¹Ì³ï¿½ ï¿½ï¿½ï¿½
+        // 4. (ï¿½ï¿½î¸· 2) Yï¿½Óµï¿½ï¿½ï¿½ 'ï¿½ï¿½ï¿½ë°ª'ï¿½ï¿½ 0.1f ï¿½Ì¸ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
         if (Input.GetButtonDown("Jump") && isGrounded && currentStamina >= staminaCostForJump && Mathf.Abs(rb.velocity.y) < 0.1f)
         {
-            // Á¡ÇÁ ½ÇÇà (v2.2ÀÇ Á÷°üÀûÀÎ ¼Óµµ ÇÒ´ç ¹æ½Ä »ç¿ë)
+            // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (v2.2ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Óµï¿½ ï¿½Ò´ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½)
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-            currentStamina -= staminaCostForJump; // ½ºÅÂ¹Ì³ª ¼Ò¸ð
+            currentStamina -= staminaCostForJump; // ï¿½ï¿½ï¿½Â¹Ì³ï¿½ ï¿½Ò¸ï¿½
 
-            // [¹æ¾î¸· 3: ÇÙ½É] Á¡ÇÁÇÏ´Â Áï½Ã isGrounded¸¦ ¼öµ¿À¸·Î false·Î ¼³Á¤
+            // [ï¿½ï¿½î¸· 3: ï¿½Ù½ï¿½] ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ isGroundedï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ falseï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
             isGrounded = false;
         }
 
-        // --- 4. ½ºÅÂ¹Ì³ª ¾÷µ¥ÀÌÆ® ---
+        // --- 4. ï¿½ï¿½ï¿½Â¹Ì³ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ---
         HandleStamina();
 
-        // --- 5. ½ºÇÁ¶óÀÌÆ® ¹æÇâ ÀüÈ¯ ---
+        // --- 5. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½È¯ ---
         FlipSprite();
 
-        // --- 6. ¾Ö´Ï¸ÞÀÌ¼Ç ¾÷µ¥ÀÌÆ® (¸Å ÇÁ·¹ÀÓ) ---
+        // --- 6. ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ® (ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½) ---
         UpdateAnimations();
 
-        // 5. Ä«¸Þ¶ó À§Ä¡ ½Ç½Ã°£ Á¶ÀÛ (¸Å ÇÁ·¹ÀÓ)
+        // 5. Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½Ä¡ ï¿½Ç½Ã°ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
         HandleCameraPosition();
     }
 
     void FixedUpdate()
     {
-        // --- 7. ¹°¸® ÀÌµ¿ Àû¿ë ---
+        // --- 7. ï¿½ï¿½ï¿½ï¿½ ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½ ---
         float currentSpeed = walkSpeed;
         if (isRunning && moveInput != 0 && currentStamina > 0)
         {
@@ -146,8 +159,8 @@ public class PlayerController : MonoBehaviour
 
     private void HandleStamina()
     {
-        // ´Þ¸®´Â ÁßÀÏ ¶§ ½ºÅÂ¹Ì³ª ¼Ò¸ð
-        if (isRunning && moveInput != 0 && isGrounded) // ¶¥¿¡¼­ ´Þ¸± ¶§¸¸ ¼Ò¸ð
+        // ï¿½Þ¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½Â¹Ì³ï¿½ ï¿½Ò¸ï¿½
+        if (isRunning && moveInput != 0 && isGrounded) // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Þ¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ò¸ï¿½
         {
             currentStamina -= staminaDrainRate * Time.deltaTime;
             if (currentStamina < 0)
@@ -156,10 +169,10 @@ public class PlayerController : MonoBehaviour
                 isRunning = false;
             }
         }
-        // ´Þ¸®Áö ¾ÊÀ» ¶§ ½ºÅÂ¹Ì³ª È¸º¹
+        // ï¿½Þ¸ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½Â¹Ì³ï¿½ È¸ï¿½ï¿½
         else if (currentStamina < maxStamina)
         {
-            // (Á¡ÇÁ Á÷ÈÄ °øÁß¿¡¼­´Â È¸º¹ ¾È µÇ°Ô isGrounded Á¶°Ç Ãß°¡ °¡´É)
+            // (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ß¿ï¿½ï¿½ï¿½ï¿½ï¿½ È¸ï¿½ï¿½ ï¿½ï¿½ ï¿½Ç°ï¿½ isGrounded ï¿½ï¿½ï¿½ï¿½ ï¿½ß°ï¿½ ï¿½ï¿½ï¿½ï¿½)
             currentStamina += staminaRegenRate * Time.deltaTime;
             if (currentStamina > maxStamina)
             {
@@ -184,29 +197,29 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // (¹®Á¦ 3 ÇØ°á) ¾Ö´Ï¸ÞÀÌÅÍ ÆÄ¶ó¹ÌÅÍ ¾÷µ¥ÀÌÆ®
+    // (ï¿½ï¿½ï¿½ï¿½ 3 ï¿½Ø°ï¿½) ï¿½Ö´Ï¸ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ä¶ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®
     private void UpdateAnimations()
     {
-        if (anim == null) return; // Animator°¡ ¾øÀ¸¸é ½ÇÇà ¾È ÇÔ
+        if (anim == null) return; // Animatorï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½
 
-        // ÇöÀç ¼öÆò ¼ÓµµÀÇ 'Àý´ë°ª'À» º¸³¿ (0: ¸ØÃã, 5: °È±â, 8: ´Þ¸®±â)
-        // °È±â/´Þ¸®±â¸¦ ±¸ºÐÇÏ±â À§ÇØ moveInput(0 ¶Ç´Â 1) ´ë½Å ½ÇÁ¦ ¼Óµµ(rb.velocity.x)¸¦ »ç¿ë
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Óµï¿½ï¿½ï¿½ 'ï¿½ï¿½ï¿½ë°ª'ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (0: ï¿½ï¿½ï¿½ï¿½, 5: ï¿½È±ï¿½, 8: ï¿½Þ¸ï¿½ï¿½ï¿½)
+        // ï¿½È±ï¿½/ï¿½Þ¸ï¿½ï¿½â¸¦ ï¿½ï¿½ï¿½ï¿½ï¿½Ï±ï¿½ ï¿½ï¿½ï¿½ï¿½ moveInput(0 ï¿½Ç´ï¿½ 1) ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Óµï¿½(rb.velocity.x)ï¿½ï¿½ ï¿½ï¿½ï¿½
         float horizontalSpeed = Mathf.Abs(rb.velocity.x);
 
-        anim.SetFloat("moveSpeed", horizontalSpeed); // (Idle, Walk, Run ±¸ºÐ¿ë)
-        anim.SetBool("isGrounded", isGrounded);     // (Á¡ÇÁ, ÂøÁö ±¸ºÐ¿ë)
-        anim.SetFloat("yVelocity", rb.velocity.y);  // (»ó½Â(Jump) / ÇÏ°­(Fall) ±¸ºÐ¿ë)
+        anim.SetFloat("moveSpeed", horizontalSpeed); // (Idle, Walk, Run ï¿½ï¿½ï¿½Ð¿ï¿½)
+        anim.SetBool("isGrounded", isGrounded);     // (ï¿½ï¿½ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ð¿ï¿½)
+        anim.SetFloat("yVelocity", rb.velocity.y);  // (ï¿½ï¿½ï¿½(Jump) / ï¿½Ï°ï¿½(Fall) ï¿½ï¿½ï¿½Ð¿ï¿½)
     }
 
-    // 6. µ¿Àû Ä«¸Þ¶ó À§Ä¡¸¦ Á¦¾îÇÏ´Â »õ ÇÔ¼ö
+    // 6. ï¿½ï¿½ï¿½ï¿½ Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ ï¿½Ô¼ï¿½
     private void HandleCameraPosition()
     {
-        if (framingTransposer == null) return; // Ä«¸Þ¶ó ¼³Á¤ÀÌ ¾øÀ¸¸é Á¾·á
+        if (framingTransposer == null) return; // Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
-        // 1. ¸ñÇ¥ Y À§Ä¡ ¼³Á¤: ¶¥¿¡ ÀÖÀ¸¸é groundScreenY, °øÁßÀÌ¸é airScreenY
+        // 1. ï¿½ï¿½Ç¥ Y ï¿½ï¿½Ä¡ ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ groundScreenY, ï¿½ï¿½ï¿½ï¿½ï¿½Ì¸ï¿½ airScreenY
         float targetScreenY = isGrounded ? groundScreenY : airScreenY;
 
-        // 2. ÇöÀç Ä«¸Þ¶ó Y À§Ä¡¸¦ ¸ñÇ¥ Y À§Ä¡·Î ºÎµå·´°Ô ÀÌµ¿ (Lerp)
+        // 2. ï¿½ï¿½ï¿½ï¿½ Ä«ï¿½Þ¶ï¿½ Y ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½ï¿½Ç¥ Y ï¿½ï¿½Ä¡ï¿½ï¿½ ï¿½Îµå·´ï¿½ï¿½ ï¿½Ìµï¿½ (Lerp)
         framingTransposer.m_ScreenY = Mathf.Lerp(
             framingTransposer.m_ScreenY,
             targetScreenY,
