@@ -47,9 +47,62 @@ public class GameManager : MonoBehaviour
         }
 
         // 3) 상태 진입
+        ForceStateByScene(SceneManager.GetActiveScene().name);
         ChangeState(currentState);
+
     }
 
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        // 씬 바뀔 때마다 상태 강제 세팅
+        ForceStateByScene(scene.name);
+        ChangeState(currentState);
+
+        // (중요) 씬 바뀌면 DialogueManager가 씬 오브젝트 다시 잡아야 함
+        if (dialogueManager == null) dialogueManager = FindAnyObjectByType<DialogueManager>();
+        if (dialogueManager != null)
+        {
+            dialogueManager.RebindForScene(); // 아래 2번에서 DialogueManager에 추가할 함수
+        }
+    }
+
+    private void ForceStateByScene(string sceneName)
+    {
+        // 너 프로젝트 씬 이름에 맞춰서 여기만 수정하면 됨.
+        // 스샷에 Bootstrap / MainMenu / SchoolFreeTime / SubwayScene 비슷하게 보였음.
+        switch (sceneName)
+        {
+            case "SubwayScene":
+            case "SubwaySc":          // 혹시 씬 이름 잘린 버전이면 지워
+                currentState = GameState.Subway;
+                break;
+
+            case "SchoolFreeTime":
+            case "SchoolFreeTimeScene":
+                currentState = GameState.Lunch_FreeTime;
+                break;
+
+            case "MainMenu":
+                // 메뉴에서 굳이 상태 필요 없으면 그냥 유지하거나 None으로 두기
+                // currentState = GameState.None;
+                break;
+
+            default:
+                // 기본: 안전하게 FreeTime으로 보내거나 유지
+                // currentState = GameState.Lunch_FreeTime;
+                break;
+        }
+    }
 
 
     // =============================================================

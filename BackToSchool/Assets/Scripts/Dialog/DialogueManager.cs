@@ -19,12 +19,18 @@ using UnityEngine.SceneManagement;
  */
 public class DialogueManager : MonoBehaviour
 {
-    [Header("UI Elements (TextMeshPro)")]
-    public GameObject speechBubbleObject;
-    public TextMeshProUGUI nameText;
-    public TextMeshProUGUI dialogueText;
+    [SerializeField] private CutsceneCommandRunner commandRunner;
+    private bool isBusy; // 연출 진행중이면 true
+
+    [Header("UI (Speech Bubble Prefab)")]
+    [SerializeField] private SpeechBubbleUI speechBubblePrefab;
+    [SerializeField] private Transform speechBubbleParent;
+
+    private SpeechBubbleUI speechBubble; // runtime instance
+    private TextMeshProUGUI nameText;
+    private TextMeshProUGUI dialogueText;
     public float typingSpeed = 0.03f;
-    public Vector3 worldOffset = new Vector3(0, 2f, 0);
+    public Vector3 worldOffset = new Vector3(0, 0.5f, 0);
     public PlayerController playerController;
     public KeyCode nextSentenceKey = KeyCode.E;
 
@@ -58,14 +64,10 @@ public class DialogueManager : MonoBehaviour
     void Start()
     {
         lines = new Queue<DialogueLine>();
-        if (speechBubbleObject == null)
-        {
-            Debug.LogError("[DialogueManager] speechBubbleObject가 인스펙터에 연결되지 않았습니다.");
-        }
-        else
-        {
-            speechBubbleObject.SetActive(false);
-        }
+
+        RebindForScene();
+
+
         IsDialogueActive = false;
         gameManager = FindObjectOfType<GameManager>();
         if (gameManager == null) UnityEngine.Debug.LogError("GameManager를 찾을 수 없습니다!");
@@ -87,11 +89,15 @@ public class DialogueManager : MonoBehaviour
 
         if (blockAdvanceInputThisFrame) return;
 
+        if (isBusy) return;
+
         if (isWaitingForChoice)
         {
             HandleChoiceInput();
             return;
         }
+       
+
 
         if (Input.GetKeyDown(nextSentenceKey) || Input.GetMouseButtonDown(0))
         {
@@ -103,22 +109,109 @@ public class DialogueManager : MonoBehaviour
 
     void LateUpdate()
     {
-        if (IsDialogueActive && currentSpeaker != null && speechBubbleObject != null)
+        if (IsDialogueActive && currentSpeaker != null && speechBubble != null)
         {
             var cam = Camera.main;
-            if (cam != null)
+            if (cam == null) return;
+
+            // speechBubbleParent 기준으로 Canvas 찾기
+            var canvas = speechBubbleParent != null
+                ? speechBubbleParent.GetComponentInParent<Canvas>()
+                : FindObjectOfType<Canvas>();
+
+            if (canvas == null) return;
+
+            Vector3 targetPos = currentSpeaker.position + worldOffset;
+            Vector3 screenPos = cam.WorldToScreenPoint(targetPos);
+
+            // 카메라 뒤면 숨김
+            if (screenPos.z < 0f)
             {
-                Vector3 targetPos = currentSpeaker.position + worldOffset;
-                Vector3 screenPos = cam.WorldToScreenPoint(targetPos);
-                speechBubbleObject.transform.position = screenPos;
+                speechBubble.gameObject.SetActive(false);
             }
             else
             {
-                Debug.LogWarning("[DialogueManager] Camera.main 이 null 입니다. 말풍선 위치를 갱신할 수 없습니다.");
+                speechBubble.gameObject.SetActive(true);
+
+                RectTransform canvasRect = canvas.transform as RectTransform;
+                RectTransform bubbleRect = speechBubble.transform as RectTransform;
+
+                // Overlay면 uiCam = null, Camera/World면 worldCamera 필요
+                Camera uiCam = (canvas.renderMode == RenderMode.ScreenSpaceOverlay) ? null : canvas.worldCamera;
+
+                if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, uiCam, out var localPoint))
+                {
+                    bubbleRect.anchoredPosition = localPoint + new Vector2(0f, -150f);
+
+                }
             }
         }
+
         inputConsumedThisFrame = false;
     }
+
+
+
+    public void RebindForScene()
+    {
+        // 1) 씬 PlayerController 다시 잡기 (태그 있으면 태그 추천)
+        if (playerController == null)
+            playerController = FindAnyObjectByType<PlayerController>();
+
+        // 2) speechBubbleParent를 "현재 씬" Canvas로 강제
+        var sceneCanvas = FindSceneCanvasInActiveScene();
+        if (sceneCanvas != null)
+            speechBubbleParent = sceneCanvas.transform;
+
+        // 3) 말풍선 인스턴스가 없으면 생성, 있으면 부모만 갱신
+        if (speechBubblePrefab == null)
+        {
+            Debug.LogError("[DialogueManager] speechBubblePrefab이 인스펙터에 연결되지 않았습니다.");
+            return;
+        }
+
+        if (speechBubble == null)
+        {
+            speechBubble = Instantiate(speechBubblePrefab, speechBubbleParent);
+            speechBubble.gameObject.SetActive(false);
+
+            nameText = speechBubble.nameText;
+            dialogueText = speechBubble.bodyText;
+        }
+        else
+        {
+            // 이미 만들어진 말풍선이면, 부모만 씬 Canvas로 옮겨주기
+            if (speechBubbleParent != null)
+                speechBubble.transform.SetParent(speechBubbleParent, false);
+        }
+
+        if (nameText == null || dialogueText == null)
+        {
+            Debug.LogError("[DialogueManager] SpeechBubbleUI에 nameText/bodyText 연결이 필요합니다.");
+        }
+    }
+
+    private Canvas FindSceneCanvasInActiveScene()
+    {
+        var active = SceneManager.GetActiveScene();
+        var roots = active.GetRootGameObjects();
+
+        Canvas best = null;
+
+        for (int i = 0; i < roots.Length; i++)
+        {
+            // 루트 밑에서 Canvas 찾기
+            var canvases = roots[i].GetComponentsInChildren<Canvas>(true);
+            for (int j = 0; j < canvases.Length; j++)
+            {
+                // ScreenSpaceOverlay/Camera 아무거나 OK
+                best = canvases[j];
+                return best;
+            }
+        }
+        return best;
+    }
+
 
     // CharacterIdentifier 캐시 새로고침
     private void RefreshCharacterCache()
@@ -154,9 +247,15 @@ public class DialogueManager : MonoBehaviour
         StopAllCoroutines();
         isTyping = false;
         isWaitingForChoice = false;
+        
+        if (dialogueText == null)
+        {
+            Debug.LogError("[DialogueManager] dialogueText가 null입니다. SpeechBubbleUI 연결을 확인하세요.");
+            return;
+        }
         dialogueText.text = "";
 
-        speechBubbleObject.SetActive(true);
+        if (speechBubble != null) speechBubble.gameObject.SetActive(true);
         IsDialogueActive = true;
         currentNpcSpeaker = npcSpeaker;
 
@@ -180,6 +279,33 @@ public class DialogueManager : MonoBehaviour
     }
 
 
+    /*  public void DisplayNextLine()
+      {
+          if (isBusy) return;          // 연출 중에는 다음으로 못 넘어가게
+          if (isTyping) { SkipTyping(); return; } // 타자 중이면 즉시완성(너 기존 기능 유지)
+
+          if (noMoreLines) { EndDialogue(); return; }
+
+          var line = GetNextLine();             // 너가 큐/리스트에서 다음 줄 꺼내는 부분
+          StartCoroutine(PlayLineRoutine(line)); // ⭐ 여기 핵심
+      }*/
+
+    //private IEnumerator PlayLineRoutine(DialogueLine line)
+    //{
+    //    isBusy = true;
+
+    //    // 1) 태그 실행 (이동/지나감이면 끝날때까지 여기서 기다림)
+    //    if (commandRunner != null)
+    //        yield return commandRunner.Execute(line.text);
+
+    //    isBusy = false;
+
+    //    // 2) 태그 제거한 텍스트만 출력
+    //    string clean = TagParser.Strip(line.text);
+    //    StartTyping(clean); // 너가 기존에 쓰는 “타자치기 출력” 함수
+    //}
+
+
     public void DisplayNextSentence()
     {
         // 타이핑 중이면 즉시 완성
@@ -190,11 +316,11 @@ public class DialogueManager : MonoBehaviour
             isTyping = false;
 
             // 선택지가 있으면 표시
-            if (currentLine.hasChoices && currentLine.choices.Count > 0)
+            /*if (currentLine.hasChoices && currentLine.choices.Count > 0)
             {
                 ShowChoices();
                 return;
-            }
+            }*/
 
             if (lines.Count == 0) EndDialogue();
             return;
@@ -279,8 +405,27 @@ public class DialogueManager : MonoBehaviour
 
         // 대사 표시
         string translatedSentence = LocalizationManager.Instance.GetLine(currentLine.lineID);
-        StartCoroutine(TypeSentence(translatedSentence));
+        StartCoroutine(RunCommandsThenType(translatedSentence));
+
     }
+
+    private IEnumerator RunCommandsThenType(string translatedSentence)
+    {
+        isBusy = true;
+
+        // 1) 태그 커맨드 실행 (move/pass/wait/door 등)
+        if (commandRunner != null)
+            yield return commandRunner.Execute(translatedSentence);
+
+        // 2) 태그 제거한 텍스트만 보여주기
+        string clean = TagParser.Strip(translatedSentence);
+
+        isBusy = false;
+
+        // 3) 타이핑 코루틴 실행 (기존 기능 그대로)
+        yield return StartCoroutine(TypeSentence(clean));
+    }
+
 
     IEnumerator TypeSentence(string sentence)
     {
@@ -296,11 +441,11 @@ public class DialogueManager : MonoBehaviour
         isTyping = false;
 
         // 타이핑 완료 후 선택지 표시 (대화 중간에도 가능)
-        if (currentLine.hasChoices && currentLine.choices.Count > 0)
+        /*if (currentLine.hasChoices && currentLine.choices.Count > 0)
         {
             yield return new WaitForSeconds(0.1f); // 짧은 딜레이
             ShowChoices();
-        }
+        }*/
     }
 
     // 선택지 표시
@@ -413,7 +558,7 @@ public class DialogueManager : MonoBehaviour
         // 모든 코루틴 중지
         StopAllCoroutines();
 
-        speechBubbleObject.SetActive(false);
+        if (speechBubble != null) speechBubble.gameObject.SetActive(false);
         if (choicePanel != null) choicePanel.SetActive(false);
         IsDialogueActive = false;
         isWaitingForChoice = false;

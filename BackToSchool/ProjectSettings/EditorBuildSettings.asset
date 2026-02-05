@@ -12,7 +12,7 @@ EditorBuildSettings:
     path: Assets/Scenes/SubwayScene.unity
     guid: 769ba85df4a51ba47934f71aba4484d4
   - enabled: 1
-    path: Assets/Scenes/SchoolFreeTime.unity
+    path: Assets/Scenes/Lunch_FreeTime.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
   - enabled: 1
     path: Assets/Scenes/MainMenu.unity

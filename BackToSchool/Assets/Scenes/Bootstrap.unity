@@ -203,6 +203,9 @@ GameObject:
   - component: {fileID: 1437671236}
   - component: {fileID: 1437671238}
   - component: {fileID: 1437671239}
+  - component: {fileID: 1437671240}
+  - component: {fileID: 1437671241}
+  - component: {fileID: 1437671242}
   m_Layer: 0
   m_Name: PhoneSystem
   m_TagString: Untagged
@@ -276,6 +279,69 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   currentLanguage: 0
+--- !u!114 &1437671240
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1437671234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: decfd0bfb6a63584cabfd4f5c1f06abc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  passPrefabFolder: Prefabs
+  characterRegistry: {fileID: 0}
+  sfxSource: {fileID: 0}
+--- !u!114 &1437671241
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1437671234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b494b9593aa842840a10de7d38dab65b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  commandRunner: {fileID: 0}
+  speechBubblePrefab: {fileID: 4292250099378932359, guid: 27d4c5c701f249549ae1c37441304302, type: 3}
+  speechBubbleParent: {fileID: 0}
+  typingSpeed: 0.03
+  worldOffset: {x: 0, y: 2, z: 0}
+  playerController: {fileID: 0}
+  nextSentenceKey: 101
+  choicePanel: {fileID: 0}
+  choiceButtons:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  choiceTexts:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  choiceArrow: {fileID: 0}
+  audioSource: {fileID: 0}
+--- !u!114 &1437671242
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1437671234}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2050cc56019cd948b3bb7bb6d51350e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentDay: 1
+  currentState: 0
+  playerController: {fileID: 0}
+  dialogueManager: {fileID: 0}
 --- !u!1 &1536496198
 GameObject:
   m_ObjectHideFlags: 0
