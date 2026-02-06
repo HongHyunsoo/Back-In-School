@@ -566,7 +566,20 @@ public class DialogueManager : MonoBehaviour
         currentNpcSpeaker = null;
         currentChoices.Clear();
 
-        if (playerController != null) playerController.enabled = true;
-        if (gameManager != null) gameManager.DialogueFinished();
+        // STORY 씬이면 FlowManager에게 "이번 이벤트 끝남"만 보고
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "STORY")
+        {
+            if (FlowManager.Instance != null)
+                FlowManager.Instance.CompleteCurrentEvent(0);
+            else
+                Debug.LogError("[DialogueManager] STORY 씬인데 FlowManager가 없음");
+        }
+        else
+        {
+            // 나머지(자유이동/NPC대화 등)는 기존대로
+            if (playerController != null) playerController.enabled = true;
+            if (gameManager != null) gameManager.DialogueFinished();
+        }
+
     }
 }

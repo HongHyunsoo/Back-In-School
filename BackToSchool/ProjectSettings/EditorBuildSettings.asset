@@ -9,12 +9,18 @@ EditorBuildSettings:
     path: Assets/Scenes/Bootstrap.unity
     guid: 787d39d0d46356843ae36053649e2604
   - enabled: 1
-    path: Assets/Scenes/SubwayScene.unity
+    path: Assets/Scenes/CHAT.unity
     guid: 769ba85df4a51ba47934f71aba4484d4
   - enabled: 1
-    path: Assets/Scenes/Lunch_FreeTime.unity
+    path: Assets/Scenes/FREEROAM.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
   - enabled: 1
     path: Assets/Scenes/MainMenu.unity
     guid: f925d3ce2abc8dc469b5cde7b7d602d6
+  - enabled: 1
+    path: Assets/Scenes/STORY.unity
+    guid: 293e938de3f638444948439a478a9762
+  - enabled: 1
+    path: Assets/Scenes/MINIGAME.unity
+    guid: 74da5bc1a6d0e914d9142386ec327847
   m_configObjects: {}

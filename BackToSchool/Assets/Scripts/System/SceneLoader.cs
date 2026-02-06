@@ -12,12 +12,22 @@ public class SceneLoader : MonoBehaviour
     // Subway로 고정 이동 버튼용 (인자 없이도 가능)
     public void LoadSchoolFreeTime()
     {
-        SceneManager.LoadScene("SchoolFreeTime");
+        SceneManager.LoadScene("FREEROAM");
     } 
     
     public void LoadSubway()
     {
-        SceneManager.LoadScene("SubwayScene");
+        SceneManager.LoadScene("CHAT");
+    }
+    
+    public void Story()
+    {
+        SceneManager.LoadScene("STORY");
+    }
+    
+    public void MINIGAME()
+    {
+        SceneManager.LoadScene("MINIGAME");
     }
 
     public void LoadMainMenu()

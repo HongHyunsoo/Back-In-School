@@ -78,31 +78,37 @@ public class GameManager : MonoBehaviour
 
     private void ForceStateByScene(string sceneName)
     {
-        // 너 프로젝트 씬 이름에 맞춰서 여기만 수정하면 됨.
-        // 스샷에 Bootstrap / MainMenu / SchoolFreeTime / SubwayScene 비슷하게 보였음.
         switch (sceneName)
         {
+            case "CHAT":
+                currentState = GameState.Subway;
+                break;
+
+            case "FREEROAM":
+                currentState = GameState.Lunch_FreeTime; // 일단 자유이동이면 이걸로
+                break;
+
+            case "STORY":
+                // 스토리 씬은 플레이어 이동 기본 off일 테니
+                // currentState를 굳이 바꿀 필요 없거나, 별도 Story 상태를 두거나
+                // 일단 유지해도 됨
+                break;
+
+            case "MINIGAME":
+                // 미니게임도 이동 off니까 유지/별도 처리
+                break;
+
+            // (기존)
             case "SubwayScene":
-            case "SubwaySc":          // 혹시 씬 이름 잘린 버전이면 지워
                 currentState = GameState.Subway;
                 break;
 
             case "SchoolFreeTime":
-            case "SchoolFreeTimeScene":
                 currentState = GameState.Lunch_FreeTime;
-                break;
-
-            case "MainMenu":
-                // 메뉴에서 굳이 상태 필요 없으면 그냥 유지하거나 None으로 두기
-                // currentState = GameState.None;
-                break;
-
-            default:
-                // 기본: 안전하게 FreeTime으로 보내거나 유지
-                // currentState = GameState.Lunch_FreeTime;
                 break;
         }
     }
+
 
 
     // =============================================================
@@ -148,17 +154,7 @@ public class GameManager : MonoBehaviour
                 {
                     ChatService.Instance.ActivateSegmentsFor(currentDay, GameState.Subway);
                 }
-                // 지하철 씬에서는 폰을 자동으로 열어줌 (기획서: 지하철 안에서 휴대폰으로 친구들과 단체 메신저)
-                if (PhoneSystem.Instance != null)
-                {
-                    PhoneSystem.Instance.Open();
-                    // 채팅 앱으로 바로 이동
-                    var phoneAppMgr = FindAnyObjectByType<PhoneAppManager>();
-                    if (phoneAppMgr != null)
-                    {
-                        phoneAppMgr.OpenApp(PhoneAppId.Chat);
-                    }
-                }
+                
                 break;
 
 
