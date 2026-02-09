@@ -22,6 +22,10 @@ public class FlowDebugUIController : MonoBehaviour
     public Dropdown presetDropdown; // UnityEngine.UI.Dropdown
     public JumpPreset[] presets;
 
+    [Header("Buttons")]
+    public Button skipButton;
+    public Button jumpButton;
+
     [Header("Manual Input (Optional)")]
     public InputField dayInput;
     public InputField stepInput;
@@ -30,19 +34,20 @@ public class FlowDebugUIController : MonoBehaviour
     int selectedIndex = 0;
 
     void Awake()
-{
-    // ✅ 루트로 올린 뒤 DontDestroy
-    if (transform.parent != null)
-        transform.SetParent(null);
+    {
+        // ✅ 루트로 올린 뒤 DontDestroy
+        if (transform.parent != null)
+            transform.SetParent(null);
 
-    DontDestroyOnLoad(gameObject);
+        DontDestroyOnLoad(gameObject);
 
-    if (panelRoot != null)
-        panelRoot.SetActive(false);
+        if (panelRoot != null)
+            panelRoot.SetActive(false);
 
-    SetupDropdown();
-    ApplySelectedPresetToInputs();
-}
+        SetupDropdown();
+        ApplySelectedPresetToInputs();
+        BindButtons();
+    }
 
 
     void Update()
@@ -101,42 +106,77 @@ public class FlowDebugUIController : MonoBehaviour
         panelRoot.SetActive(!panelRoot.activeSelf);
     }
 
+    void BindButtons()
+    {
+        if (skipButton == null)
+            skipButton = FindButtonByName("Skip");
+
+        if (jumpButton == null)
+            jumpButton = FindButtonByName("Jump");
+
+        if (skipButton != null)
+        {
+            skipButton.onClick.RemoveListener(OnClickSkip);
+            skipButton.onClick.AddListener(OnClickSkip);
+        }
+
+        if (jumpButton != null)
+        {
+            jumpButton.onClick.RemoveListener(OnClickJump);
+            jumpButton.onClick.AddListener(OnClickJump);
+        }
+    }
+
+    Button FindButtonByName(string targetName)
+    {
+        if (panelRoot == null) return null;
+
+        var buttons = panelRoot.GetComponentsInChildren<Button>(true);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            if (buttons[i] != null && buttons[i].name == targetName)
+                return buttons[i];
+        }
+
+        return null;
+    }
+
     // --- Buttons ---
 
-  public void OnClickSkip()
-{
-    Debug.Log("[FlowDebugUI] Skip button clicked");
+    public void OnClickSkip()
+    {
+        Debug.Log("[FlowDebugUI] Skip button clicked");
 
-    var fm = FlowManager.Instance;
-    Debug.Log($"[FlowDebugUI] FlowManager.Instance = {(fm == null ? "NULL" : fm.name)}");
+        var fm = FlowManager.Instance;
+        Debug.Log($"[FlowDebugUI] FlowManager.Instance = {(fm == null ? "NULL" : fm.name)}");
 
-    if (fm == null) return;
+        if (fm == null) return;
 
-    // DebugSkip이 #if로 날아갔을 가능성 대비: CompleteCurrentEvent로 직접 호출
-    fm.CompleteCurrentEvent(0);
-}
+        // DebugSkip이 #if로 날아갔을 가능성 대비: CompleteCurrentEvent로 직접 호출
+        fm.CompleteCurrentEvent(0);
+    }
 
-public void OnClickJump()
-{
-    Debug.Log("[FlowDebugUI] Jump button clicked");
+    public void OnClickJump()
+    {
+        Debug.Log("[FlowDebugUI] Jump button clicked");
 
-    var fm = FlowManager.Instance;
-    Debug.Log($"[FlowDebugUI] FlowManager.Instance = {(fm == null ? "NULL" : fm.name)}");
+        var fm = FlowManager.Instance;
+        Debug.Log($"[FlowDebugUI] FlowManager.Instance = {(fm == null ? "NULL" : fm.name)}");
 
-    if (fm == null) return;
+        if (fm == null) return;
 
-    int d = ParseOr(dayInput, fm.day);
-    int s = ParseOr(stepInput, fm.stepIndex);
-    int p = ParseOr(penaltyInput, fm.penaltyPoints);
+        int d = ParseOr(dayInput, fm.day);
+        int s = ParseOr(stepInput, fm.stepIndex);
+        int p = ParseOr(penaltyInput, fm.penaltyPoints);
 
-    Debug.Log($"[FlowDebugUI] Jump to day={d}, step={s}, penalty={p}");
+        Debug.Log($"[FlowDebugUI] Jump to day={d}, step={s}, penalty={p}");
 
-    // DebugJump이 #if로 날아갔을 가능성 대비: 내부 로직 직접 수행
-    fm.day = d;
-    fm.stepIndex = s;
-    fm.penaltyPoints = p;
-    fm.PlayCurrent();
-}
+        // DebugJump이 #if로 날아갔을 가능성 대비: 내부 로직 직접 수행
+        fm.day = d;
+        fm.stepIndex = s;
+        fm.penaltyPoints = p;
+        fm.PlayCurrent();
+    }
 
 
     int ParseOr(InputField field, int fallback)
