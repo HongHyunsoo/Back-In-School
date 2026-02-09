@@ -70,7 +70,7 @@ public class FlowManager : MonoBehaviour
             list.Add(E(FlowEventType.MINIGAME, $"", "수업1 미니게임"));
             list.Add(E(FlowEventType.STORY, $"D{d}_CLASS1_END", "수업1 종료"));
 
-            list.Add(E(FlowEventType.MINIGAME, $"LUNCH_D{d}", "점심 미니게임"));
+            list.Add(E(FlowEventType.MINIGAME, $"LUNCH_Tetris{d}", "점심 미니게임"));
             list.Add(E(FlowEventType.FREEROAM, $"D{d}_LUNCH_FREEROAM", "점심 자유이동"));
 
             list.Add(E(FlowEventType.STORY, $"D{d}_CLASS2_START", "수업2 시작 전"));
