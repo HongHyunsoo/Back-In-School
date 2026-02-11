@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
@@ -57,8 +57,9 @@ public class DialogueManager : MonoBehaviour
     private int selectedChoiceIndex = 0;
     private List<DialogueChoice> currentChoices = new List<DialogueChoice>();
 
-    // 성능 개선: CharacterIdentifier 캐싱
+    // 성능 개선: CharacterIdentifier/CharacterActor 캐싱
     private Dictionary<string, CharacterIdentifier> characterCache = new Dictionary<string, CharacterIdentifier>();
+    private Dictionary<string, Transform> actorCache = new Dictionary<string, Transform>();
     private bool blockAdvanceInputThisFrame = false;
 
     void Start()
@@ -119,7 +120,14 @@ public class DialogueManager : MonoBehaviour
                 ? speechBubbleParent.GetComponentInParent<Canvas>()
                 : FindObjectOfType<Canvas>();
 
-            if (canvas == null) return;
+            if (canvas == null)
+            {
+                canvas = EnsureRuntimeDialogueCanvas();
+                if (canvas == null) return;
+
+                speechBubbleParent = canvas.transform;
+                speechBubble.transform.SetParent(speechBubbleParent, false);
+            }
 
             Vector3 targetPos = currentSpeaker.position + worldOffset;
             Vector3 screenPos = cam.WorldToScreenPoint(targetPos);
@@ -141,7 +149,7 @@ public class DialogueManager : MonoBehaviour
 
                 if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, uiCam, out var localPoint))
                 {
-                    bubbleRect.anchoredPosition = localPoint + new Vector2(0f, -150f);
+                    bubbleRect.anchoredPosition = localPoint + new Vector2(0f, 120f);
 
                 }
             }
@@ -160,6 +168,8 @@ public class DialogueManager : MonoBehaviour
 
         // 2) speechBubbleParent를 "현재 씬" Canvas로 강제
         var sceneCanvas = FindSceneCanvasInActiveScene();
+        if (sceneCanvas == null)
+            sceneCanvas = EnsureRuntimeDialogueCanvas();
         if (sceneCanvas != null)
             speechBubbleParent = sceneCanvas.transform;
 
@@ -185,6 +195,8 @@ public class DialogueManager : MonoBehaviour
                 speechBubble.transform.SetParent(speechBubbleParent, false);
         }
 
+        EnsureBubbleVisuals(speechBubble);
+
         if (nameText == null || dialogueText == null)
         {
             Debug.LogError("[DialogueManager] SpeechBubbleUI에 nameText/bodyText 연결이 필요합니다.");
@@ -204,12 +216,78 @@ public class DialogueManager : MonoBehaviour
             var canvases = roots[i].GetComponentsInChildren<Canvas>(true);
             for (int j = 0; j < canvases.Length; j++)
             {
-                // ScreenSpaceOverlay/Camera 아무거나 OK
-                best = canvases[j];
-                return best;
+                // 우선순위: 활성화된 Canvas
+                if (canvases[j].isActiveAndEnabled && canvases[j].gameObject.activeInHierarchy)
+                    return canvases[j];
+
+                if (best == null)
+                    best = canvases[j];
             }
         }
         return best;
+    }
+
+    private Canvas EnsureRuntimeDialogueCanvas()
+    {
+        const string canvasName = "__RuntimeDialogueCanvas";
+        var existing = GameObject.Find(canvasName);
+        if (existing != null)
+        {
+            var existingCanvas = existing.GetComponent<Canvas>();
+            if (existingCanvas != null)
+                return existingCanvas;
+        }
+
+        var go = new GameObject(canvasName, typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        var canvas = go.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 5000;
+
+        var scaler = go.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        Debug.Log("[DialogueManager] Runtime dialogue canvas created: " + canvasName);
+
+        return canvas;
+    }
+
+    private void EnsureBubbleVisuals(SpeechBubbleUI bubble)
+    {
+        if (bubble == null) return;
+
+        var images = bubble.GetComponentsInChildren<Image>(true);
+        bool hasRenderableImage = false;
+        for (int i = 0; i < images.Length; i++)
+        {
+            if (images[i].sprite != null && images[i].color.a > 0.01f)
+            {
+                hasRenderableImage = true;
+                break;
+            }
+        }
+
+        if (!hasRenderableImage)
+        {
+            var bg = bubble.transform.Find("__AutoBubbleBG");
+            if (bg == null)
+            {
+                var bgGo = new GameObject("__AutoBubbleBG", typeof(RectTransform), typeof(RawImage));
+                bgGo.transform.SetParent(bubble.transform, false);
+                bgGo.transform.SetAsFirstSibling();
+
+                var bgRect = bgGo.GetComponent<RectTransform>();
+                bgRect.anchorMin = Vector2.zero;
+                bgRect.anchorMax = Vector2.one;
+                bgRect.offsetMin = Vector2.zero;
+                bgRect.offsetMax = Vector2.zero;
+
+                var raw = bgGo.GetComponent<RawImage>();
+                raw.color = new Color(1f, 1f, 1f, 0.95f);
+                raw.raycastTarget = false;
+            }
+        }
     }
 
 
@@ -217,6 +295,7 @@ public class DialogueManager : MonoBehaviour
     private void RefreshCharacterCache()
     {
         characterCache.Clear();
+        actorCache.Clear();
         CharacterIdentifier[] allCharacters = FindObjectsOfType<CharacterIdentifier>();
         foreach (CharacterIdentifier character in allCharacters)
         {
@@ -225,6 +304,47 @@ public class DialogueManager : MonoBehaviour
                 characterCache[character.characterID] = character;
             }
         }
+
+        CharacterActor[] allActors = FindObjectsOfType<CharacterActor>();
+        foreach (CharacterActor actor in allActors)
+        {
+            if (!string.IsNullOrEmpty(actor.characterId))
+            {
+                actorCache[actor.characterId] = actor.transform;
+            }
+        }
+    }
+
+    private Transform ResolveSpeakerTransform(string speakerId)
+    {
+        if (string.IsNullOrEmpty(speakerId)) return null;
+
+        if (characterCache.TryGetValue(speakerId, out var ci) && ci != null)
+            return ci.transform;
+        if (actorCache.TryGetValue(speakerId, out var at))
+            return at;
+
+        string noPrefix = speakerId.StartsWith("NAME_") ? speakerId.Substring(5) : speakerId;
+        if (characterCache.TryGetValue(noPrefix, out var ci2) && ci2 != null)
+            return ci2.transform;
+        if (actorCache.TryGetValue(noPrefix, out var at2))
+            return at2;
+
+        // 마지막 시도: 대소문자 무시 매칭
+        foreach (var kv in actorCache)
+        {
+            if (string.Equals(kv.Key, speakerId, System.StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(kv.Key, noPrefix, System.StringComparison.OrdinalIgnoreCase))
+                return kv.Value;
+        }
+        foreach (var kv in characterCache)
+        {
+            if (string.Equals(kv.Key, speakerId, System.StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(kv.Key, noPrefix, System.StringComparison.OrdinalIgnoreCase))
+                return kv.Value != null ? kv.Value.transform : null;
+        }
+
+        return null;
     }
 
     // 대화 시작
@@ -335,45 +455,18 @@ public class DialogueManager : MonoBehaviour
         currentLine = lines.Dequeue();
         string currentSpeakerID = currentLine.speakerID;
 
-        // 캐시에서 캐릭터 찾기
-        currentSpeaker = null;
-        
-        // 먼저 원본 ID로 찾기 시도
-        if (characterCache.ContainsKey(currentSpeakerID))
+        // 캐시에서 캐릭터 찾기 (CharacterIdentifier + CharacterActor 모두 지원)
+        currentSpeaker = ResolveSpeakerTransform(currentSpeakerID);
+        if (currentSpeaker == null)
         {
-            currentSpeaker = characterCache[currentSpeakerID].transform;
+            // 캐시 새로고침 후 다시 시도
+            RefreshCharacterCache();
+            currentSpeaker = ResolveSpeakerTransform(currentSpeakerID);
         }
-        else
+        if (currentSpeaker == null)
         {
-            // NAME_ 접두사 제거 후 찾기 시도 (예: NAME_SWORD -> SWORD)
-            string characterIDWithoutPrefix = currentSpeakerID;
-            if (currentSpeakerID.StartsWith("NAME_"))
-            {
-                characterIDWithoutPrefix = currentSpeakerID.Substring(5); // "NAME_" 제거
-            }
-            
-            if (characterCache.ContainsKey(characterIDWithoutPrefix))
-            {
-                currentSpeaker = characterCache[characterIDWithoutPrefix].transform;
-            }
-            else
-            {
-                // 캐시 새로고침 후 다시 시도
-                RefreshCharacterCache();
-                if (characterCache.ContainsKey(currentSpeakerID))
-                {
-                    currentSpeaker = characterCache[currentSpeakerID].transform;
-                }
-                else if (characterCache.ContainsKey(characterIDWithoutPrefix))
-                {
-                    currentSpeaker = characterCache[characterIDWithoutPrefix].transform;
-                }
-                else
-                {
-                    // 찾지 못하면 기본 NPC 스피커 사용
-                    currentSpeaker = currentNpcSpeaker;
-                }
-            }
+            // 찾지 못하면 기본 NPC 스피커 사용
+            currentSpeaker = currentNpcSpeaker;
         }
 
         // 이름 표시

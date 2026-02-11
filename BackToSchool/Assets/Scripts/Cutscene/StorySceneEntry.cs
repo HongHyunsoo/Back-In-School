@@ -20,7 +20,8 @@ public class StorySceneEntry : MonoBehaviour
         var dm = FindAnyObjectByType<DialogueManager>();
         if (dm == null)
         {
-            Debug.LogError("[StorySceneEntry] DialogueManager 없음");
+            Debug.LogError("[StorySceneEntry] DialogueManager 없음 → 자동 스킵");
+            FlowManager.Instance?.CompleteCurrentEvent(0);
             return;
         }
 

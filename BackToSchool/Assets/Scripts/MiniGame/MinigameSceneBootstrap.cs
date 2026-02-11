@@ -37,6 +37,9 @@ public class MinigameSceneBootstrap : MonoBehaviour
         if (!shouldRunTetris)
         {
             Debug.LogWarning($"[MinigameSceneBootstrap] Unknown FLOW_ID '{id}'. Tetris disabled.");
+            // FLOW_ID가 비정상이면 미니게임 씬에서 멈추지 않게 다음 이벤트로 진행
+            if (FlowManager.Instance != null)
+                FlowManager.Instance.CompleteCurrentEvent(0);
         }
     }
 }
