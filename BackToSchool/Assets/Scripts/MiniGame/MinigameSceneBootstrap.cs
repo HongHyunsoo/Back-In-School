@@ -2,44 +2,62 @@ using UnityEngine;
 
 /// <summary>
 /// Attach this to any GameObject in the MINIGAME scene.
-/// It decides which minigame to start based on PlayerPrefs written by FlowManager.
-/// Currently: FLOW_ID starting with "LUNCH_" -> Tetris.
+/// It decides which minigame to start based on FLOW_ID written by FlowManager.
 /// </summary>
 public class MinigameSceneBootstrap : MonoBehaviour
 {
     [Header("Routing")]
     [Tooltip("If FLOW_ID starts with this prefix, we run Tetris.")]
     public string lunchPrefix = "LUNCH_";
+    [Tooltip("If FLOW_ID starts with this prefix, we run Pixel Paint.")]
+    public string class1Prefix = "CLASS1_";
+    [Tooltip("If FLOW_ID starts with this prefix, we run Pixel Paint.")]
+    public string class2Prefix = "CLASS2_";
 
     [Header("Tetris")]
     public TetrisMinigameController tetris;
 
+    [Header("Pixel Paint")]
+    public PixelPaintMinigameController pixelPaint;
+
     private void Awake()
     {
-        if (tetris == null)
-        {
-            tetris = FindAnyObjectByType<TetrisMinigameController>();
-        }
+        EnsureControllers();
 
-        // If not present in scene, create one.
+        string id = PlayerPrefs.GetString("FLOW_ID", "");
+
+        bool shouldRunTetris = !string.IsNullOrEmpty(id) && id.StartsWith(lunchPrefix);
+        bool shouldRunPixelPaint =
+            !string.IsNullOrEmpty(id) &&
+            (id.StartsWith(class1Prefix) || id.StartsWith(class2Prefix));
+
+        tetris.gameObject.SetActive(shouldRunTetris);
+        pixelPaint.gameObject.SetActive(shouldRunPixelPaint);
+
+        if (!shouldRunTetris && !shouldRunPixelPaint)
+        {
+            Debug.LogWarning($"[MinigameSceneBootstrap] Unknown FLOW_ID '{id}'.");
+            if (FlowManager.Instance != null)
+                FlowManager.Instance.CompleteCurrentEvent(0);
+        }
+    }
+
+    private void EnsureControllers()
+    {
+        if (tetris == null)
+            tetris = FindAnyObjectByType<TetrisMinigameController>();
         if (tetris == null)
         {
             var go = new GameObject("TetrisMinigame");
             tetris = go.AddComponent<TetrisMinigameController>();
         }
 
-        // Decide based on FLOW_ID.
-        string id = PlayerPrefs.GetString("FLOW_ID", "");
-
-        bool shouldRunTetris = !string.IsNullOrEmpty(id) && id.StartsWith(lunchPrefix);
-        tetris.gameObject.SetActive(shouldRunTetris);
-
-        if (!shouldRunTetris)
+        if (pixelPaint == null)
+            pixelPaint = FindAnyObjectByType<PixelPaintMinigameController>();
+        if (pixelPaint == null)
         {
-            Debug.LogWarning($"[MinigameSceneBootstrap] Unknown FLOW_ID '{id}'. Tetris disabled.");
-            // FLOW_ID가 비정상이면 미니게임 씬에서 멈추지 않게 다음 이벤트로 진행
-            if (FlowManager.Instance != null)
-                FlowManager.Instance.CompleteCurrentEvent(0);
+            var go = new GameObject("PixelPaintMinigame");
+            pixelPaint = go.AddComponent<PixelPaintMinigameController>();
         }
     }
 }
