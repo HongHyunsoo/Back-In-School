@@ -1,0 +1,316 @@
+﻿using System.Collections;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class MainMenuController : MonoBehaviour
+{
+    [Header("Panels")]
+    public GameObject mainPanel;
+    public GameObject settingsPanel;
+
+    [Header("Main Buttons")]
+    public Button startButton;
+    public Button settingsButton;
+    public Button challengeButton;
+    public Button quitButton;
+
+    [Header("Start Transition")]
+    public Transform transitionZoomTarget;
+    public Camera transitionCamera;
+    public float transitionDuration = 0.9f;
+    public float targetZoomScale = 1.2f;
+    public float targetCameraOrthoSize = 4.2f;
+    public bool useUnscaledTimeForTransition = true;
+    public float fadeOutDuration = 0.28f;
+    public float fadeInDuration = 0.35f;
+
+    [Header("Settings Buttons")]
+    public Button backButton;
+    public Button languageButton;
+
+    [Header("Settings Controls")]
+    public Slider masterVolumeSlider;
+    public Button bindLeftButton;
+    public Button bindRightButton;
+    public Button bindDownButton;
+    public Button bindUpButton;
+    public Button bindInteractButton;
+    public Button bindPhoneButton;
+
+    [Header("Optional Labels")]
+    public TextMeshProUGUI languageButtonLabel;
+    public TextMeshProUGUI infoLabel;
+    public TextMeshProUGUI bindLeftLabel;
+    public TextMeshProUGUI bindRightLabel;
+    public TextMeshProUGUI bindDownLabel;
+    public TextMeshProUGUI bindUpLabel;
+    public TextMeshProUGUI bindInteractLabel;
+    public TextMeshProUGUI bindPhoneLabel;
+
+    private string waitingBindKey;
+    private bool isStarting;
+
+    private void Start()
+    {
+        WireButtons();
+        InitUI();
+
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnDestroy()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= OnLanguageChanged;
+    }
+
+    private void Update()
+    {
+        if (string.IsNullOrEmpty(waitingBindKey))
+            return;
+
+        foreach (KeyCode code in System.Enum.GetValues(typeof(KeyCode)))
+        {
+            if (!Input.GetKeyDown(code))
+                continue;
+
+            KeyBindingConfig.Set(waitingBindKey, code);
+            waitingBindKey = null;
+            SetInfo(L("키가 변경되었습니다.", "Key binding updated."));
+            RefreshBindingLabels();
+            break;
+        }
+    }
+
+    private void WireButtons()
+    {
+        if (startButton != null) startButton.onClick.AddListener(OnStartGame);
+        if (settingsButton != null) settingsButton.onClick.AddListener(OpenSettings);
+        if (challengeButton != null) challengeButton.onClick.AddListener(OnChallenges);
+        if (quitButton != null) quitButton.onClick.AddListener(OnQuit);
+
+        if (backButton != null) backButton.onClick.AddListener(CloseSettings);
+        if (languageButton != null) languageButton.onClick.AddListener(ToggleLanguage);
+
+        if (bindLeftButton != null) bindLeftButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.LeftKey));
+        if (bindRightButton != null) bindRightButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.RightKey));
+        if (bindDownButton != null) bindDownButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.JumpKey));
+        if (bindUpButton != null) bindUpButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.PhoneKey));
+        if (bindInteractButton != null) bindInteractButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.InteractKey));
+        if (bindPhoneButton != null) bindPhoneButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.PhoneKey));
+    }
+
+    private void InitUI()
+    {
+        if (mainPanel != null) mainPanel.SetActive(true);
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+
+        if (masterVolumeSlider != null)
+        {
+            masterVolumeSlider.value = AudioListener.volume;
+            masterVolumeSlider.onValueChanged.AddListener(v => AudioListener.volume = v);
+        }
+
+        RefreshLanguageLabel();
+        RefreshBindingLabels();
+        SetInfo("");
+    }
+
+    private void OnStartGame()
+    {
+        if (isStarting)
+            return;
+
+        StartCoroutine(CoStartGameWithTransition());
+    }
+
+    private IEnumerator CoStartGameWithTransition()
+    {
+        isStarting = true;
+        SetMainButtonsInteractable(false);
+
+        Transform zoomTarget = transitionZoomTarget != null ? transitionZoomTarget : transform;
+        Vector3 startScale = zoomTarget.localScale;
+        Vector3 endScale = startScale * Mathf.Max(1f, targetZoomScale);
+
+        Camera cam = transitionCamera != null ? transitionCamera : Camera.main;
+        bool canZoomCamera = cam != null && cam.orthographic;
+        float startOrtho = canZoomCamera ? cam.orthographicSize : 0f;
+        float endOrtho = canZoomCamera ? Mathf.Max(0.1f, targetCameraOrthoSize) : 0f;
+
+        float duration = Mathf.Max(0.01f, transitionDuration);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            float dt = useUnscaledTimeForTransition ? Time.unscaledDeltaTime : Time.deltaTime;
+            elapsed += dt;
+            float t = Mathf.Clamp01(elapsed / duration);
+            float eased = 1f - Mathf.Pow(1f - t, 3f);
+
+            if (zoomTarget != null)
+                zoomTarget.localScale = Vector3.LerpUnclamped(startScale, endScale, eased);
+
+            if (canZoomCamera)
+                cam.orthographicSize = Mathf.LerpUnclamped(startOrtho, endOrtho, eased);
+
+            yield return null;
+        }
+
+        var fader = SceneTransitionFader.EnsureInstance();
+        fader.PrepareFadeInOnNextScene(fadeInDuration);
+        yield return fader.FadeOut(fadeOutDuration);
+
+        // Safety reset before scene load in case camera/root survives scene changes.
+        if (zoomTarget != null)
+            zoomTarget.localScale = startScale;
+        if (canZoomCamera)
+            cam.orthographicSize = startOrtho;
+
+        var fm = FlowManager.Instance;
+        if (fm == null)
+        {
+            var go = new GameObject("FlowManager");
+            fm = go.AddComponent<FlowManager>();
+            fm.autoStartOnPlay = false;
+        }
+
+        fm.day = 1;
+        fm.stepIndex = 0;
+        fm.penaltyPoints = 0;
+        fm.PlayCurrent();
+    }
+
+    private void SetMainButtonsInteractable(bool interactable)
+    {
+        if (startButton != null) startButton.interactable = interactable;
+        if (settingsButton != null) settingsButton.interactable = interactable;
+        if (challengeButton != null) challengeButton.interactable = interactable;
+        if (quitButton != null) quitButton.interactable = interactable;
+    }
+
+    private void OpenSettings()
+    {
+        if (settingsPanel != null) settingsPanel.SetActive(true);
+        if (ShouldToggleMainPanelForSettings() && mainPanel != null)
+            mainPanel.SetActive(false);
+        SetInfo("");
+    }
+
+    private void CloseSettings()
+    {
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (mainPanel != null) mainPanel.SetActive(true);
+        SetInfo("");
+    }
+
+    private void OnChallenges()
+    {
+        SetInfo(L("도전과제는 아직 준비 중입니다.", "Challenges are not implemented yet."));
+    }
+
+    private void OnQuit()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
+
+    private void ToggleLanguage()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.ToggleLanguage();
+        RefreshLanguageLabel();
+        RefreshBindingLabels();
+    }
+
+    private void StartRebind(string key)
+    {
+        waitingBindKey = key;
+        SetInfo(L("변경할 키를 눌러주세요...", "Press any key..."));
+    }
+
+    private void RefreshLanguageLabel()
+    {
+        bool isKorean = LocalizationManager.Instance == null ||
+                        LocalizationManager.Instance.GetCurrentLanguage() == Language.Korean;
+
+        string label = isKorean ? "한국어" : "English";
+
+        SetText(languageButtonLabel, label);
+        SetButtonText(languageButton, label);
+    }
+
+    private void RefreshBindingLabels()
+    {
+        UpdateBindingVisual(bindLeftButton, bindLeftLabel, L("왼쪽", "Left"), KeyBindingConfig.LeftKey, KeyCode.A);
+        UpdateBindingVisual(bindRightButton, bindRightLabel, L("오른쪽", "Right"), KeyBindingConfig.RightKey, KeyCode.D);
+        UpdateBindingVisual(bindDownButton, bindDownLabel, L("점프", "Jump"), KeyBindingConfig.JumpKey, KeyCode.Space);
+        UpdateBindingVisual(bindInteractButton, bindInteractLabel, L("상호작용", "Interact"), KeyBindingConfig.InteractKey, KeyCode.E);
+        UpdateBindingVisual(bindUpButton, bindUpLabel, L("휴대폰", "Phone"), KeyBindingConfig.PhoneKey, KeyCode.Tab);
+        UpdateBindingVisual(bindPhoneButton, bindPhoneLabel, L("휴대폰", "Phone"), KeyBindingConfig.PhoneKey, KeyCode.Tab);
+    }
+
+    private void UpdateBindingVisual(Button button, TextMeshProUGUI label, string actionName, string keyId, KeyCode fallback)
+    {
+        KeyCode code = KeyBindingConfig.Get(keyId, fallback);
+        string value = code.ToString();
+
+        SetText(label, value);
+        SetButtonText(button, value);
+    }
+
+    private void SetButtonText(Button button, string text)
+    {
+        if (button == null)
+            return;
+
+        TextMeshProUGUI buttonText = button.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (buttonText != null)
+            buttonText.text = text;
+    }
+
+    private void SetText(TextMeshProUGUI label, string text)
+    {
+        if (label != null)
+            label.text = text;
+    }
+
+    private void SetInfo(string text)
+    {
+        if (infoLabel != null)
+            infoLabel.text = text;
+    }
+
+    private void OnLanguageChanged(Language _)
+    {
+        RefreshLanguageLabel();
+        RefreshBindingLabels();
+    }
+
+    private string L(string ko, string en)
+    {
+        if (LocalizationManager.Instance == null)
+            return ko;
+
+        return LocalizationManager.Instance.GetCurrentLanguage() == Language.Korean ? ko : en;
+    }
+
+    private bool ShouldToggleMainPanelForSettings()
+    {
+        if (mainPanel == null || settingsPanel == null)
+            return false;
+
+        if (mainPanel == settingsPanel)
+            return false;
+
+        if (settingsPanel.transform.IsChildOf(mainPanel.transform))
+            return false;
+
+        return true;
+    }
+}

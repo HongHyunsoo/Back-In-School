@@ -108,7 +108,14 @@ public class PlayerController : MonoBehaviour
         }
 
         // --- 2. �Է� üũ ---
-        moveInput = Input.GetAxisRaw("Horizontal");
+        KeyCode leftKey = KeyBindingConfig.Get(KeyBindingConfig.LeftKey, KeyCode.A);
+        KeyCode rightKey = KeyBindingConfig.Get(KeyBindingConfig.RightKey, KeyCode.D);
+        KeyCode jumpKey = KeyBindingConfig.Get(KeyBindingConfig.JumpKey, KeyCode.Space);
+
+        float horizontal = 0f;
+        if (Input.GetKey(leftKey)) horizontal -= 1f;
+        if (Input.GetKey(rightKey)) horizontal += 1f;
+        moveInput = Mathf.Clamp(horizontal, -1f, 1f);
         isRunning = Input.GetKey(KeyCode.LeftShift);
 
         // --- 3. ���� (v2.6 ����: �� 2, 3) ---
@@ -116,7 +123,7 @@ public class PlayerController : MonoBehaviour
         // 2. (�� 1�� ������) isGrounded�� true
         // 3. ���¹̳� ���
         // 4. (�� 2) Y�ӵ��� '���밪'�� 0.1f �̸� (���� ��������)
-        if (Input.GetButtonDown("Jump") && isGrounded && currentStamina >= staminaCostForJump && Mathf.Abs(rb.velocity.y) < 0.1f)
+        if (Input.GetKeyDown(jumpKey) && isGrounded && currentStamina >= staminaCostForJump && Mathf.Abs(rb.velocity.y) < 0.1f)
         {
             // ���� ���� (v2.2�� �������� �ӵ� �Ҵ� ��� ���)
             rb.velocity = new Vector2(rb.velocity.x, jumpForce);

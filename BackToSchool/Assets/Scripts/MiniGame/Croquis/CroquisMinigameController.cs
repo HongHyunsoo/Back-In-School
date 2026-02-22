@@ -1,0 +1,766 @@
+﻿using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+
+public class CroquisMinigameController : MonoBehaviour
+{
+    [Header("Stage Goals")]
+    public int[] successesPerStage = new[] { 10, 15, 20 };
+
+    [Header("Paper Area")]
+    public Vector2 paperSize = new Vector2(9.6f, 5.8f);
+    public Vector2 paperCenter = Vector2.zero;
+    public float paperPadding = 0.45f;
+    public Color paperColor = new Color(0.97f, 0.95f, 0.90f, 1f);
+
+    [Header("Stage Sketches (3)")]
+    public Sprite[] stageSketchSprites = new Sprite[3];
+    public Color sketchColor = new Color(0.08f, 0.08f, 0.08f, 1f);
+    [Range(0f, 0.25f)] public float stageStartAlpha = 0.02f;
+
+    [Header("Prompt Mix")]
+    [Range(0f, 1f)] public float clickPromptChance = 0.55f;
+
+    [Header("Prompt Visual")]
+    public float markerScale = 0.45f;
+    public float markerPulseAmplitude = 0.08f;
+    public float markerPulseSpeed = 5f;
+    public Color clickColor = new Color(0.20f, 0.85f, 0.95f, 1f);
+    public Color dragColor = new Color(0.95f, 0.80f, 0.2f, 1f);
+    public float dragArrowLength = 1.0f;
+
+    [Header("Drag Validation")]
+    public float requiredDragDistance = 0.65f;
+    [Range(0f, 1f)] public float requiredDirectionDot = 0.75f;
+    public float maxGrabDistance = 0.45f;
+
+    [Header("Teacher Bubble")]
+    public string[] teacherLineKeys = new[]
+    {
+        "MINIGAME_CROQUIS_TEACHER_01","MINIGAME_CROQUIS_TEACHER_02","MINIGAME_CROQUIS_TEACHER_03","MINIGAME_CROQUIS_TEACHER_04","MINIGAME_CROQUIS_TEACHER_05",
+        "MINIGAME_CROQUIS_TEACHER_06","MINIGAME_CROQUIS_TEACHER_07","MINIGAME_CROQUIS_TEACHER_08","MINIGAME_CROQUIS_TEACHER_09","MINIGAME_CROQUIS_TEACHER_10",
+        "MINIGAME_CROQUIS_TEACHER_11","MINIGAME_CROQUIS_TEACHER_12","MINIGAME_CROQUIS_TEACHER_13","MINIGAME_CROQUIS_TEACHER_14","MINIGAME_CROQUIS_TEACHER_15",
+        "MINIGAME_CROQUIS_TEACHER_16","MINIGAME_CROQUIS_TEACHER_17","MINIGAME_CROQUIS_TEACHER_18","MINIGAME_CROQUIS_TEACHER_19","MINIGAME_CROQUIS_TEACHER_20"
+    };
+    public float bubbleMinInterval = 5f;
+    public float bubbleMaxInterval = 9f;
+    public float bubbleShowDuration = 2.8f;
+
+    [Header("UI Font")]
+    public TMP_FontAsset uiFontAsset;
+
+    [Header("Flow")]
+    public int penaltyOnGiveUp = 1;
+
+    private enum PromptType { Click, Drag }
+
+    private const int RevealStepsPerStage = 5;
+
+    private readonly string[] teacherFallbackEN = new[]
+    {
+        "Observe the whole pose before details.",
+        "Find the action line first.",
+        "Use quick lines and avoid over-rendering.",
+        "Check shoulder and pelvis tilt.",
+        "Mark major joints first.",
+        "Think in simple volumes.",
+        "Keep your stroke rhythm steady.",
+        "Silhouette must read clearly.",
+        "Commit to forms instead of erasing a lot.",
+        "Gesture first, anatomy second.",
+        "Compare angle and length constantly.",
+        "Push weight and balance of the pose.",
+        "Draw what you see, not what you know.",
+        "Focus on big masses first.",
+        "Use negative space to check accuracy.",
+        "Capture movement with fewer lines.",
+        "Keep proportions under control.",
+        "Simplify and avoid tiny corrections.",
+        "Light pressure, faster decisions.",
+        "Good. Refine only key edges now."
+    };
+
+    private int stageIndex;
+    private int stageSuccessCount;
+    private int totalSuccessCount;
+    private int totalGoalCount;
+    private bool ended;
+
+    private PromptType currentPromptType;
+    private Vector2 currentPromptPos;
+    private Vector2 currentDragDir;
+
+    private bool dragTracking;
+    private Vector2 dragStartWorld;
+
+    private Camera mainCam;
+    private System.Random rng;
+
+    private GameObject paperRoot;
+    private SpriteRenderer[] stageRenderers = new SpriteRenderer[3];
+
+    private GameObject markerRoot;
+    private SpriteRenderer markerRenderer;
+    private LineRenderer dragLine;
+
+    private Canvas uiCanvas;
+    private TextMeshProUGUI statusText;
+    private TextMeshProUGUI bubbleText;
+    private Image bubbleBg;
+
+    private float bubbleTimer;
+    private float bubbleHideTimer;
+    private int lastBubbleIndex = -1;
+
+    private void Awake()
+    {
+        string flowId = PlayerPrefs.GetString("FLOW_ID", "");
+        if (string.IsNullOrEmpty(flowId) || !flowId.StartsWith("CLASS1_"))
+        {
+            enabled = false;
+            return;
+        }
+
+        rng = new System.Random();
+        mainCam = Camera.main;
+        if (mainCam == null) mainCam = FindAnyObjectByType<Camera>();
+
+        EnsureUIFont();
+        EnsureEventSystem();
+        BuildPaperVisuals();
+        BuildRuntimeUI();
+        BuildPromptVisual();
+
+        stageIndex = 0;
+        stageSuccessCount = 0;
+        totalSuccessCount = 0;
+        totalGoalCount = ComputeTotalGoal();
+
+        UpdateStageSketches();
+        SpawnNextPrompt();
+        ResetBubbleTimer();
+        RefreshStatus();
+
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnDisable()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= OnLanguageChanged;
+
+        if (ended) return;
+        CleanupRuntimeOnly();
+    }
+
+    private void OnDestroy()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= OnLanguageChanged;
+        CleanupRuntimeOnly();
+    }
+
+    private void Update()
+    {
+        if (ended) return;
+
+        TickBubble();
+        TickPromptPulse();
+        HandleInput();
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+            End(false);
+    }
+
+    private void HandleInput()
+    {
+        if (mainCam == null) return;
+
+        if (currentPromptType == PromptType.Click)
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                var world = MouseWorld();
+                if (Vector2.Distance(world, currentPromptPos) <= maxGrabDistance)
+                    OnPromptSuccess();
+            }
+            return;
+        }
+
+        if (Input.GetMouseButtonDown(0))
+        {
+            var world = MouseWorld();
+            if (Vector2.Distance(world, currentPromptPos) <= maxGrabDistance)
+            {
+                dragTracking = true;
+                dragStartWorld = world;
+            }
+        }
+
+        if (Input.GetMouseButtonUp(0) && dragTracking)
+        {
+            dragTracking = false;
+            var end = MouseWorld();
+            var delta = end - dragStartWorld;
+
+            if (delta.magnitude < requiredDragDistance)
+                return;
+
+            var dir = delta.normalized;
+            float dot = Vector2.Dot(dir, currentDragDir);
+            if (dot >= requiredDirectionDot)
+                OnPromptSuccess();
+        }
+    }
+
+    private void OnPromptSuccess()
+    {
+        stageSuccessCount++;
+        totalSuccessCount++;
+
+        bool stageCompleted = stageSuccessCount >= CurrentStageGoal();
+        if (stageCompleted)
+        {
+            ForceCurrentStageFullyRevealed();
+
+            stageIndex++;
+            stageSuccessCount = 0;
+
+            if (stageIndex >= 3)
+            {
+                End(true);
+                return;
+            }
+        }
+
+        UpdateStageSketches();
+        SpawnNextPrompt();
+        RefreshStatus();
+    }
+
+    private void SpawnNextPrompt()
+    {
+        currentPromptPos = RandomPointInsidePaper();
+
+        bool pickClick = rng.NextDouble() <= clickPromptChance;
+        if (pickClick)
+        {
+            currentPromptType = PromptType.Click;
+            currentDragDir = Vector2.right;
+        }
+        else
+        {
+            if (TryPickValidDragDirection(currentPromptPos, out var dir))
+            {
+                currentPromptType = PromptType.Drag;
+                currentDragDir = dir;
+            }
+            else
+            {
+                currentPromptType = PromptType.Click;
+                currentDragDir = Vector2.right;
+            }
+        }
+
+        ApplyPromptVisual();
+    }
+
+    private bool TryPickValidDragDirection(Vector2 point, out Vector2 dir)
+    {
+        Vector2[] candidates = new[] { Vector2.right, Vector2.left, Vector2.up, Vector2.down };
+        ShuffleDirections(candidates);
+
+        float need = requiredDragDistance + 0.25f;
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            Vector2 end = point + (candidates[i] * need);
+            if (IsInsidePaper(end))
+            {
+                dir = candidates[i];
+                return true;
+            }
+        }
+
+        dir = Vector2.right;
+        return false;
+    }
+
+    private void ShuffleDirections(Vector2[] arr)
+    {
+        for (int i = arr.Length - 1; i > 0; i--)
+        {
+            int j = rng.Next(i + 1);
+            (arr[i], arr[j]) = (arr[j], arr[i]);
+        }
+    }
+
+    private Vector2 RandomPointInsidePaper()
+    {
+        float halfW = (paperSize.x * 0.5f) - paperPadding;
+        float halfH = (paperSize.y * 0.5f) - paperPadding;
+
+        halfW = Mathf.Max(0.2f, halfW);
+        halfH = Mathf.Max(0.2f, halfH);
+
+        float x = paperCenter.x + Mathf.Lerp(-halfW, halfW, (float)rng.NextDouble());
+        float y = paperCenter.y + Mathf.Lerp(-halfH, halfH, (float)rng.NextDouble());
+        return new Vector2(x, y);
+    }
+
+    private bool IsInsidePaper(Vector2 worldPos)
+    {
+        float halfW = (paperSize.x * 0.5f) - paperPadding;
+        float halfH = (paperSize.y * 0.5f) - paperPadding;
+        return worldPos.x >= paperCenter.x - halfW &&
+               worldPos.x <= paperCenter.x + halfW &&
+               worldPos.y >= paperCenter.y - halfH &&
+               worldPos.y <= paperCenter.y + halfH;
+    }
+
+    private void BuildPaperVisuals()
+    {
+        paperRoot = new GameObject("CroquisPaper");
+        paperRoot.transform.SetParent(transform, false);
+        paperRoot.transform.position = paperCenter;
+
+        var paperRenderer = paperRoot.AddComponent<SpriteRenderer>();
+        paperRenderer.sprite = CreateSolidSprite();
+        paperRenderer.drawMode = SpriteDrawMode.Sliced;
+        paperRenderer.size = paperSize;
+        paperRenderer.sortingOrder = 40;
+        paperRenderer.color = paperColor;
+
+        var paperCol = paperRoot.AddComponent<BoxCollider2D>();
+        paperCol.size = paperSize;
+        paperCol.isTrigger = true;
+
+        for (int i = 0; i < 3; i++)
+        {
+            var stageGo = new GameObject($"SketchStage_{i + 1}");
+            stageGo.transform.SetParent(paperRoot.transform, false);
+
+            var sr = stageGo.AddComponent<SpriteRenderer>();
+            sr.sortingOrder = 41 + i;
+            sr.sprite = GetStageSprite(i);
+            FitSpriteToPaper(sr, paperSize);
+            sr.enabled = false;
+            stageRenderers[i] = sr;
+        }
+    }
+
+    private Sprite GetStageSprite(int idx)
+    {
+        if (stageSketchSprites != null && idx >= 0 && idx < stageSketchSprites.Length && stageSketchSprites[idx] != null)
+            return stageSketchSprites[idx];
+        return CreateFallbackSketchSprite();
+    }
+
+    private void UpdateStageSketches()
+    {
+        for (int i = 0; i < stageRenderers.Length; i++)
+        {
+            var sr = stageRenderers[i];
+            if (sr == null) continue;
+
+            if (i < stageIndex)
+            {
+                sr.enabled = true;
+                SetSketchAlpha(sr, 1f);
+            }
+            else if (i == stageIndex)
+            {
+                sr.enabled = true;
+                int goal = CurrentStageGoal();
+                int step = ComputeRevealStep(stageSuccessCount, goal);
+                float alpha = Mathf.Lerp(stageStartAlpha, 1f, step / (float)RevealStepsPerStage);
+                SetSketchAlpha(sr, alpha);
+            }
+            else
+            {
+                sr.enabled = false;
+                SetSketchAlpha(sr, stageStartAlpha);
+            }
+        }
+    }
+
+    private void ForceCurrentStageFullyRevealed()
+    {
+        if (stageIndex < 0 || stageIndex >= stageRenderers.Length) return;
+        var sr = stageRenderers[stageIndex];
+        if (sr == null) return;
+        sr.enabled = true;
+        SetSketchAlpha(sr, 1f);
+    }
+
+    private int ComputeRevealStep(int success, int goal)
+    {
+        if (goal <= 0) return RevealStepsPerStage;
+        float p = Mathf.Clamp01(success / (float)goal);
+        int step = Mathf.CeilToInt(p * RevealStepsPerStage);
+        return Mathf.Clamp(step, 0, RevealStepsPerStage);
+    }
+
+    private void SetSketchAlpha(SpriteRenderer sr, float alpha)
+    {
+        var c = sketchColor;
+        c.a = Mathf.Clamp01(alpha);
+        sr.color = c;
+    }
+
+    private void BuildPromptVisual()
+    {
+        markerRoot = new GameObject("CroquisPrompt");
+        markerRoot.transform.SetParent(transform, false);
+
+        markerRenderer = markerRoot.AddComponent<SpriteRenderer>();
+        markerRenderer.sprite = CreateSolidSprite();
+        markerRenderer.sortingOrder = 60;
+        markerRenderer.drawMode = SpriteDrawMode.Sliced;
+        markerRenderer.size = new Vector2(0.9f, 0.9f);
+
+        dragLine = markerRoot.AddComponent<LineRenderer>();
+        dragLine.material = new Material(Shader.Find("Sprites/Default"));
+        dragLine.widthMultiplier = 0.08f;
+        dragLine.positionCount = 2;
+        dragLine.sortingOrder = 61;
+        dragLine.useWorldSpace = true;
+    }
+
+    private void ApplyPromptVisual()
+    {
+        if (markerRoot == null) return;
+
+        markerRoot.transform.position = currentPromptPos;
+        markerRoot.transform.localScale = Vector3.one * markerScale;
+
+        bool isClick = currentPromptType == PromptType.Click;
+        markerRenderer.color = isClick ? clickColor : dragColor;
+        dragLine.enabled = !isClick;
+        if (!isClick)
+        {
+            dragLine.startColor = dragColor;
+            dragLine.endColor = dragColor;
+            dragLine.SetPosition(0, currentPromptPos);
+            dragLine.SetPosition(1, currentPromptPos + (currentDragDir * dragArrowLength));
+        }
+    }
+
+    private void TickPromptPulse()
+    {
+        if (markerRoot == null) return;
+        float pulse = 1f + (Mathf.Sin(Time.time * markerPulseSpeed) * markerPulseAmplitude);
+        markerRoot.transform.localScale = Vector3.one * markerScale * pulse;
+    }
+
+    private void BuildRuntimeUI()
+    {
+        var canvasGo = new GameObject("__CroquisUI", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        uiCanvas = canvasGo.GetComponent<Canvas>();
+        uiCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        uiCanvas.sortingOrder = 6200;
+
+        var scaler = canvasGo.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        var root = new GameObject("Root", typeof(RectTransform));
+        root.transform.SetParent(canvasGo.transform, false);
+        var rootRect = root.GetComponent<RectTransform>();
+        rootRect.anchorMin = Vector2.zero;
+        rootRect.anchorMax = Vector2.one;
+        rootRect.offsetMin = Vector2.zero;
+        rootRect.offsetMax = Vector2.zero;
+
+        var statusGo = new GameObject("Status", typeof(RectTransform), typeof(TextMeshProUGUI));
+        statusGo.transform.SetParent(root.transform, false);
+        var statusRect = statusGo.GetComponent<RectTransform>();
+        statusRect.anchorMin = new Vector2(0f, 1f);
+        statusRect.anchorMax = new Vector2(1f, 1f);
+        statusRect.pivot = new Vector2(0.5f, 1f);
+        statusRect.anchoredPosition = new Vector2(0f, -20f);
+        statusRect.sizeDelta = new Vector2(0f, 72f);
+
+        statusText = statusGo.GetComponent<TextMeshProUGUI>();
+        statusText.alignment = TextAlignmentOptions.Center;
+        statusText.fontSize = 34f;
+        statusText.color = Color.white;
+        if (uiFontAsset != null) statusText.font = uiFontAsset;
+
+        var bubbleBgGo = new GameObject("TeacherBubble", typeof(RectTransform), typeof(Image));
+        bubbleBgGo.transform.SetParent(root.transform, false);
+        var bubbleRect = bubbleBgGo.GetComponent<RectTransform>();
+        bubbleRect.anchorMin = new Vector2(0.5f, 1f);
+        bubbleRect.anchorMax = new Vector2(0.5f, 1f);
+        bubbleRect.pivot = new Vector2(0.5f, 1f);
+        bubbleRect.anchoredPosition = new Vector2(0f, -110f);
+        bubbleRect.sizeDelta = new Vector2(1080f, 120f);
+
+        bubbleBg = bubbleBgGo.GetComponent<Image>();
+        bubbleBg.color = new Color(0f, 0f, 0f, 0.68f);
+
+        var bubbleTextGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+        bubbleTextGo.transform.SetParent(bubbleBgGo.transform, false);
+        var btRect = bubbleTextGo.GetComponent<RectTransform>();
+        btRect.anchorMin = Vector2.zero;
+        btRect.anchorMax = Vector2.one;
+        btRect.offsetMin = new Vector2(28f, 10f);
+        btRect.offsetMax = new Vector2(-28f, -10f);
+
+        bubbleText = bubbleTextGo.GetComponent<TextMeshProUGUI>();
+        bubbleText.alignment = TextAlignmentOptions.Center;
+        bubbleText.fontSize = 30f;
+        bubbleText.color = Color.white;
+        bubbleText.text = "";
+        if (uiFontAsset != null) bubbleText.font = uiFontAsset;
+
+        bubbleBg.enabled = false;
+        bubbleText.enabled = false;
+    }
+
+    private void RefreshStatus()
+    {
+        if (statusText == null) return;
+
+        int stageNo = Mathf.Clamp(stageIndex + 1, 1, 3);
+        int goal = CurrentStageGoal();
+        string promptLabel = currentPromptType == PromptType.Click
+            ? L("MINIGAME_CROQUIS_PROMPT_CLICK", "Click Prompt")
+            : L("MINIGAME_CROQUIS_PROMPT_DRAG", "Drag Prompt");
+
+        string format = L("MINIGAME_CROQUIS_STATUS_FMT", "Croquis {0}/3 | Success {1}/{2} | {3}");
+        statusText.text = string.Format(format, stageNo, stageSuccessCount, goal, promptLabel);
+    }
+
+    private void TickBubble()
+    {
+        if (bubbleHideTimer > 0f)
+        {
+            bubbleHideTimer -= Time.deltaTime;
+            if (bubbleHideTimer <= 0f)
+                HideBubble();
+        }
+
+        bubbleTimer -= Time.deltaTime;
+        if (bubbleTimer <= 0f)
+        {
+            ShowRandomBubble();
+            ResetBubbleTimer();
+        }
+    }
+
+    private void ShowRandomBubble()
+    {
+        int count = Mathf.Min(20, Mathf.Min(teacherLineKeys.Length, teacherFallbackEN.Length));
+        if (count <= 0) return;
+
+        int idx = rng.Next(0, count);
+        lastBubbleIndex = idx;
+
+        string key = teacherLineKeys[idx];
+        string line = L(key, teacherFallbackEN[idx]);
+        string prefix = L("MINIGAME_CROQUIS_TEACHER_PREFIX", "Teacher");
+
+        bubbleText.text = $"{prefix}: {line}";
+        bubbleBg.enabled = true;
+        bubbleText.enabled = true;
+        bubbleHideTimer = bubbleShowDuration;
+    }
+
+    private void HideBubble()
+    {
+        bubbleBg.enabled = false;
+        bubbleText.enabled = false;
+    }
+
+    private void ResetBubbleTimer()
+    {
+        float min = Mathf.Max(0.5f, bubbleMinInterval);
+        float max = Mathf.Max(min + 0.1f, bubbleMaxInterval);
+        bubbleTimer = UnityEngine.Random.Range(min, max);
+    }
+
+    private int CurrentStageGoal()
+    {
+        if (stageIndex < 0 || stageIndex >= successesPerStage.Length)
+            return 1;
+        return Mathf.Max(1, successesPerStage[stageIndex]);
+    }
+
+    private int ComputeTotalGoal()
+    {
+        int sum = 0;
+        for (int i = 0; i < successesPerStage.Length; i++)
+            sum += Mathf.Max(1, successesPerStage[i]);
+        return sum <= 0 ? 45 : sum;
+    }
+
+    private void OnLanguageChanged(Language _)
+    {
+        RefreshStatus();
+        if (bubbleText != null && bubbleText.enabled && lastBubbleIndex >= 0 && lastBubbleIndex < teacherLineKeys.Length)
+        {
+            string key = teacherLineKeys[lastBubbleIndex];
+            string line = L(key, teacherFallbackEN[lastBubbleIndex]);
+            string prefix = L("MINIGAME_CROQUIS_TEACHER_PREFIX", "Teacher");
+            bubbleText.text = $"{prefix}: {line}";
+        }
+    }
+
+    private Vector2 MouseWorld()
+    {
+        var p = Input.mousePosition;
+        p.z = Mathf.Abs(mainCam.transform.position.z);
+        var w = mainCam.ScreenToWorldPoint(p);
+        return new Vector2(w.x, w.y);
+    }
+
+    private void End(bool success)
+    {
+        if (ended) return;
+        ended = true;
+
+        CleanupRuntimeOnly();
+
+        if (FlowManager.Instance != null)
+        {
+            int delta = success ? 0 : penaltyOnGiveUp;
+            FlowManager.Instance.CompleteCurrentEvent(delta);
+            return;
+        }
+
+        var gm = FindAnyObjectByType<GameManager>();
+        if (gm != null)
+            gm.MinigameFinished(success);
+    }
+
+    private void CleanupRuntimeOnly()
+    {
+        if (uiCanvas != null)
+        {
+            Destroy(uiCanvas.gameObject);
+            uiCanvas = null;
+        }
+
+        if (markerRoot != null)
+        {
+            Destroy(markerRoot);
+            markerRoot = null;
+        }
+    }
+
+    private void EnsureEventSystem()
+    {
+        if (FindAnyObjectByType<EventSystem>() != null)
+            return;
+
+        var go = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+        DontDestroyOnLoad(go);
+    }
+
+    private void FitSpriteToPaper(SpriteRenderer sr, Vector2 targetSize)
+    {
+        if (sr == null || sr.sprite == null) return;
+        Vector2 spriteSize = sr.sprite.bounds.size;
+        if (spriteSize.x <= 0f || spriteSize.y <= 0f) return;
+        sr.transform.localScale = new Vector3(targetSize.x / spriteSize.x, targetSize.y / spriteSize.y, 1f);
+    }
+
+    private Sprite CreateSolidSprite()
+    {
+        var tex = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+        tex.SetPixel(0, 0, Color.white);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
+    }
+
+    private Sprite CreateFallbackSketchSprite()
+    {
+        const int size = 256;
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        Color clear = new Color(0f, 0f, 0f, 0f);
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+                tex.SetPixel(x, y, clear);
+        }
+
+        Color ink = new Color(0f, 0f, 0f, 1f);
+        DrawLine(tex, 70, 200, 128, 230, ink, 2);
+        DrawLine(tex, 128, 230, 186, 200, ink, 2);
+        DrawLine(tex, 70, 200, 64, 150, ink, 2);
+        DrawLine(tex, 186, 200, 192, 150, ink, 2);
+        DrawLine(tex, 64, 150, 192, 150, ink, 2);
+        DrawLine(tex, 128, 150, 128, 82, ink, 2);
+        DrawLine(tex, 128, 120, 78, 92, ink, 2);
+        DrawLine(tex, 128, 120, 178, 92, ink, 2);
+        DrawLine(tex, 78, 92, 58, 38, ink, 2);
+        DrawLine(tex, 178, 92, 198, 38, ink, 2);
+        DrawLine(tex, 64, 150, 34, 104, ink, 2);
+        DrawLine(tex, 192, 150, 222, 106, ink, 2);
+
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
+    }
+
+    private void DrawLine(Texture2D tex, int x0, int y0, int x1, int y1, Color color, int thickness)
+    {
+        int dx = Mathf.Abs(x1 - x0);
+        int sx = x0 < x1 ? 1 : -1;
+        int dy = -Mathf.Abs(y1 - y0);
+        int sy = y0 < y1 ? 1 : -1;
+        int err = dx + dy;
+
+        while (true)
+        {
+            DrawDot(tex, x0, y0, thickness, color);
+            if (x0 == x1 && y0 == y1) break;
+            int e2 = 2 * err;
+            if (e2 >= dy)
+            {
+                err += dy;
+                x0 += sx;
+            }
+            if (e2 <= dx)
+            {
+                err += dx;
+                y0 += sy;
+            }
+        }
+    }
+
+    private void DrawDot(Texture2D tex, int cx, int cy, int radius, Color color)
+    {
+        for (int y = -radius; y <= radius; y++)
+        {
+            for (int x = -radius; x <= radius; x++)
+            {
+                if ((x * x) + (y * y) > radius * radius) continue;
+                int px = cx + x;
+                int py = cy + y;
+                if (px < 0 || py < 0 || px >= tex.width || py >= tex.height) continue;
+                tex.SetPixel(px, py, color);
+            }
+        }
+    }
+
+    private string L(string key, string fallback)
+    {
+        if (LocalizationManager.Instance == null || string.IsNullOrEmpty(key))
+            return fallback;
+
+        string value = LocalizationManager.Instance.GetLine(key);
+        return value == key ? fallback : value;
+    }
+
+    private void EnsureUIFont()
+    {
+        if (uiFontAsset != null) return;
+        #if UNITY_EDITOR
+        uiFontAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(
+            "Assets/Fonts/Galmuri11-Bold SDF.asset");
+        #endif
+    }
+}

@@ -88,6 +88,8 @@ public class DialogueManager : MonoBehaviour
     {
         if (!IsDialogueActive) return;
 
+        nextSentenceKey = KeyBindingConfig.Get(KeyBindingConfig.InteractKey, KeyCode.E);
+
         if (blockAdvanceInputThisFrame) return;
 
         if (isBusy) return;
@@ -118,7 +120,7 @@ public class DialogueManager : MonoBehaviour
             // speechBubbleParent 기준으로 Canvas 찾기
             var canvas = speechBubbleParent != null
                 ? speechBubbleParent.GetComponentInParent<Canvas>()
-                : FindObjectOfType<Canvas>();
+                : FindSceneCanvasInActiveScene();
 
             if (canvas == null)
             {
@@ -583,7 +585,7 @@ public class DialogueManager : MonoBehaviour
             selectedChoiceIndex = Mathf.Min(currentChoices.Count - 1, selectedChoiceIndex + 1);
             UpdateChoiceArrow();
         }
-        else if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.E) || Input.GetMouseButtonDown(0))
+        else if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(nextSentenceKey) || Input.GetMouseButtonDown(0))
         {
             SelectChoice(selectedChoiceIndex);
         }

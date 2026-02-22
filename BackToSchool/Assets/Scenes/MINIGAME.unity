@@ -289,7 +289,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lunchPrefix: LUNCH_Tetris
+  class1Prefix: CLASS1_
+  class2Prefix: CLASS2_
   tetris: {fileID: 0}
+  croquis: {fileID: 0}
+  pixelPaint: {fileID: 0}
 --- !u!4 &2018414699
 Transform:
   m_ObjectHideFlags: 0
@@ -305,6 +309,150 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2135599849
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2135599853}
+  - component: {fileID: 2135599852}
+  - component: {fileID: 2135599851}
+  - component: {fileID: 2135599850}
+  m_Layer: 0
+  m_Name: MinigameControllers
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2135599850
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2135599849}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75af817bc3d692e4d878f064366b54e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetLockedPieces: 15
+  fallInterval: 0.75
+  softDropInterval: 0.06
+  board: {fileID: 0}
+  penaltyOnFail: 1
+--- !u!114 &2135599851
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2135599849}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d8e66437fe8feda4faa343f3e775345a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  puzzles: []
+  selectMode: 1
+  fixedPuzzleIndex: 0
+  cellSize: 0.8
+  boardOrigin: {x: -3.2, y: -2.8}
+  numberTextScaleMultiplier: 0.48
+  numberFontAsset: {fileID: 11400000, guid: 430dff06d0fae6348b9294c82804c693, type: 2}
+  autoFitToCamera: 1
+  fitRatio: 0.92
+  enableWheelZoom: 1
+  zoomSpeed: 3.5
+  wheelStepDamping: 4
+  minOrthoSize: 0.8
+  maxOrthoSize: 18
+  enableMiddleMousePan: 1
+  panSpeed: 1
+  palette:
+  - {r: 0.9, g: 0.25, b: 0.25, a: 1}
+  - {r: 0.95, g: 0.85, b: 0.25, a: 1}
+  - {r: 0.3, g: 0.7, b: 0.95, a: 1}
+  - {r: 0.28, g: 0.82, b: 0.44, a: 1}
+  penaltyOnGiveUp: 1
+--- !u!114 &2135599852
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2135599849}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e30eb17f2d737d4f91896d32e936a6d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  successesPerStage: 0a0000000f00000014000000
+  paperSize: {x: 9.6, y: 5.8}
+  paperCenter: {x: 0, y: 0}
+  paperPadding: 0.45
+  paperColor: {r: 0.97, g: 0.95, b: 0.9, a: 1}
+  stageSketchSprites:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  sketchColor: {r: 0.08, g: 0.08, b: 0.08, a: 1}
+  stageStartAlpha: 0.02
+  clickPromptChance: 0.55
+  markerScale: 0.45
+  markerPulseAmplitude: 0.08
+  markerPulseSpeed: 5
+  clickColor: {r: 0.2, g: 0.85, b: 0.95, a: 1}
+  dragColor: {r: 0.95, g: 0.8, b: 0.2, a: 1}
+  dragArrowLength: 1
+  requiredDragDistance: 0.65
+  requiredDirectionDot: 0.75
+  maxGrabDistance: 0.45
+  teacherLineKeys:
+  - MINIGAME_CROQUIS_TEACHER_01
+  - MINIGAME_CROQUIS_TEACHER_02
+  - MINIGAME_CROQUIS_TEACHER_03
+  - MINIGAME_CROQUIS_TEACHER_04
+  - MINIGAME_CROQUIS_TEACHER_05
+  - MINIGAME_CROQUIS_TEACHER_06
+  - MINIGAME_CROQUIS_TEACHER_07
+  - MINIGAME_CROQUIS_TEACHER_08
+  - MINIGAME_CROQUIS_TEACHER_09
+  - MINIGAME_CROQUIS_TEACHER_10
+  - MINIGAME_CROQUIS_TEACHER_11
+  - MINIGAME_CROQUIS_TEACHER_12
+  - MINIGAME_CROQUIS_TEACHER_13
+  - MINIGAME_CROQUIS_TEACHER_14
+  - MINIGAME_CROQUIS_TEACHER_15
+  - MINIGAME_CROQUIS_TEACHER_16
+  - MINIGAME_CROQUIS_TEACHER_17
+  - MINIGAME_CROQUIS_TEACHER_18
+  - MINIGAME_CROQUIS_TEACHER_19
+  - MINIGAME_CROQUIS_TEACHER_20
+  bubbleMinInterval: 5
+  bubbleMaxInterval: 9
+  bubbleShowDuration: 2.8
+  uiFontAsset: {fileID: 11400000, guid: 0c79719180d600243baa2aa429aff767, type: 2}
+  penaltyOnGiveUp: 1
+--- !u!4 &2135599853
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2135599849}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 155.74094, y: 88.86655, z: -2.1820939}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -312,3 +460,4 @@ SceneRoots:
   - {fileID: 162336060}
   - {fileID: 791443084}
   - {fileID: 2018414699}
+  - {fileID: 2135599853}

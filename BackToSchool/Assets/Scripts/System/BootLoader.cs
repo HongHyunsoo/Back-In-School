@@ -5,10 +5,8 @@ using UnityEngine.SceneManagement;
 
 public class BootLoader : MonoBehaviour
 {
-    [SerializeField] private string firstSceneName = "MainMenu";
-
     private void Start()
     {
-        SceneManager.LoadScene(firstSceneName);
+        SceneManager.LoadScene("MainMenu");
     }
 }

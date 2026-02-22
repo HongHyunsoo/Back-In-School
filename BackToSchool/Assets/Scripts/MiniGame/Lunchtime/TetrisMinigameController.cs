@@ -66,6 +66,13 @@ public class TetrisMinigameController : MonoBehaviour
 
     private void Awake()
     {
+        string flowId = PlayerPrefs.GetString("FLOW_ID", "");
+        if (string.IsNullOrEmpty(flowId) || !flowId.StartsWith("LUNCH_"))
+        {
+            enabled = false;
+            return;
+        }
+
         if (board == null)
         {
             var bgo = new GameObject("TetrisBoard");
@@ -309,10 +316,33 @@ public class TetrisMinigameController : MonoBehaviour
     }
 
     // --- input helpers (old Input Manager) ---
-    private bool KeyDownLeft()  => Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow);
-    private bool KeyDownRight() => Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow);
-    private bool KeyDownDown()  => Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow);
-    private bool KeyDownRotate()=> Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow);
+    private bool KeyDownLeft()
+    {
+        var custom = KeyBindingConfig.Get(KeyBindingConfig.LeftKey, KeyCode.A);
+        return Input.GetKeyDown(custom) || Input.GetKeyDown(KeyCode.LeftArrow);
+    }
 
-    private bool IsSoftDropping()=> Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
+    private bool KeyDownRight()
+    {
+        var custom = KeyBindingConfig.Get(KeyBindingConfig.RightKey, KeyCode.D);
+        return Input.GetKeyDown(custom) || Input.GetKeyDown(KeyCode.RightArrow);
+    }
+
+    private bool KeyDownDown()
+    {
+        var custom = KeyBindingConfig.Get(KeyBindingConfig.DownKey, KeyCode.S);
+        return Input.GetKeyDown(custom) || Input.GetKeyDown(KeyCode.DownArrow);
+    }
+
+    private bool KeyDownRotate()
+    {
+        var custom = KeyBindingConfig.Get(KeyBindingConfig.UpKey, KeyCode.W);
+        return Input.GetKeyDown(custom) || Input.GetKeyDown(KeyCode.UpArrow);
+    }
+
+    private bool IsSoftDropping()
+    {
+        var custom = KeyBindingConfig.Get(KeyBindingConfig.DownKey, KeyCode.S);
+        return Input.GetKey(custom) || Input.GetKey(KeyCode.DownArrow);
+    }
 }

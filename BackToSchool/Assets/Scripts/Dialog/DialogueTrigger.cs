@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,27 +9,27 @@ public class ContextualDialogue
     public GameState specificState;
     public DialogueBehavior behavior = DialogueBehavior.Repeatable;
 
-    [Tooltip("단일 대화 ID (Repeatable, PlayOnce 사용 시)")]
-    public string conversationID; // 예: "ROBOT_CONVO_DAY1"
+    [Tooltip("?⑥씪 ???ID (Repeatable, PlayOnce ?ъ슜 ??")]
+    public string conversationID; // ?? "ROBOT_CONVO_DAY1"
 
-    [Tooltip("랜덤 대화 ID 목록 (Random 사용 시, 이 중에서 랜덤 선택)")]
+    [Tooltip("?쒕뜡 ???ID 紐⑸줉 (Random ?ъ슜 ?? ??以묒뿉???쒕뜡 ?좏깮)")]
     public List<string> randomConversationIDs = new List<string>();
 
-    [Header("대사 커스터마이징 (각 대사마다 개별 설정)")]
-    [Tooltip("대화의 몇 번째 대사에 설정을 적용할지 (0부터 시작, -1이면 모든 대사에 적용 안 함)")]
+    [Header("???而ㅼ뒪?곕쭏?댁쭠 (媛???щ쭏??媛쒕퀎 ?ㅼ젙)")]
+    [Tooltip("??붿쓽 紐?踰덉㎏ ??ъ뿉 ?ㅼ젙???곸슜?좎? (0遺???쒖옉, -1?대㈃ 紐⑤뱺 ??ъ뿉 ?곸슜 ????")]
     public int customLineIndex = -1;
 
-    [Tooltip("해당 대사에 적용할 애니메이션 트리거 이름")]
+    [Tooltip("?대떦 ??ъ뿉 ?곸슜???좊땲硫붿씠???몃━嫄??대쫫")]
     public string animationTrigger;
 
-    [Tooltip("해당 대사에 재생할 소리 이펙트 이름 (Resources/Sounds에서 로드)")]
+    [Tooltip("?대떦 ??ъ뿉 ?ъ깮???뚮━ ?댄럺???대쫫 (Resources/Sounds?먯꽌 濡쒕뱶)")]
     public string soundEffectName;
 
-    [Header("선택지 설정 (대화 중간에 선택지를 넣을 수 있음)")]
-    [Tooltip("대화의 몇 번째 대사에 선택지를 넣을지 (0부터 시작, -1이면 마지막 대사)")]
-    public int choiceLineIndex = -1; // -1이면 마지막 대사에 선택지
+    [Header("?좏깮吏 ?ㅼ젙 (???以묎컙???좏깮吏瑜??ｌ쓣 ???덉쓬)")]
+    [Tooltip("??붿쓽 紐?踰덉㎏ ??ъ뿉 ?좏깮吏瑜??ｌ쓣吏 (0遺???쒖옉, -1?대㈃ 留덉?留????")]
+    public int choiceLineIndex = -1; // -1?대㈃ 留덉?留???ъ뿉 ?좏깮吏
 
-    [Tooltip("선택지 목록 (최대 4개)")]
+    [Tooltip("?좏깮吏 紐⑸줉 (理쒕? 4媛?")]
     public List<DialogueChoice> choices = new List<DialogueChoice>();
 
     [HideInInspector]
@@ -40,11 +40,11 @@ public enum DialogueBehavior { Repeatable, PlayOnce, Random }
 
 /*
  * ===================================================================================
- * DialogueTrigger (v4.0 - Random 동작 구현)
+ * DialogueTrigger (v4.0 - Random ?숈옉 援ы쁽)
  * ===================================================================================
- * - [v4.0 추가 기능]
- * - 1. Random 동작 구현 완료
- * - 2. 랜덤 대화 목록에서 선택
+ * - [v4.0 異붽? 湲곕뒫]
+ * - 1. Random ?숈옉 援ы쁽 ?꾨즺
+ * - 2. ?쒕뜡 ???紐⑸줉?먯꽌 ?좏깮
  * ===================================================================================
  */
 public class DialogueTrigger : MonoBehaviour
@@ -57,7 +57,7 @@ public class DialogueTrigger : MonoBehaviour
     public List<ContextualDialogue> contextualDialogues;
 
     [Header("Default Dialogue")]
-    [Tooltip("상황에 맞는 대화가 없을 때 사용할 기본 대화")]
+    [Tooltip("Fallback conversation ID used when no contextual dialogue matches.")]
     public string defaultConversationID;
 
     private DialogueManager manager;
@@ -68,13 +68,15 @@ public class DialogueTrigger : MonoBehaviour
     {
         manager = FindObjectOfType<DialogueManager>();
         gameManager = FindObjectOfType<GameManager>();
-        if (manager == null) UnityEngine.Debug.LogError("DialogueManager를 찾을 수 없습니다!");
-        if (gameManager == null) UnityEngine.Debug.LogError("GameManager를 찾을 수 없습니다!");
+        if (manager == null) UnityEngine.Debug.LogError("DialogueManager瑜?李얠쓣 ???놁뒿?덈떎!");
+        if (gameManager == null) UnityEngine.Debug.LogError("GameManager瑜?李얠쓣 ???놁뒿?덈떎!");
         if (interactPrompt != null) interactPrompt.SetActive(false);
     }
 
     void Update()
     {
+        interactKey = KeyBindingConfig.Get(KeyBindingConfig.InteractKey, KeyCode.E);
+
         if (isPlayerInRange)
         {
             ContextualDialogue currentDialogue = FindCurrentDialogue();
@@ -108,23 +110,23 @@ public class DialogueTrigger : MonoBehaviour
         {
             if (cd.day == today && cd.specificState == now) return cd;
         }
-        return null; // 해당 상황에 없음
+        return null; // ?대떦 ?곹솴???놁쓬
     }
 
-    // 대화 동작에 따라 대화 시작
+    // ????숈옉???곕씪 ????쒖옉
     private void StartDialogueBasedOnBehavior(ContextualDialogue cd)
     {
         string conversationID_ToPlay;
 
-        // 1. 해당 상황에 맞는 대화가 없으면 '기본 대화 ID'를 사용
+        // 1. ?대떦 ?곹솴??留욌뒗 ??붽? ?놁쑝硫?'湲곕낯 ???ID'瑜??ъ슜
         if (cd == null)
         {
             conversationID_ToPlay = defaultConversationID;
         }
-        // 2. 해당 상황에 맞는 '대화 ID'를 사용
+        // 2. ?대떦 ?곹솴??留욌뒗 '???ID'瑜??ъ슜
         else
         {
-            // Random 동작: 랜덤 대화 목록에서 선택
+            // Random ?숈옉: ?쒕뜡 ???紐⑸줉?먯꽌 ?좏깮
             if (cd.behavior == DialogueBehavior.Random)
             {
                 if (cd.randomConversationIDs != null && cd.randomConversationIDs.Count > 0)
@@ -134,7 +136,7 @@ public class DialogueTrigger : MonoBehaviour
                 }
                 else if (!string.IsNullOrEmpty(cd.conversationID))
                 {
-                    // 랜덤 목록이 없으면 기본 대화 ID 사용
+                    // ?쒕뜡 紐⑸줉???놁쑝硫?湲곕낯 ???ID ?ъ슜
                     conversationID_ToPlay = cd.conversationID;
                 }
                 else
@@ -142,7 +144,7 @@ public class DialogueTrigger : MonoBehaviour
                     conversationID_ToPlay = defaultConversationID;
                 }
             }
-            // Repeatable, PlayOnce 동작: 단일 대화 ID 사용
+            // Repeatable, PlayOnce ?숈옉: ?⑥씪 ???ID ?ъ슜
             else
             {
                 conversationID_ToPlay = cd.conversationID;
@@ -154,16 +156,16 @@ public class DialogueTrigger : MonoBehaviour
             }
         }
 
-        // 3. '대화 ID'와 '대화 주인 NPC(transform)'를 DialogueManager에 전달
+        // 3. '???ID'? '???二쇱씤 NPC(transform)'瑜?DialogueManager???꾨떖
         if (!string.IsNullOrEmpty(conversationID_ToPlay))
         {
-            // 대사 커스터마이징 적용 (애니메이션, 이펙트, 소리)
+            // ???而ㅼ뒪?곕쭏?댁쭠 ?곸슜 (?좊땲硫붿씠?? ?댄럺?? ?뚮━)
             if (cd != null && cd.customLineIndex >= 0)
             {
                 ApplyLineCustomization(conversationID_ToPlay, cd.customLineIndex, cd);
             }
 
-            // 선택지가 설정되어 있으면 대화에 선택지 추가
+            // ?좏깮吏媛 ?ㅼ젙?섏뼱 ?덉쑝硫???붿뿉 ?좏깮吏 異붽?
             if (cd != null && cd.choices != null && cd.choices.Count > 0)
             {
                 AddChoicesToConversation(conversationID_ToPlay, cd.choiceLineIndex, cd.choices);
@@ -173,70 +175,70 @@ public class DialogueTrigger : MonoBehaviour
         }
         else
         {
-            UnityEngine.Debug.LogWarning("대화 ID가 비어있습니다!");
+            UnityEngine.Debug.LogWarning("???ID媛 鍮꾩뼱?덉뒿?덈떎!");
         }
     }
 
-    // 대사에 커스터마이징 적용 (애니메이션, 이펙트, 소리)
+    // ??ъ뿉 而ㅼ뒪?곕쭏?댁쭠 ?곸슜 (?좊땲硫붿씠?? ?댄럺?? ?뚮━)
     private void ApplyLineCustomization(string conversationID, int lineIndex, ContextualDialogue cd)
     {
         List<DialogueLine> lines = LocalizationManager.Instance.GetConversation(conversationID);
         
         if (lines == null || lines.Count == 0)
         {
-            UnityEngine.Debug.LogWarning($"대화를 찾을 수 없습니다: {conversationID}");
+            UnityEngine.Debug.LogWarning($"??붾? 李얠쓣 ???놁뒿?덈떎: {conversationID}");
             return;
         }
 
         if (lineIndex < 0 || lineIndex >= lines.Count)
         {
-            UnityEngine.Debug.LogWarning($"대사 인덱스가 범위를 벗어났습니다: {lineIndex} / {lines.Count}");
+            UnityEngine.Debug.LogWarning($"????몃뜳?ㅺ? 踰붿쐞瑜?踰쀬뼱?ъ뒿?덈떎: {lineIndex} / {lines.Count}");
             return;
         }
 
         DialogueLine targetLine = lines[lineIndex];
 
-        // 애니메이션 트리거 설정
+        // ?좊땲硫붿씠???몃━嫄??ㅼ젙
         if (!string.IsNullOrEmpty(cd.animationTrigger))
         {
             targetLine.animationTrigger = cd.animationTrigger;
         }
 
-        // 소리 이펙트 설정
+        // ?뚮━ ?댄럺???ㅼ젙
         if (!string.IsNullOrEmpty(cd.soundEffectName))
         {
             targetLine.soundEffectName = cd.soundEffectName;
         }
 
-        UnityEngine.Debug.Log($"대화 '{conversationID}'의 {lineIndex + 1}번째 대사에 커스터마이징 적용됨");
+        UnityEngine.Debug.Log($"Applied customization to {conversationID} line {lineIndex + 1}.");
     }
 
-    // 대화에 선택지 추가
+    // ??붿뿉 ?좏깮吏 異붽?
     private void AddChoicesToConversation(string conversationID, int lineIndex, List<DialogueChoice> choices)
     {
         List<DialogueLine> lines = LocalizationManager.Instance.GetConversation(conversationID);
         
         if (lines == null || lines.Count == 0)
         {
-            UnityEngine.Debug.LogWarning($"대화를 찾을 수 없습니다: {conversationID}");
+            UnityEngine.Debug.LogWarning($"??붾? 李얠쓣 ???놁뒿?덈떎: {conversationID}");
             return;
         }
 
-        // lineIndex가 -1이면 마지막 대사에 선택지 추가
+        // lineIndex媛 -1?대㈃ 留덉?留???ъ뿉 ?좏깮吏 異붽?
         int targetIndex = (lineIndex == -1) ? lines.Count - 1 : lineIndex;
         
         if (targetIndex < 0 || targetIndex >= lines.Count)
         {
-            UnityEngine.Debug.LogWarning($"선택지를 넣을 대사 인덱스가 범위를 벗어났습니다: {targetIndex} / {lines.Count}");
+            UnityEngine.Debug.LogWarning($"?좏깮吏瑜??ｌ쓣 ????몃뜳?ㅺ? 踰붿쐞瑜?踰쀬뼱?ъ뒿?덈떎: {targetIndex} / {lines.Count}");
             return;
         }
 
-        // 선택지 추가
+        // ?좏깮吏 異붽?
         DialogueLine targetLine = lines[targetIndex];
         targetLine.hasChoices = true;
         targetLine.choices = new List<DialogueChoice>(choices);
 
-        UnityEngine.Debug.Log($"대화 '{conversationID}'의 {targetIndex + 1}번째 대사에 선택지 {choices.Count}개 추가됨");
+        UnityEngine.Debug.Log($"Added {choices.Count} choices to {conversationID} line {targetIndex + 1}.");
     }
 
     private void OnTriggerEnter2D(Collider2D other) 

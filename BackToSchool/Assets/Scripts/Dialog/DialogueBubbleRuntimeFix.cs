@@ -97,8 +97,8 @@ public class DialogueBubbleRuntimeFix : MonoBehaviour
         for (int i = 0; i < roots.Length; i++)
         {
             var canvases = roots[i].GetComponentsInChildren<Canvas>(true);
-            for (int j = 0; j < canvases.Length; j++)
-                return canvases[j];
+            if (canvases.Length > 0)
+                return canvases[0];
         }
         return null;
     }

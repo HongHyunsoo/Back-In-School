@@ -118,6 +118,13 @@ public class PixelPaintMinigameController : MonoBehaviour
 
     private void Awake()
     {
+        string flowId = PlayerPrefs.GetString("FLOW_ID", "");
+        if (string.IsNullOrEmpty(flowId) || !flowId.StartsWith("CLASS2_"))
+        {
+            enabled = false;
+            return;
+        }
+
         mainCam = Camera.main;
         if (mainCam == null)
             mainCam = FindAnyObjectByType<Camera>();
@@ -135,6 +142,24 @@ public class PixelPaintMinigameController : MonoBehaviour
         BuildRuntimeUI();
         RefreshHeader();
         RefreshPaletteUI();
+
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnDisable()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= OnLanguageChanged;
+
+        CleanupRuntimeUI();
+    }
+
+    private void OnDestroy()
+    {
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= OnLanguageChanged;
+        CleanupRuntimeUI();
     }
 
     private void Update()
@@ -158,7 +183,7 @@ public class PixelPaintMinigameController : MonoBehaviour
             if (IsSolved())
                 OnSolved();
             else
-                RefreshHeader("Not solved yet.");
+                RefreshHeader(L("MINIGAME_PIXELPAINT_NOT_SOLVED", "아직 정답이 아닙니다.", "Not solved yet."));
         }
 
         if (Input.GetKeyDown(KeyCode.Escape))
@@ -823,9 +848,18 @@ public class PixelPaintMinigameController : MonoBehaviour
     {
         if (headerText == null) return;
 
+        string colorLabel = L("MINIGAME_PIXELPAINT_COLOR", "색상", "Color");
+        string controls = L("MINIGAME_PIXELPAINT_CONTROLS", "좌클릭 칠하기 / 우클릭 지우기 / 엔터 제출 / ESC 포기", "LMB Paint / RMB Erase / Enter Submit / Esc Give up");
+        string format = L("MINIGAME_PIXELPAINT_HEADER_FMT", "{0} ({1}/{2})  |  {3} {4}  |  {5}", "{0} ({1}/{2})  |  {3} {4}  |  {5}");
+
         string text =
-            $"{activePuzzleTitle} ({activePuzzleIndex + 1}/{puzzles.Count})  |  " +
-            $"Color {selectedColor}  |  LMB Paint / RMB Erase / Enter Submit / Esc Give up";
+            string.Format(format,
+                activePuzzleTitle,
+                activePuzzleIndex + 1,
+                puzzles.Count,
+                colorLabel,
+                selectedColor,
+                controls);
 
         if (!string.IsNullOrEmpty(suffix))
             text += $"  |  {suffix}";
@@ -900,7 +934,7 @@ public class PixelPaintMinigameController : MonoBehaviour
 
         solvedWaitForContinue = true;
         HideBoardOutlinesAndNumbers();
-        RefreshHeader("Completed! Click to continue.");
+        RefreshHeader(L("MINIGAME_PIXELPAINT_COMPLETED", "완성! 클릭해서 계속 진행", "Completed! Click to continue."));
     }
 
     private void HideBoardOutlinesAndNumbers()
@@ -924,8 +958,7 @@ public class PixelPaintMinigameController : MonoBehaviour
         if (ended) return;
         ended = true;
 
-        if (uiCanvas != null)
-            Destroy(uiCanvas.gameObject);
+        CleanupRuntimeUI();
 
         Debug.Log($"[PixelPaint] End: {(success ? "SUCCESS" : "FAIL")}");
 
@@ -939,6 +972,29 @@ public class PixelPaintMinigameController : MonoBehaviour
         var gm = FindAnyObjectByType<GameManager>();
         if (gm != null)
             gm.MinigameFinished(success);
+    }
+
+    private void CleanupRuntimeUI()
+    {
+        if (uiCanvas != null)
+        {
+            Destroy(uiCanvas.gameObject);
+            uiCanvas = null;
+        }
+    }
+
+    private void OnLanguageChanged(Language _)
+    {
+        RefreshHeader();
+    }
+
+    private string L(string key, string fallbackKO, string fallbackEN)
+    {
+        Language lang = LocalizationManager.Instance != null ? LocalizationManager.Instance.GetCurrentLanguage() : Language.Korean;
+        string fallback = lang == Language.Korean ? fallbackKO : fallbackEN;
+        if (LocalizationManager.Instance == null) return fallback;
+        string value = LocalizationManager.Instance.GetLine(key);
+        return value == key ? fallback : value;
     }
 
     private bool InBounds(int x, int y)

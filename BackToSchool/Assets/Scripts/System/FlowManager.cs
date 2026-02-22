@@ -25,7 +25,7 @@ public class FlowManager : MonoBehaviour
     public int penaltyThreshold = 3;  // 임시 3점
 
     [Header("Debug")]
-    public bool autoStartOnPlay = true;
+    public bool autoStartOnPlay = false;
 
     // day -> event list
     Dictionary<int, List<FlowEvent>> timeline;
@@ -45,10 +45,13 @@ public class FlowManager : MonoBehaviour
 
     private void Start()
     {
-        if (autoStartOnPlay)
-        {
-            PlayCurrent();
-        }
+        if (!autoStartOnPlay) return;
+
+        string sceneName = SceneManager.GetActiveScene().name;
+        if (sceneName == "Bootstrap" || sceneName == "MainMenu")
+            return;
+
+        PlayCurrent();
     }
 
 

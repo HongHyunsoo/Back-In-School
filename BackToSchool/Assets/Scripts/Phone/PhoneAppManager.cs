@@ -1,6 +1,6 @@
+癤퓎sing System;
 using System.Collections;
 using System.Collections.Generic;
-using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -19,24 +19,28 @@ public class PhoneAppManager : MonoBehaviour
     [SerializeField] private GameObject chatPanel;
     [SerializeField] private GameObject musicPanel;
 
+    [Header("App Splash")]
+    [SerializeField] private GameObject appSplashPanel;
+    [SerializeField] private float splashDuration = 0.45f;
+    [SerializeField] private bool useSplash = true;
+
     [Header("Buttons (Optional wiring)")]
     [SerializeField] private Button btnRules;
     [SerializeField] private Button btnHealth;
     [SerializeField] private Button btnChat;
     [SerializeField] private Button btnMusic;
-    [SerializeField] private Button btnBack;       // 앱에서 홈으로
-    [SerializeField] private Button btnClosePhone; // 폰 닫기(학교)
-    [SerializeField] private Button btnPower;      // 전원(컨텍스트별 처리)
+    [SerializeField] private Button btnBack;       // app -> home
+    [SerializeField] private Button btnClosePhone; // close phone (school)
+    [SerializeField] private Button btnPower;      // power (context-specific)
 
     private readonly Dictionary<PhoneAppId, GameObject> appPanels = new();
+    private Coroutine openRoutine;
 
     public PhoneAppId CurrentApp { get; private set; } = PhoneAppId.Home;
-
-    /// 채팅 세션 중일 때 뒤로/닫기 막는 용도
     public bool IsLocked { get; private set; }
 
-    public event Action OnRequestClosePhone; // (학교) 폰 닫기 요청
-    public event Action OnRequestPower;      // (지하철) 내리기 같은 특수 처리
+    public event Action OnRequestClosePhone;
+    public event Action OnRequestPower;
 
     private void Awake()
     {
@@ -64,6 +68,9 @@ public class PhoneAppManager : MonoBehaviour
             OnRequestPower?.Invoke();
         });
 
+        if (appSplashPanel != null)
+            appSplashPanel.SetActive(false);
+
         ShowHome();
         SetLocked(false);
     }
@@ -78,31 +85,38 @@ public class PhoneAppManager : MonoBehaviour
             return;
         }
 
-        homePanel.SetActive(false);
-        appContainer.SetActive(true);
+        if (openRoutine != null)
+            StopCoroutine(openRoutine);
 
-        foreach (var kv in appPanels)
-            kv.Value.SetActive(false);
-
-        if (appPanels.TryGetValue(appId, out var panel))
-            panel.SetActive(true);
-
-        CurrentApp = appId;
+        openRoutine = StartCoroutine(CoOpenAppWithSplash(appId));
     }
 
     public void BackToHome()
     {
         if (IsLocked) return;
+
+        if (openRoutine != null)
+        {
+            StopCoroutine(openRoutine);
+            openRoutine = null;
+        }
+
+        if (appSplashPanel != null)
+            appSplashPanel.SetActive(false);
+
         ShowHome();
     }
 
     private void ShowHome()
     {
-        homePanel.SetActive(true);
-        appContainer.SetActive(true);
+        if (homePanel != null) homePanel.SetActive(true);
+        if (appContainer != null) appContainer.SetActive(true);
 
         foreach (var kv in appPanels)
-            kv.Value.SetActive(false);
+        {
+            if (kv.Value != null)
+                kv.Value.SetActive(false);
+        }
 
         CurrentApp = PhoneAppId.Home;
     }
@@ -111,5 +125,31 @@ public class PhoneAppManager : MonoBehaviour
     {
         IsLocked = locked;
         if (overlayLock) overlayLock.SetActive(locked);
+    }
+
+    private IEnumerator CoOpenAppWithSplash(PhoneAppId appId)
+    {
+        if (homePanel != null) homePanel.SetActive(false);
+        if (appContainer != null) appContainer.SetActive(true);
+
+        foreach (var kv in appPanels)
+        {
+            if (kv.Value != null)
+                kv.Value.SetActive(false);
+        }
+
+        bool showSplash = useSplash && appSplashPanel != null && splashDuration > 0f;
+        if (showSplash)
+        {
+            appSplashPanel.SetActive(true);
+            yield return new WaitForSecondsRealtime(splashDuration);
+            appSplashPanel.SetActive(false);
+        }
+
+        if (appPanels.TryGetValue(appId, out var panel) && panel != null)
+            panel.SetActive(true);
+
+        CurrentApp = appId;
+        openRoutine = null;
     }
 }
