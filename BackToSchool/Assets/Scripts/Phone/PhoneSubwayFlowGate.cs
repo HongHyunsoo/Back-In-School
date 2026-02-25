@@ -104,6 +104,11 @@ public class PhoneSubwayFlowGate : MonoBehaviour
         bool checkedHealth = healthCheckedDays.Contains(day);
         int penalty = checkedHealth ? 0 : 1;
 
+        if (penalty > 0)
+        {
+            PenaltyReasonLog.Add(PenaltyReasonLog.ReasonHealthSurveyMissing, penalty, day);
+        }
+
         Debug.Log("[PhoneSubwayFlowGate] Complete subway event. day=" + day + ", penaltyDelta=" + penalty);
         StartCoroutine(CoCompleteAfterFeedback(penalty));
     }

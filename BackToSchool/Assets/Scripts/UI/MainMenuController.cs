@@ -180,6 +180,7 @@ public class MainMenuController : MonoBehaviour
         fm.day = 1;
         fm.stepIndex = 0;
         fm.penaltyPoints = 0;
+        PenaltyReasonLog.Clear();
         fm.PlayCurrent();
     }
 

@@ -181,6 +181,15 @@ public class FlowManager : MonoBehaviour
         PlayCurrent();
     }
 
+    public void AddPenaltyWithReason(int penaltyDelta, string reasonId)
+    {
+        if (penaltyDelta <= 0)
+            return;
+
+        penaltyPoints += penaltyDelta;
+        PenaltyReasonLog.Add(reasonId, penaltyDelta, day);
+    }
+
     #if UNITY_EDITOR || DEVELOPMENT_BUILD
     // 지금 이벤트 강제 완료(개발용)
     public void DebugSkip(int penaltyDelta = 0)

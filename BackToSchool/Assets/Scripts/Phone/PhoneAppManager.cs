@@ -6,6 +6,14 @@ using UnityEngine.UI;
 
 public enum PhoneAppId { Home, Rules, Health, Chat, Music }
 
+[Serializable]
+public class AppSplashEntry
+{
+    public PhoneAppId appId;
+    public GameObject splashPanel;
+    public float duration = 0.45f;
+}
+
 public class PhoneAppManager : MonoBehaviour
 {
     [Header("Panels")]
@@ -20,8 +28,10 @@ public class PhoneAppManager : MonoBehaviour
     [SerializeField] private GameObject musicPanel;
 
     [Header("App Splash")]
+    [SerializeField] private List<AppSplashEntry> appSplashEntries = new();
     [SerializeField] private GameObject appSplashPanel;
     [SerializeField] private float splashDuration = 0.45f;
+    [SerializeField] private float splashFadeDuration = 0.18f;
     [SerializeField] private bool useSplash = true;
 
     [Header("Buttons (Optional wiring)")]
@@ -34,6 +44,7 @@ public class PhoneAppManager : MonoBehaviour
     [SerializeField] private Button btnPower;      // power (context-specific)
 
     private readonly Dictionary<PhoneAppId, GameObject> appPanels = new();
+    private readonly Dictionary<PhoneAppId, AppSplashEntry> splashByApp = new();
     private Coroutine openRoutine;
 
     public PhoneAppId CurrentApp { get; private set; } = PhoneAppId.Home;
@@ -48,6 +59,7 @@ public class PhoneAppManager : MonoBehaviour
         appPanels[PhoneAppId.Health] = healthPanel;
         appPanels[PhoneAppId.Chat] = chatPanel;
         appPanels[PhoneAppId.Music] = musicPanel;
+        BuildSplashLookup();
 
         if (btnRules) btnRules.onClick.AddListener(() => OpenApp(PhoneAppId.Rules));
         if (btnHealth) btnHealth.onClick.AddListener(() => OpenApp(PhoneAppId.Health));
@@ -68,8 +80,7 @@ public class PhoneAppManager : MonoBehaviour
             OnRequestPower?.Invoke();
         });
 
-        if (appSplashPanel != null)
-            appSplashPanel.SetActive(false);
+        HideAllSplashPanels();
 
         ShowHome();
         SetLocked(false);
@@ -101,8 +112,7 @@ public class PhoneAppManager : MonoBehaviour
             openRoutine = null;
         }
 
-        if (appSplashPanel != null)
-            appSplashPanel.SetActive(false);
+        HideAllSplashPanels();
 
         ShowHome();
     }
@@ -138,12 +148,12 @@ public class PhoneAppManager : MonoBehaviour
                 kv.Value.SetActive(false);
         }
 
-        bool showSplash = useSplash && appSplashPanel != null && splashDuration > 0f;
+        GetSplashConfig(appId, out var splashPanel, out var duration);
+        bool showSplash = useSplash && splashPanel != null && duration > 0f;
         if (showSplash)
         {
-            appSplashPanel.SetActive(true);
-            yield return new WaitForSecondsRealtime(splashDuration);
-            appSplashPanel.SetActive(false);
+            HideAllSplashPanels();
+            yield return PlaySplashWithFade(splashPanel, duration);
         }
 
         if (appPanels.TryGetValue(appId, out var panel) && panel != null)
@@ -151,5 +161,92 @@ public class PhoneAppManager : MonoBehaviour
 
         CurrentApp = appId;
         openRoutine = null;
+    }
+
+    private void BuildSplashLookup()
+    {
+        splashByApp.Clear();
+        for (int i = 0; i < appSplashEntries.Count; i++)
+        {
+            var entry = appSplashEntries[i];
+            if (entry == null)
+                continue;
+
+            splashByApp[entry.appId] = entry;
+        }
+    }
+
+    private void HideAllSplashPanels()
+    {
+        if (appSplashPanel != null)
+            appSplashPanel.SetActive(false);
+
+        for (int i = 0; i < appSplashEntries.Count; i++)
+        {
+            var entry = appSplashEntries[i];
+            if (entry != null && entry.splashPanel != null)
+                entry.splashPanel.SetActive(false);
+        }
+    }
+
+    private void GetSplashConfig(PhoneAppId appId, out GameObject panel, out float duration)
+    {
+        if (splashByApp.TryGetValue(appId, out var entry) && entry != null && entry.splashPanel != null)
+        {
+            panel = entry.splashPanel;
+            duration = Mathf.Max(0f, entry.duration);
+            return;
+        }
+
+        panel = appSplashPanel;
+        duration = Mathf.Max(0f, splashDuration);
+    }
+
+    private IEnumerator PlaySplashWithFade(GameObject splashPanel, float duration)
+    {
+        if (splashPanel == null)
+            yield break;
+
+        splashPanel.SetActive(true);
+
+        var group = splashPanel.GetComponent<CanvasGroup>();
+        if (group == null)
+            group = splashPanel.AddComponent<CanvasGroup>();
+
+        float fade = Mathf.Max(0f, splashFadeDuration);
+        float hold = Mathf.Max(0f, duration - (fade * 2f));
+
+        if (fade > 0f)
+            yield return FadeCanvasGroup(group, 0f, 1f, fade);
+        else
+            group.alpha = 1f;
+
+        if (hold > 0f)
+            yield return new WaitForSecondsRealtime(hold);
+
+        if (fade > 0f)
+            yield return FadeCanvasGroup(group, 1f, 0f, fade);
+        else
+            group.alpha = 0f;
+
+        splashPanel.SetActive(false);
+    }
+
+    private static IEnumerator FadeCanvasGroup(CanvasGroup group, float from, float to, float duration)
+    {
+        if (group == null)
+            yield break;
+
+        float t = 0f;
+        float d = Mathf.Max(0.01f, duration);
+        while (t < d)
+        {
+            t += Time.unscaledDeltaTime;
+            float k = Mathf.Clamp01(t / d);
+            group.alpha = Mathf.Lerp(from, to, k);
+            yield return null;
+        }
+
+        group.alpha = to;
     }
 }
