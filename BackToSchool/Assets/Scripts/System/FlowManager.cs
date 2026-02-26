@@ -16,6 +16,8 @@ public class FlowEvent
 
 public class FlowManager : MonoBehaviour
 {
+    public const string StoryAppendConversationPrefKey = "FLOW_STORY_APPEND_ID";
+
     public static FlowManager Instance { get; private set; }
 
     [Header("Progress")]
@@ -27,8 +29,14 @@ public class FlowManager : MonoBehaviour
     [Header("Debug")]
     public bool autoStartOnPlay = false;
 
+    [Header("School Rules")]
+    [SerializeField] private bool isWearingSlippers;
+    [SerializeField] private bool changedToSlippersToday;
+
     // day -> event list
     Dictionary<int, List<FlowEvent>> timeline;
+    int shoeStateDay = -1;
+    bool noSlippersPenaltyAppliedToday;
 
     private void Awake()
     {
@@ -118,6 +126,11 @@ public class FlowManager : MonoBehaviour
 
     public void PlayCurrent()
     {
+        if (stepIndex == 0)
+            shoeStateDay = -1;
+
+        EnsureShoeStateForCurrentDay();
+
         if (!timeline.ContainsKey(day))
         {
             Debug.LogError($"[FlowManager] Day {day} 타임라인 없음");
@@ -146,7 +159,8 @@ public class FlowManager : MonoBehaviour
 
     void LoadModeScene(FlowEvent ev)
     {
-        PlayerPrefs.SetString("FLOW_ID", ev.id);
+        string resolvedId = ResolveFlowId(ev);
+        PlayerPrefs.SetString("FLOW_ID", resolvedId);
         PlayerPrefs.SetString("FLOW_TYPE", ev.type.ToString());
 
         // ✅ GameManager 상태는 필요한 모드만 건드림
@@ -176,6 +190,18 @@ public class FlowManager : MonoBehaviour
     // 각 모드가 끝나면 이걸 호출하면 됨
     public void CompleteCurrentEvent(int penaltyDelta = 0)
     {
+        if (timeline.TryGetValue(day, out var list) && stepIndex < list.Count)
+        {
+            var finishedEvent = list[stepIndex];
+            if (finishedEvent.type == FlowEventType.STORY &&
+                IsMorningAssemblyEvent(finishedEvent.id) &&
+                !isWearingSlippers)
+            {
+                ForceWearSlippers();
+                Debug.Log("[FlowManager] 조회 지적 이후 자동으로 실내화 착용 처리");
+            }
+        }
+
         penaltyPoints += penaltyDelta;
         stepIndex++;
         PlayCurrent();
@@ -207,6 +233,101 @@ public class FlowManager : MonoBehaviour
     }
     #endif
 
+    public bool IsWearingSlippers => isWearingSlippers;
+    public bool ChangedToSlippersToday => changedToSlippersToday;
+
+    public void ResetSchoolRuleRuntimeState()
+    {
+        shoeStateDay = -1;
+        isWearingSlippers = false;
+        changedToSlippersToday = false;
+        noSlippersPenaltyAppliedToday = false;
+        PlayerPrefs.DeleteKey(StoryAppendConversationPrefKey);
+    }
+
+    public bool TryChangeToSlippers()
+    {
+        EnsureShoeStateForCurrentDay();
+
+        if (isWearingSlippers)
+            return false;
+
+        isWearingSlippers = true;
+        changedToSlippersToday = true;
+        return true;
+    }
+
+    public void ForceWearSlippers()
+    {
+        EnsureShoeStateForCurrentDay();
+        isWearingSlippers = true;
+    }
+
+    void EnsureShoeStateForCurrentDay()
+    {
+        if (shoeStateDay == day)
+            return;
+
+        shoeStateDay = day;
+        isWearingSlippers = false;
+        changedToSlippersToday = false;
+        noSlippersPenaltyAppliedToday = false;
+    }
+
+    string ResolveFlowId(FlowEvent ev)
+    {
+        if (ev.type != FlowEventType.STORY || !IsMorningAssemblyEvent(ev.id))
+        {
+            PlayerPrefs.DeleteKey(StoryAppendConversationPrefKey);
+            return ev.id;
+        }
+
+        if (isWearingSlippers)
+        {
+            PlayerPrefs.DeleteKey(StoryAppendConversationPrefKey);
+            return ev.id;
+        }
+
+        if (!noSlippersPenaltyAppliedToday)
+        {
+            AddPenaltyWithReason(1, PenaltyReasonLog.ReasonNoSlippers);
+            noSlippersPenaltyAppliedToday = true;
+        }
+
+        string altId = ev.id + "_NO_SLIPPERS";
+        if (HasConversation(altId))
+        {
+            // 미착용 지적 대사 후 기존 조회 대사를 이어서 재생
+            PlayerPrefs.SetString(StoryAppendConversationPrefKey, ev.id);
+            return altId;
+        }
+
+        PlayerPrefs.DeleteKey(StoryAppendConversationPrefKey);
+        return ev.id;
+    }
+
+    static bool IsMorningAssemblyEvent(string id)
+    {
+        if (string.IsNullOrEmpty(id))
+            return false;
+
+        if (id.StartsWith("DAY", StringComparison.Ordinal) && id.IndexOf("_CLASSOPEN", StringComparison.Ordinal) >= 0)
+            return true;
+
+        if (id.StartsWith("D", StringComparison.Ordinal) && id.EndsWith("_ASSEMBLY", StringComparison.Ordinal))
+            return true;
+
+        return false;
+    }
+
+    static bool HasConversation(string conversationId)
+    {
+        if (LocalizationManager.Instance == null || string.IsNullOrEmpty(conversationId))
+            return false;
+
+        var lines = LocalizationManager.Instance.GetConversation(conversationId);
+        return lines != null && lines.Count > 0;
+    }
 }
 
 // Fluent helper

@@ -33,6 +33,7 @@ public class MainMenuController : MonoBehaviour
     public Slider masterVolumeSlider;
     public Button bindLeftButton;
     public Button bindRightButton;
+    public Button bindJumpButton;
     public Button bindDownButton;
     public Button bindUpButton;
     public Button bindInteractButton;
@@ -43,6 +44,7 @@ public class MainMenuController : MonoBehaviour
     public TextMeshProUGUI infoLabel;
     public TextMeshProUGUI bindLeftLabel;
     public TextMeshProUGUI bindRightLabel;
+    public TextMeshProUGUI bindJumpLabel;
     public TextMeshProUGUI bindDownLabel;
     public TextMeshProUGUI bindUpLabel;
     public TextMeshProUGUI bindInteractLabel;
@@ -50,6 +52,9 @@ public class MainMenuController : MonoBehaviour
 
     private string waitingBindKey;
     private bool isStarting;
+    private Button resolvedJumpBindButton;
+    private Button resolvedPhoneBindButton;
+    private Button resolvedInteractBindButton;
 
     private void Start()
     {
@@ -86,6 +91,8 @@ public class MainMenuController : MonoBehaviour
 
     private void WireButtons()
     {
+        ResolveBindingButtons();
+
         if (startButton != null) startButton.onClick.AddListener(OnStartGame);
         if (settingsButton != null) settingsButton.onClick.AddListener(OpenSettings);
         if (challengeButton != null) challengeButton.onClick.AddListener(OnChallenges);
@@ -96,10 +103,9 @@ public class MainMenuController : MonoBehaviour
 
         if (bindLeftButton != null) bindLeftButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.LeftKey));
         if (bindRightButton != null) bindRightButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.RightKey));
-        if (bindDownButton != null) bindDownButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.JumpKey));
-        if (bindUpButton != null) bindUpButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.PhoneKey));
-        if (bindInteractButton != null) bindInteractButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.InteractKey));
-        if (bindPhoneButton != null) bindPhoneButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.PhoneKey));
+        if (resolvedJumpBindButton != null) resolvedJumpBindButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.JumpKey));
+        if (resolvedInteractBindButton != null) resolvedInteractBindButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.InteractKey));
+        if (resolvedPhoneBindButton != null) resolvedPhoneBindButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.PhoneKey));
     }
 
     private void InitUI()
@@ -180,6 +186,7 @@ public class MainMenuController : MonoBehaviour
         fm.day = 1;
         fm.stepIndex = 0;
         fm.penaltyPoints = 0;
+        fm.ResetSchoolRuleRuntimeState();
         PenaltyReasonLog.Clear();
         fm.PlayCurrent();
     }
@@ -248,12 +255,13 @@ public class MainMenuController : MonoBehaviour
 
     private void RefreshBindingLabels()
     {
+        ResolveBindingButtons();
+
         UpdateBindingVisual(bindLeftButton, bindLeftLabel, L("왼쪽", "Left"), KeyBindingConfig.LeftKey, KeyCode.A);
         UpdateBindingVisual(bindRightButton, bindRightLabel, L("오른쪽", "Right"), KeyBindingConfig.RightKey, KeyCode.D);
-        UpdateBindingVisual(bindDownButton, bindDownLabel, L("점프", "Jump"), KeyBindingConfig.JumpKey, KeyCode.Space);
-        UpdateBindingVisual(bindInteractButton, bindInteractLabel, L("상호작용", "Interact"), KeyBindingConfig.InteractKey, KeyCode.E);
-        UpdateBindingVisual(bindUpButton, bindUpLabel, L("휴대폰", "Phone"), KeyBindingConfig.PhoneKey, KeyCode.Tab);
-        UpdateBindingVisual(bindPhoneButton, bindPhoneLabel, L("휴대폰", "Phone"), KeyBindingConfig.PhoneKey, KeyCode.Tab);
+        UpdateBindingVisual(resolvedJumpBindButton, bindJumpLabel != null ? bindJumpLabel : bindDownLabel, L("점프", "Jump"), KeyBindingConfig.JumpKey, KeyCode.Space);
+        UpdateBindingVisual(resolvedInteractBindButton, bindInteractLabel, L("상호작용", "Interact"), KeyBindingConfig.InteractKey, KeyCode.E);
+        UpdateBindingVisual(resolvedPhoneBindButton, bindPhoneLabel != null ? bindPhoneLabel : bindUpLabel, L("휴대폰", "Phone"), KeyBindingConfig.PhoneKey, KeyCode.Tab);
     }
 
     private void UpdateBindingVisual(Button button, TextMeshProUGUI label, string actionName, string keyId, KeyCode fallback)
@@ -313,5 +321,57 @@ public class MainMenuController : MonoBehaviour
             return false;
 
         return true;
+    }
+
+    private void ResolveBindingButtons()
+    {
+        resolvedJumpBindButton = bindJumpButton != null ? bindJumpButton : bindDownButton;
+        resolvedInteractBindButton = bindInteractButton;
+        resolvedPhoneBindButton = bindPhoneButton != null ? bindPhoneButton : bindUpButton;
+
+        if (resolvedJumpBindButton == null)
+            resolvedJumpBindButton = FindSettingsButtonByNameOrText("Jump", "점프");
+
+        if (resolvedInteractBindButton == null)
+            resolvedInteractBindButton = FindSettingsButtonByNameOrText("Interact", "상호작용");
+
+        if (resolvedPhoneBindButton == null)
+            resolvedPhoneBindButton = FindSettingsButtonByNameOrText("Phone", "휴대폰", "PhoneUI");
+    }
+
+    private Button FindSettingsButtonByNameOrText(params string[] tokens)
+    {
+        if (settingsPanel == null || tokens == null || tokens.Length == 0)
+            return null;
+
+        var buttons = settingsPanel.GetComponentsInChildren<Button>(true);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            if (HasAnyToken(buttons[i].name, tokens))
+                return buttons[i];
+
+            var text = buttons[i].GetComponentInChildren<TextMeshProUGUI>(true);
+            if (text != null && HasAnyToken(text.text, tokens))
+                return buttons[i];
+        }
+
+        return null;
+    }
+
+    private static bool HasAnyToken(string source, params string[] tokens)
+    {
+        if (string.IsNullOrEmpty(source) || tokens == null)
+            return false;
+
+        for (int i = 0; i < tokens.Length; i++)
+        {
+            if (string.IsNullOrEmpty(tokens[i]))
+                continue;
+
+            if (source.IndexOf(tokens[i], System.StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+        }
+
+        return false;
     }
 }

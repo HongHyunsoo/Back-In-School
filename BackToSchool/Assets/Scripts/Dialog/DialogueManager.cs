@@ -664,6 +664,22 @@ public class DialogueManager : MonoBehaviour
         // STORY 씬이면 FlowManager에게 "이번 이벤트 끝남"만 보고
         if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "STORY")
         {
+            string appendConversationId = PlayerPrefs.GetString(FlowManager.StoryAppendConversationPrefKey, "");
+            if (!string.IsNullOrEmpty(appendConversationId))
+            {
+                PlayerPrefs.DeleteKey(FlowManager.StoryAppendConversationPrefKey);
+
+                if (LocalizationManager.Instance != null)
+                {
+                    var appendLines = LocalizationManager.Instance.GetConversation(appendConversationId);
+                    if (appendLines != null && appendLines.Count > 0)
+                    {
+                        StartDialogue(appendConversationId, null);
+                        return;
+                    }
+                }
+            }
+
             if (FlowManager.Instance != null)
                 FlowManager.Instance.CompleteCurrentEvent(0);
             else
