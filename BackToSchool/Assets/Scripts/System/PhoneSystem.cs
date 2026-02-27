@@ -74,5 +74,8 @@ public class PhoneSystem : MonoBehaviour
 
         if (phoneUIInstance.GetComponent<PhoneUiHotfixes>() == null)
             phoneUIInstance.AddComponent<PhoneUiHotfixes>();
+
+        if (phoneUIInstance.GetComponent<PhoneSettingsAppController>() == null)
+            phoneUIInstance.AddComponent<PhoneSettingsAppController>();
     }
 }

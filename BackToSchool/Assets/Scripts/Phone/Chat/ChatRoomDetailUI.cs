@@ -21,6 +21,10 @@ public class ChatRoomDetailUI : MonoBehaviour
     [SerializeField] private Transform contentRoot;
     [SerializeField] private ChatMessageItem msgOtherPrefab;
     [SerializeField] private ChatMessageItem msgMePrefab;
+    [SerializeField] private float bottomSafeScrollOffset = 22f;
+    [SerializeField] private int messageSpacing = 6;
+    [SerializeField] private int contentHorizontalPadding = 0;
+    [SerializeField] private int contentBottomPadding = 96;
 
     [Header("Send")]
     [SerializeField] private Button btnSendNext;
@@ -63,6 +67,7 @@ public class ChatRoomDetailUI : MonoBehaviour
     {
         EnsureScrollRectStableSettings();
         EnsureContentRootBinding();
+        SanitizeChatContentRect();
         NormalizeContentRectForScroll();
         EnsureViewportIsValid();
         if (btnBack) btnBack.onClick.AddListener(OnBack);
@@ -88,25 +93,9 @@ public class ChatRoomDetailUI : MonoBehaviour
 
     private IEnumerator CoScrollToBottom()
     {
-        // TMP/?�이?�웃??LateUpdate?�서 ?�기�??�시 계산?�는 경우가 ?�어
-        // ?�두 ?�레???�에 ?�크롤을 "?�정"?�야 마�?�?메시지가 ??가?�진??
-        var rt = (scrollRect.content != null) ? scrollRect.content : (RectTransform)contentRoot;
-        float lastHeight = -1f;
-        for (int i = 0; i < 10; i++)
-        {
-            yield return new WaitForEndOfFrame();
-            Canvas.ForceUpdateCanvases();
-
-            if (rt != null)
-                LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
-
-            ForceScrollToLatestMessage();
-
-            float h = (rt != null) ? rt.rect.height : 0f;
-            if (i >= 3 && Mathf.Abs(h - lastHeight) < 0.5f)
-                break;
-            lastHeight = h;
-        }
+        yield return null;
+        yield return null;
+        ForceScrollToLatestMessage();
         scrollRoutine = null;
     }
 
@@ -120,6 +109,7 @@ public class ChatRoomDetailUI : MonoBehaviour
     {
         EnsureScrollRectStableSettings();
         EnsureContentRootBinding();
+        SanitizeChatContentRect();
         NormalizeContentRectForScroll();
         EnsureViewportIsValid();
 
@@ -419,6 +409,9 @@ public class ChatRoomDetailUI : MonoBehaviour
         var item = Instantiate(prefab, contentRoot);
         item.transform.SetParent(contentRoot, false); // ??좌표 꼬임 방�?
         item.Set(displayName, avatar, body, true);
+        ForceLeftAlignTexts(item.transform);
+        EnsureMessageItemVisibleHeight(item);
+        Debug.Log($"[ChatUI] Spawned msg under={contentRoot.name} childCount={contentRoot.childCount} line={line.lineID}");
 
 
         Canvas.ForceUpdateCanvases();
@@ -474,6 +467,9 @@ public class ChatRoomDetailUI : MonoBehaviour
         if (contentRoot == null) return;
         for (int i = contentRoot.childCount - 1; i >= 0; i--)
             Destroy(contentRoot.GetChild(i).gameObject);
+
+        if (scrollRect != null && scrollRect.content != null)
+            scrollRect.content.anchoredPosition = Vector2.zero;
     }
 
     private void EnsureViewportIsValid()
@@ -502,12 +498,21 @@ public class ChatRoomDetailUI : MonoBehaviour
     }
     private void ForceScrollToLatestMessage()
     {
-        if (scrollRect == null || scrollRect.content == null || contentRoot == null)
+        if (scrollRect == null || contentRoot == null)
             return;
 
-        RectTransform content = scrollRect.content;
+        RectTransform content = contentRoot as RectTransform;
+        if (content == null)
+            return;
+
+        // Always pin to assigned message content to avoid runtime mismatch.
+        if (scrollRect.content != content)
+            scrollRect.content = content;
+
+        SanitizeChatContentRect();
         LayoutRebuilder.ForceRebuildLayoutImmediate(content);
         Canvas.ForceUpdateCanvases();
+
         scrollRect.StopMovement();
         scrollRect.verticalNormalizedPosition = 0f;
         Canvas.ForceUpdateCanvases();
@@ -517,23 +522,72 @@ public class ChatRoomDetailUI : MonoBehaviour
 
     private void EnsureContentRootBinding()
     {
-        if (scrollRect == null)
-            return;
-
-        if (scrollRect.content != null)
+        if (contentRoot == null)
         {
-            if (contentRoot == null || contentRoot != scrollRect.content.transform)
+            if (scrollRect != null && scrollRect.content != null)
                 contentRoot = scrollRect.content.transform;
             return;
         }
 
-        if (contentRoot is RectTransform contentRt)
+        if (scrollRect != null && contentRoot is RectTransform contentRt && scrollRect.content != contentRt)
             scrollRect.content = contentRt;
+    }
+
+    private void SanitizeChatContentRect()
+    {
+        if (!(contentRoot is RectTransform content))
+            return;
+
+        if (scrollRect != null && scrollRect.viewport != null)
+        {
+            RectTransform vp = scrollRect.viewport;
+            // Broken prefab case: viewport is zero-sized at bottom-left.
+            if (vp.rect.width < 10f || vp.rect.height < 10f ||
+                vp.anchorMin != Vector2.zero || vp.anchorMax != Vector2.one)
+            {
+                vp.anchorMin = Vector2.zero;
+                vp.anchorMax = Vector2.one;
+                vp.pivot = new Vector2(0.5f, 0.5f);
+                vp.anchoredPosition = Vector2.zero;
+                vp.sizeDelta = Vector2.zero;
+                vp.localScale = Vector3.one;
+            }
+        }
+
+        // Chat content should be top-aligned stretch on X.
+        content.anchorMin = new Vector2(0f, 1f);
+        content.anchorMax = new Vector2(1f, 1f);
+        content.pivot = new Vector2(0.5f, 1f);
+
+        // Recover from corrupted prefab/content offsets that push all messages out of viewport.
+        Vector2 ap = content.anchoredPosition;
+        if (Mathf.Abs(ap.y) > 10f || Mathf.Abs(ap.x) > 2f)
+            content.anchoredPosition = new Vector2(0f, 0f);
+        else
+            content.anchoredPosition = new Vector2(0f, 0f);
+
+        if (Mathf.Abs(content.sizeDelta.x) > 2f)
+            content.sizeDelta = new Vector2(0f, content.sizeDelta.y);
+
+        if (content.localScale != Vector3.one)
+            content.localScale = Vector3.one;
+
+        var vlg = content.GetComponent<VerticalLayoutGroup>();
+        if (vlg != null)
+        {
+            vlg.childAlignment = TextAnchor.UpperLeft;
+            vlg.spacing = messageSpacing;
+            var p = vlg.padding ?? new RectOffset();
+            p.left = 0;
+            p.right = 0;
+            p.bottom = contentBottomPadding;
+            vlg.padding = p;
+        }
     }
 
     private void NormalizeContentRectForScroll()
     {
-        // Keep prefab-authored anchors/pivot. Runtime forcing caused mismatch.
+        // Keep prefab-authored anchors/pivot and layout untouched.
     }
 
     private void EnsureScrollRectStableSettings()
@@ -545,6 +599,64 @@ public class ChatRoomDetailUI : MonoBehaviour
         if (scrollRect.verticalScrollbarVisibility == ScrollRect.ScrollbarVisibility.AutoHideAndExpandViewport)
             scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
     }
+
+    private void EnsureMessageItemVisibleHeight(ChatMessageItem item)
+    {
+        if (item == null)
+            return;
+
+        RectTransform rt = item.transform as RectTransform;
+        if (rt == null)
+            return;
+
+        var layoutElement = item.GetComponent<LayoutElement>();
+        if (layoutElement == null)
+            layoutElement = item.gameObject.AddComponent<LayoutElement>();
+
+        // Msg prefab root height can be 0 in this project; enforce a visible height for VLG.
+        float preferred = 72f;
+        var texts = item.GetComponentsInChildren<TMP_Text>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            var t = texts[i];
+            if (t == null || string.IsNullOrEmpty(t.text))
+                continue;
+
+            float width = 320f;
+            RectTransform textRt = t.transform as RectTransform;
+            if (textRt != null && textRt.rect.width > 20f)
+                width = textRt.rect.width;
+
+            preferred += t.GetPreferredValues(t.text, width, 0f).y;
+        }
+
+        preferred = Mathf.Clamp(preferred, 72f, 320f);
+        layoutElement.minHeight = preferred;
+        layoutElement.preferredHeight = preferred;
+        layoutElement.flexibleHeight = 0f;
+
+        if (rt.sizeDelta.y < 1f)
+            rt.sizeDelta = new Vector2(rt.sizeDelta.x, preferred);
+    }
+
+    private void ForceLeftAlignTexts(Transform root)
+    {
+        if (root == null)
+            return;
+
+        var texts = root.GetComponentsInChildren<TMP_Text>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            if (texts[i] == null)
+                continue;
+
+            if (texts[i].name.IndexOf("Name", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                texts[i].alignment = TextAlignmentOptions.Left;
+            else
+                texts[i].alignment = TextAlignmentOptions.TopLeft;
+        }
+    }
+
 }
 
 

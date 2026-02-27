@@ -104,13 +104,20 @@ public class PhoneSubwayFlowGate : MonoBehaviour
         bool checkedHealth = healthCheckedDays.Contains(day);
         int penalty = checkedHealth ? 0 : 1;
 
-        if (penalty > 0)
+        bool penaltyAppliedByFlowManager = false;
+        if (penalty > 0 && FlowManager.Instance != null)
+        {
+            FlowManager.Instance.AddPenaltyWithReason(penalty, PenaltyReasonLog.ReasonHealthSurveyMissing);
+            penaltyAppliedByFlowManager = true;
+        }
+        else if (penalty > 0)
         {
             PenaltyReasonLog.Add(PenaltyReasonLog.ReasonHealthSurveyMissing, penalty, day);
         }
 
-        Debug.Log("[PhoneSubwayFlowGate] Complete subway event. day=" + day + ", penaltyDelta=" + penalty);
-        StartCoroutine(CoCompleteAfterFeedback(penalty));
+        int penaltyForComplete = penaltyAppliedByFlowManager ? 0 : penalty;
+        Debug.Log("[PhoneSubwayFlowGate] Complete subway event. day=" + day + ", penaltyDelta=" + penaltyForComplete);
+        StartCoroutine(CoCompleteAfterFeedback(penaltyForComplete));
     }
 
     private bool IsSubwayContext()

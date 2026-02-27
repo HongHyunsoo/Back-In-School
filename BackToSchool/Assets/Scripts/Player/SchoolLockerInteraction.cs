@@ -37,6 +37,9 @@ public class SchoolLockerInteraction : MonoBehaviour
         if (changed)
         {
             Debug.Log("[SchoolLockerInteraction] Changed shoes to slippers.");
+            var shoeVisual = FindAnyObjectByType<PlayerShoeVisual>();
+            if (shoeVisual != null)
+                shoeVisual.ForceRefresh();
             TryPlayChangedMessageDialogue();
         }
     }

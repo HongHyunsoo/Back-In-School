@@ -5,6 +5,7 @@ public class PlayerShoeVisual : MonoBehaviour
     [Header("Animator")]
     [SerializeField] private Animator targetAnimator;
     [SerializeField] private bool swapRuntimeController;
+    [SerializeField] private bool autoSwapIfControllersAssigned = true;
     [SerializeField] private RuntimeAnimatorController sneakersController;
     [SerializeField] private RuntimeAnimatorController slippersController;
     [SerializeField] private string slippersBoolParam = "isSlippers";
@@ -16,13 +17,31 @@ public class PlayerShoeVisual : MonoBehaviour
     {
         if (targetAnimator == null)
             targetAnimator = GetComponent<Animator>();
+
+        if (targetAnimator == null)
+            targetAnimator = GetComponentInChildren<Animator>(true);
+    }
+
+    private void OnEnable()
+    {
+        ForceRefresh();
     }
 
     private void Update()
     {
+        if (targetAnimator == null)
+            targetAnimator = GetComponentInChildren<Animator>(true);
+
         bool isSlippers = FlowManager.Instance != null && FlowManager.Instance.IsWearingSlippers;
         if (!hasAppliedOnce || lastAppliedIsSlippers != isSlippers)
             ApplyVisual(isSlippers);
+    }
+
+    public void ForceRefresh()
+    {
+        hasAppliedOnce = false;
+        bool isSlippers = FlowManager.Instance != null && FlowManager.Instance.IsWearingSlippers;
+        ApplyVisual(isSlippers);
     }
 
     private void ApplyVisual(bool isSlippers)
@@ -35,7 +54,9 @@ public class PlayerShoeVisual : MonoBehaviour
             if (HasBoolParameter(targetAnimator, slippersBoolParam))
                 targetAnimator.SetBool(slippersBoolParam, isSlippers);
 
-            if (swapRuntimeController)
+            bool shouldSwap = swapRuntimeController ||
+                              (autoSwapIfControllersAssigned && sneakersController != null && slippersController != null);
+            if (shouldSwap)
             {
                 RuntimeAnimatorController next = isSlippers ? slippersController : sneakersController;
                 if (next != null && targetAnimator.runtimeAnimatorController != next)

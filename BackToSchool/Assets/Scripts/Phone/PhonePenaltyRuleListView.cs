@@ -79,21 +79,27 @@ public class PhonePenaltyRuleListView : MonoBehaviour
         if (newestAtBottom)
         {
             for (int i = 0; i < items.Count; i++)
-                SpawnItem(BuildEntryText(items[i]));
+                SpawnItem(items[i]);
         }
         else
         {
             for (int i = items.Count - 1; i >= 0; i--)
-                SpawnItem(BuildEntryText(items[i]));
+                SpawnItem(items[i]);
         }
     }
 
-    private void SpawnItem(string text)
+    private void SpawnItem(PenaltyReasonEntry entry)
     {
         var go = Instantiate(itemPrefab, contentRoot);
-        var textComp = go.GetComponentInChildren<TextMeshProUGUI>(true);
-        if (textComp != null)
-            textComp.text = text;
+        string scoreText = BuildScoreText(entry);
+        string reasonText = BuildReasonText(entry);
+
+        if (!TryApplyRuleBreakerFields(go, scoreText, reasonText))
+        {
+            var textComp = go.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (textComp != null)
+                textComp.text = BuildEntryText(entry);
+        }
         spawnedItems.Add(go);
     }
 
@@ -114,6 +120,46 @@ public class PhonePenaltyRuleListView : MonoBehaviour
         if (it.day > 0)
             text += "  D" + it.day;
         return text;
+    }
+
+    private string BuildScoreText(PenaltyReasonEntry it)
+    {
+        return "+" + it.amount.ToString();
+    }
+
+    private string BuildReasonText(PenaltyReasonEntry it)
+    {
+        string reason = GetReasonLabel(it.reasonId);
+        if (it.day > 0)
+            reason += "  D" + it.day;
+        return reason;
+    }
+
+    private bool TryApplyRuleBreakerFields(GameObject go, string score, string reason)
+    {
+        if (go == null)
+            return false;
+
+        TMP_Text scoreText = FindNamedText(go.transform, "Score");
+        TMP_Text reasonText = FindNamedText(go.transform, "Reason");
+        if (scoreText == null || reasonText == null)
+            return false;
+
+        scoreText.text = score;
+        reasonText.text = reason;
+        return true;
+    }
+
+    private static TMP_Text FindNamedText(Transform root, string childName)
+    {
+        if (root == null || string.IsNullOrEmpty(childName))
+            return null;
+
+        Transform t = root.Find(childName);
+        if (t == null)
+            return null;
+
+        return t.GetComponent<TMP_Text>();
     }
 
     private void SetLegacyText(string text)

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public enum PhoneAppId { Home, Rules, Health, Chat, Music }
+public enum PhoneAppId { Home, Rules, Health, Chat, Music, Settings }
 
 [Serializable]
 public class AppSplashEntry
@@ -26,6 +26,7 @@ public class PhoneAppManager : MonoBehaviour
     [SerializeField] private GameObject healthPanel;
     [SerializeField] private GameObject chatPanel;
     [SerializeField] private GameObject musicPanel;
+    [SerializeField] private GameObject settingsPanel;
 
     [Header("App Splash")]
     [SerializeField] private List<AppSplashEntry> appSplashEntries = new();
@@ -39,6 +40,7 @@ public class PhoneAppManager : MonoBehaviour
     [SerializeField] private Button btnHealth;
     [SerializeField] private Button btnChat;
     [SerializeField] private Button btnMusic;
+    [SerializeField] private Button btnSettings;
     [SerializeField] private Button btnBack;       // app -> home
     [SerializeField] private Button btnClosePhone; // close phone (school)
     [SerializeField] private Button btnPower;      // power (context-specific)
@@ -59,12 +61,14 @@ public class PhoneAppManager : MonoBehaviour
         appPanels[PhoneAppId.Health] = healthPanel;
         appPanels[PhoneAppId.Chat] = chatPanel;
         appPanels[PhoneAppId.Music] = musicPanel;
+        appPanels[PhoneAppId.Settings] = settingsPanel;
         BuildSplashLookup();
 
         if (btnRules) btnRules.onClick.AddListener(() => OpenApp(PhoneAppId.Rules));
         if (btnHealth) btnHealth.onClick.AddListener(() => OpenApp(PhoneAppId.Health));
         if (btnChat) btnChat.onClick.AddListener(() => OpenApp(PhoneAppId.Chat));
         if (btnMusic) btnMusic.onClick.AddListener(() => OpenApp(PhoneAppId.Music));
+        if (btnSettings) btnSettings.onClick.AddListener(() => OpenApp(PhoneAppId.Settings));
 
         if (btnBack) btnBack.onClick.AddListener(BackToHome);
 

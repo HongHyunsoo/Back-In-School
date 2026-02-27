@@ -28,7 +28,8 @@ public class PhoneUiHotfixes : MonoBehaviour
         var all = GetComponentsInChildren<Button>(true);
         for (int i = 0; i < all.Length; i++)
         {
-            if (all[i].name.Contains("App"))
+            string target = ResolveTargetPanelForButton(all[i]);
+            if (!string.IsNullOrEmpty(target))
                 appButtons.Add(all[i]);
         }
 
@@ -68,6 +69,9 @@ public class PhoneUiHotfixes : MonoBehaviour
                 break;
             case "App_Music":
                 appManager.OpenApp(PhoneAppId.Music);
+                break;
+            case "App_Settings":
+                appManager.OpenApp(PhoneAppId.Settings);
                 break;
         }
     }
@@ -123,6 +127,7 @@ public class PhoneUiHotfixes : MonoBehaviour
         if (button.name.Contains("Health")) return "App_Health";
         if (button.name.Contains("Chat")) return "App_Chat";
         if (button.name.Contains("Music")) return "App_Music";
+        if (button.name.Contains("Settings")) return "App_Settings";
 
         var text = button.GetComponentInChildren<TextMeshProUGUI>(true);
         if (text != null)
@@ -132,6 +137,7 @@ public class PhoneUiHotfixes : MonoBehaviour
             if (t.Contains("health") || t.Contains("자가진단") || t.Contains("건강")) return "App_Health";
             if (t.Contains("chat") || t.Contains("채팅")) return "App_Chat";
             if (t.Contains("music") || t.Contains("음악")) return "App_Music";
+            if (t.Contains("setting") || t.Contains("설정")) return "App_Settings";
         }
 
         return null;
