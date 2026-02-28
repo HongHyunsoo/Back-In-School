@@ -133,6 +133,7 @@ GameObject:
   - component: {fileID: 162336060}
   - component: {fileID: 162336059}
   - component: {fileID: 162336058}
+  - component: {fileID: 162336061}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -214,6 +215,186 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &162336061
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 162336057}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_RenderShadows: 1
+  m_RequiresDepthTextureOption: 2
+  m_RequiresOpaqueTextureOption: 2
+  m_CameraType: 0
+  m_Cameras: []
+  m_RendererIndex: -1
+  m_VolumeLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
+  m_RenderPostProcessing: 0
+  m_Antialiasing: 0
+  m_AntialiasingQuality: 2
+  m_StopNaN: 0
+  m_Dithering: 0
+  m_ClearDepth: 1
+  m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
+  m_UseScreenCoordOverride: 0
+  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
+  m_RequiresDepthTexture: 0
+  m_RequiresColorTexture: 0
+  m_Version: 2
+  m_TaaSettings:
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
+--- !u!1 &756319439
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 756319440}
+  - component: {fileID: 756319441}
+  m_Layer: 0
+  m_Name: CroquisMinigame
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &756319440
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 756319439}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -2.1820939}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1525928949}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &756319441
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 756319439}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e30eb17f2d737d4f91896d32e936a6d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: f24dfb4ff038d7c4995411c07861d8d4, type: 2}
+  overrideStageGoals: 1
+  overridePaperArea: 1
+  overrideStageSketches: 1
+  overridePromptMix: 1
+  overridePromptVisual: 1
+  overrideDragValidation: 1
+  overrideTeacherBubble: 1
+  overrideFlow: 1
+  overrideUIFont: 1
+  successesPerStage: 0a0000000f00000014000000
+  paperSize: {x: 6, y: 6.4}
+  paperCenter: {x: 0, y: 0}
+  paperPadding: 0.45
+  paperColor: {r: 0.97, g: 0.95, b: 0.9, a: 0}
+  stageSketchSprites: []
+  stage1RevealSprites:
+  - {fileID: -2102290503, guid: 3cf7043b4b47f244e8759907968a2953, type: 3}
+  - {fileID: 1125242037, guid: 3cf7043b4b47f244e8759907968a2953, type: 3}
+  - {fileID: -2127496130, guid: 3cf7043b4b47f244e8759907968a2953, type: 3}
+  - {fileID: 132543829, guid: 3cf7043b4b47f244e8759907968a2953, type: 3}
+  - {fileID: -100351144, guid: 3cf7043b4b47f244e8759907968a2953, type: 3}
+  stage2RevealSprites:
+  - {fileID: -543131528, guid: 3cf7043b4b47f244e8759907968a2953, type: 3}
+  - {fileID: 841197034, guid: 3cf7043b4b47f244e8759907968a2953, type: 3}
+  - {fileID: -366299595, guid: 3cf7043b4b47f244e8759907968a2953, type: 3}
+  - {fileID: 1564291094, guid: 3cf7043b4b47f244e8759907968a2953, type: 3}
+  - {fileID: -1566075386, guid: 3cf7043b4b47f244e8759907968a2953, type: 3}
+  stage3RevealSprites:
+  - {fileID: 272815981, guid: 3cf7043b4b47f244e8759907968a2953, type: 3}
+  - {fileID: -812483097, guid: 3cf7043b4b47f244e8759907968a2953, type: 3}
+  - {fileID: 1232690597, guid: 3cf7043b4b47f244e8759907968a2953, type: 3}
+  - {fileID: 438590409, guid: 3cf7043b4b47f244e8759907968a2953, type: 3}
+  - {fileID: -2121116187, guid: 3cf7043b4b47f244e8759907968a2953, type: 3}
+  stageRevealStepSprites:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  sketchColor: {r: 0.08, g: 0.08, b: 0.08, a: 1}
+  stageStartAlpha: 0.02
+  clickPromptChance: 0.55
+  promptVisualPrefab: {fileID: 0}
+  markerScale: 0.45
+  markerPulseAmplitude: 0.08
+  markerPulseSpeed: 5
+  clickColor: {r: 0.2, g: 0.85, b: 0.95, a: 1}
+  dragColor: {r: 0.95, g: 0.8, b: 0.2, a: 1}
+  dragArrowLength: 1
+  requiredDragDistance: 0.65
+  requiredDirectionDot: 0.75
+  maxGrabDistance: 0.45
+  teacherBubblePrefab: {fileID: 0}
+  teacherLineKeys:
+  - MINIGAME_CROQUIS_TEACHER_01
+  - MINIGAME_CROQUIS_TEACHER_02
+  - MINIGAME_CROQUIS_TEACHER_03
+  - MINIGAME_CROQUIS_TEACHER_04
+  - MINIGAME_CROQUIS_TEACHER_05
+  - MINIGAME_CROQUIS_TEACHER_06
+  - MINIGAME_CROQUIS_TEACHER_07
+  - MINIGAME_CROQUIS_TEACHER_08
+  - MINIGAME_CROQUIS_TEACHER_09
+  - MINIGAME_CROQUIS_TEACHER_10
+  - MINIGAME_CROQUIS_TEACHER_11
+  - MINIGAME_CROQUIS_TEACHER_12
+  - MINIGAME_CROQUIS_TEACHER_13
+  - MINIGAME_CROQUIS_TEACHER_14
+  - MINIGAME_CROQUIS_TEACHER_15
+  - MINIGAME_CROQUIS_TEACHER_16
+  - MINIGAME_CROQUIS_TEACHER_17
+  - MINIGAME_CROQUIS_TEACHER_18
+  - MINIGAME_CROQUIS_TEACHER_19
+  - MINIGAME_CROQUIS_TEACHER_20
+  bubbleMinInterval: 5
+  bubbleMaxInterval: 9
+  bubbleShowDuration: 2.8
+  stageCompleteDelay: 3
+  uiFontAsset: {fileID: 11400000, guid: f0fd8ed4dff808b47a3664e0ee1293e3, type: 2}
+  penaltyOnGiveUp: 1
 --- !u!1 &791443082
 GameObject:
   m_ObjectHideFlags: 0
@@ -259,6 +440,91 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1525928948
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1525928949}
+  - component: {fileID: 1525928950}
+  m_Layer: 0
+  m_Name: Background
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1525928949
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1525928948}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 2.1820939}
+  m_LocalScale: {x: 1.5, y: 1.5, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2028475751}
+  m_Father: {fileID: 756319440}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &1525928950
+SpriteRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1525928948}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_Sprite: {fileID: 21300000, guid: 0436bb3de97f23d44b38cfa8bd14d1e8, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 1, y: 1}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_MaskInteraction: 0
+  m_SpriteSortPoint: 0
 --- !u!1 &2018414697
 GameObject:
   m_ObjectHideFlags: 0
@@ -292,7 +558,8 @@ MonoBehaviour:
   class1Prefix: CLASS1_
   class2Prefix: CLASS2_
   tetris: {fileID: 0}
-  croquis: {fileID: 0}
+  croquis: {fileID: 756319441}
+  croquisConfig: {fileID: 11400000, guid: f24dfb4ff038d7c4995411c07861d8d4, type: 2}
   pixelPaint: {fileID: 0}
 --- !u!4 &2018414699
 Transform:
@@ -309,6 +576,90 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2028475750
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2028475751}
+  - component: {fileID: 2028475752}
+  m_Layer: 0
+  m_Name: Notes
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2028475751
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2028475750}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -0.45}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1525928949}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &2028475752
+SpriteRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2028475750}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_Sprite: {fileID: 21300000, guid: 3a2d523108da8ac42b6ebe3fee516a34, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 1, y: 1}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_MaskInteraction: 0
+  m_SpriteSortPoint: 0
 --- !u!1 &2135599849
 GameObject:
   m_ObjectHideFlags: 0
@@ -318,7 +669,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2135599853}
-  - component: {fileID: 2135599852}
   - component: {fileID: 2135599851}
   - component: {fileID: 2135599850}
   m_Layer: 0
@@ -345,6 +695,13 @@ MonoBehaviour:
   softDropInterval: 0.06
   board: {fileID: 0}
   penaltyOnFail: 1
+  enableJelly: 1
+  fallStretchAmount: 0.08
+  landSquashAmount: 0.16
+  rotateJellyAmount: 0.06
+  landLockDelay: 0.06
+  jellySnapSpeed: 22
+  jellyReturnSpeed: 14
 --- !u!114 &2135599851
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -379,65 +736,6 @@ MonoBehaviour:
   - {r: 0.3, g: 0.7, b: 0.95, a: 1}
   - {r: 0.28, g: 0.82, b: 0.44, a: 1}
   penaltyOnGiveUp: 1
---- !u!114 &2135599852
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2135599849}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e30eb17f2d737d4f91896d32e936a6d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  successesPerStage: 0a0000000f00000014000000
-  paperSize: {x: 9.6, y: 5.8}
-  paperCenter: {x: 0, y: 0}
-  paperPadding: 0.45
-  paperColor: {r: 0.97, g: 0.95, b: 0.9, a: 1}
-  stageSketchSprites:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  sketchColor: {r: 0.08, g: 0.08, b: 0.08, a: 1}
-  stageStartAlpha: 0.02
-  clickPromptChance: 0.55
-  markerScale: 0.45
-  markerPulseAmplitude: 0.08
-  markerPulseSpeed: 5
-  clickColor: {r: 0.2, g: 0.85, b: 0.95, a: 1}
-  dragColor: {r: 0.95, g: 0.8, b: 0.2, a: 1}
-  dragArrowLength: 1
-  requiredDragDistance: 0.65
-  requiredDirectionDot: 0.75
-  maxGrabDistance: 0.45
-  teacherLineKeys:
-  - MINIGAME_CROQUIS_TEACHER_01
-  - MINIGAME_CROQUIS_TEACHER_02
-  - MINIGAME_CROQUIS_TEACHER_03
-  - MINIGAME_CROQUIS_TEACHER_04
-  - MINIGAME_CROQUIS_TEACHER_05
-  - MINIGAME_CROQUIS_TEACHER_06
-  - MINIGAME_CROQUIS_TEACHER_07
-  - MINIGAME_CROQUIS_TEACHER_08
-  - MINIGAME_CROQUIS_TEACHER_09
-  - MINIGAME_CROQUIS_TEACHER_10
-  - MINIGAME_CROQUIS_TEACHER_11
-  - MINIGAME_CROQUIS_TEACHER_12
-  - MINIGAME_CROQUIS_TEACHER_13
-  - MINIGAME_CROQUIS_TEACHER_14
-  - MINIGAME_CROQUIS_TEACHER_15
-  - MINIGAME_CROQUIS_TEACHER_16
-  - MINIGAME_CROQUIS_TEACHER_17
-  - MINIGAME_CROQUIS_TEACHER_18
-  - MINIGAME_CROQUIS_TEACHER_19
-  - MINIGAME_CROQUIS_TEACHER_20
-  bubbleMinInterval: 5
-  bubbleMaxInterval: 9
-  bubbleShowDuration: 2.8
-  uiFontAsset: {fileID: 11400000, guid: 0c79719180d600243baa2aa429aff767, type: 2}
-  penaltyOnGiveUp: 1
 --- !u!4 &2135599853
 Transform:
   m_ObjectHideFlags: 0
@@ -461,3 +759,4 @@ SceneRoots:
   - {fileID: 791443084}
   - {fileID: 2018414699}
   - {fileID: 2135599853}
+  - {fileID: 756319440}

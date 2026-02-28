@@ -2289,6 +2289,8 @@ MonoBehaviour:
   penaltyPoints: 0
   penaltyThreshold: 3
   autoStartOnPlay: 1
+  isWearingSlippers: 0
+  changedToSlippersToday: 0
 --- !u!1 &1536496198
 GameObject:
   m_ObjectHideFlags: 0

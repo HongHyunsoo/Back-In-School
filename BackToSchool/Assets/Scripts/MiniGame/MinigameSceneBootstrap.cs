@@ -19,6 +19,7 @@ public class MinigameSceneBootstrap : MonoBehaviour
 
     [Header("Croquis Doodle")]
     public CroquisMinigameController croquis;
+    public CroquisMinigameConfig croquisConfig;
 
     [Header("Pixel Paint")]
     public PixelPaintMinigameController pixelPaint;
@@ -35,30 +36,9 @@ public class MinigameSceneBootstrap : MonoBehaviour
         bool shouldRunPixelPaint =
             !string.IsNullOrEmpty(id) && id.StartsWith(class2Prefix);
 
-        bool sharedHost =
-            tetris.gameObject == croquis.gameObject ||
-            tetris.gameObject == pixelPaint.gameObject ||
-            croquis.gameObject == pixelPaint.gameObject;
-
-        if (sharedHost)
-        {
-            // If all controllers are attached to one host object, avoid SetActive on the whole object.
-            tetris.enabled = shouldRunTetris;
-            croquis.enabled = shouldRunCroquis;
-            pixelPaint.enabled = shouldRunPixelPaint;
-
-            Debug.LogWarning("[MinigameSceneBootstrap] Controllers share same GameObject. Using component enable/disable mode.");
-        }
-        else
-        {
-            tetris.gameObject.SetActive(shouldRunTetris);
-            croquis.gameObject.SetActive(shouldRunCroquis);
-            pixelPaint.gameObject.SetActive(shouldRunPixelPaint);
-
-            tetris.enabled = shouldRunTetris;
-            croquis.enabled = shouldRunCroquis;
-            pixelPaint.enabled = shouldRunPixelPaint;
-        }
+        ApplyControllerState(tetris, shouldRunTetris, CanToggleHostGameObject(tetris));
+        ApplyControllerState(croquis, shouldRunCroquis, CanToggleHostGameObject(croquis));
+        ApplyControllerState(pixelPaint, shouldRunPixelPaint, CanToggleHostGameObject(pixelPaint));
 
         if (!shouldRunTetris && !shouldRunCroquis && !shouldRunPixelPaint)
         {
@@ -85,6 +65,8 @@ public class MinigameSceneBootstrap : MonoBehaviour
             var go = new GameObject("CroquisMinigame");
             croquis = go.AddComponent<CroquisMinigameController>();
         }
+        if (croquis != null && croquis.config == null && croquisConfig != null)
+            croquis.config = croquisConfig;
 
         if (pixelPaint == null)
             pixelPaint = FindAnyObjectByType<PixelPaintMinigameController>();
@@ -93,5 +75,30 @@ public class MinigameSceneBootstrap : MonoBehaviour
             var go = new GameObject("PixelPaintMinigame");
             pixelPaint = go.AddComponent<PixelPaintMinigameController>();
         }
+    }
+
+    private bool CanToggleHostGameObject(MonoBehaviour controller)
+    {
+        if (controller == null) return false;
+        var host = controller.gameObject;
+        if (host == null) return false;
+
+        int count = 0;
+        if (tetris != null && tetris.gameObject == host) count++;
+        if (croquis != null && croquis.gameObject == host) count++;
+        if (pixelPaint != null && pixelPaint.gameObject == host) count++;
+
+        // Only safe to toggle whole GameObject when this host is not shared.
+        return count <= 1;
+    }
+
+    private static void ApplyControllerState(MonoBehaviour controller, bool shouldRun, bool canToggleHost)
+    {
+        if (controller == null) return;
+
+        if (canToggleHost && controller.gameObject != null)
+            controller.gameObject.SetActive(shouldRun);
+
+        controller.enabled = shouldRun;
     }
 }

@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d72fabe548d175d4ca646c971ec36cd3, type: 3}
+  m_Name: CroquisConfig
+  m_EditorClassIdentifier: 
+  successesPerStage: 0a0000000f00000014000000
+  paperSize: {x: 9.6, y: 5.8}
+  paperCenter: {x: 0, y: 0}
+  paperPadding: 0.45
+  paperColor: {r: 0.97, g: 0.95, b: 0.9, a: 1}
+  stageSketchSprites:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  sketchColor: {r: 0.08, g: 0.08, b: 0.08, a: 1}
+  stageStartAlpha: 0.02
+  clickPromptChance: 0.55
+  markerScale: 0.45
+  markerPulseAmplitude: 0.08
+  markerPulseSpeed: 5
+  clickColor: {r: 0.2, g: 0.85, b: 0.95, a: 1}
+  dragColor: {r: 0.95, g: 0.8, b: 0.2, a: 1}
+  dragArrowLength: 1
+  requiredDragDistance: 0.65
+  requiredDirectionDot: 0.75
+  maxGrabDistance: 0.45
+  teacherLineKeys:
+  - MINIGAME_CROQUIS_TEACHER_01
+  - MINIGAME_CROQUIS_TEACHER_02
+  - MINIGAME_CROQUIS_TEACHER_03
+  - MINIGAME_CROQUIS_TEACHER_04
+  - MINIGAME_CROQUIS_TEACHER_05
+  - MINIGAME_CROQUIS_TEACHER_06
+  - MINIGAME_CROQUIS_TEACHER_07
+  - MINIGAME_CROQUIS_TEACHER_08
+  - MINIGAME_CROQUIS_TEACHER_09
+  - MINIGAME_CROQUIS_TEACHER_10
+  - MINIGAME_CROQUIS_TEACHER_11
+  - MINIGAME_CROQUIS_TEACHER_12
+  - MINIGAME_CROQUIS_TEACHER_13
+  - MINIGAME_CROQUIS_TEACHER_14
+  - MINIGAME_CROQUIS_TEACHER_15
+  - MINIGAME_CROQUIS_TEACHER_16
+  - MINIGAME_CROQUIS_TEACHER_17
+  - MINIGAME_CROQUIS_TEACHER_18
+  - MINIGAME_CROQUIS_TEACHER_19
+  - MINIGAME_CROQUIS_TEACHER_20
+  bubbleMinInterval: 5
+  bubbleMaxInterval: 9
+  bubbleShowDuration: 2.8
+  uiFontAsset: {fileID: 11400000, guid: f0fd8ed4dff808b47a3664e0ee1293e3, type: 2}
+  penaltyOnGiveUp: 1

@@ -22,11 +22,21 @@ public class TetrisMinigameController : MonoBehaviour
     [Tooltip("Penalty to add when failed. (FlowManager penaltyDelta)")]
     public int penaltyOnFail = 1;
 
+    [Header("Jelly Feel")]
+    public bool enableJelly = true;
+    [Range(0f, 0.35f)] public float fallStretchAmount = 0.08f;
+    [Range(0f, 0.45f)] public float landSquashAmount = 0.16f;
+    [Range(0f, 0.2f)] public float rotateJellyAmount = 0.06f;
+    [Range(0.01f, 0.2f)] public float landLockDelay = 0.06f;
+    [Range(1f, 40f)] public float jellySnapSpeed = 22f;
+    [Range(1f, 40f)] public float jellyReturnSpeed = 14f;
+
     private int lockedCount = 0;
     private float fallTimer = 0f;
 
     private TetrisPiece active;
     private readonly List<Transform> activeBlocks = new();
+    private Transform activeVisualRoot;
 
     private System.Random rng = new System.Random();
 
@@ -34,6 +44,10 @@ public class TetrisMinigameController : MonoBehaviour
 
     // 7-bag generator
     private readonly List<int> bag = new();
+    private Vector2 jellyScale = Vector2.one;
+    private Vector2 jellyTargetScale = Vector2.one;
+    private bool lockPending = false;
+    private float lockPendingTimer = 0f;
 
     private static readonly Vector2Int[][] SHAPES = new Vector2Int[][]
     {
@@ -91,6 +105,14 @@ public class TetrisMinigameController : MonoBehaviour
     {
         if (ended) return;
 
+        TickJelly();
+        if (lockPending)
+        {
+            if (TickLockPending()) return;
+            UpdateActiveVisuals();
+            return;
+        }
+
         HandleInput();
 
         float interval = IsSoftDropping() ? softDropInterval : fallInterval;
@@ -106,6 +128,8 @@ public class TetrisMinigameController : MonoBehaviour
 
     private void HandleInput()
     {
+        if (lockPending) return;
+
         if (KeyDownLeft()) TryMove(new Vector2Int(-1, 0));
         if (KeyDownRight()) TryMove(new Vector2Int(1, 0));
 
@@ -119,28 +143,21 @@ public class TetrisMinigameController : MonoBehaviour
     {
         if (active == null) return;
 
-        if (!TryMove(new Vector2Int(0, -1)))
+        if (TryMove(new Vector2Int(0, -1)))
         {
-            // Lock
-            bool overflow = LocksAboveTop(active.cells, active.position);
-            board.LockPiece(active.cells, active.position, active.color);
-            ClearActiveVisuals();
-            lockedCount++;
-
-            if (overflow)
-            {
-                End(false);
-                return;
-            }
-
-            if (lockedCount >= targetLockedPieces)
-            {
-                End(true);
-                return;
-            }
-
-            SpawnNewPiece();
+            TriggerFallStretch();
+            return;
         }
+
+        if (enableJelly && !lockPending)
+        {
+            TriggerLandSquash();
+            lockPending = true;
+            lockPendingTimer = landLockDelay;
+            return;
+        }
+
+        LockCurrentPieceAndContinue();
     }
 
     private void SpawnNewPiece()
@@ -162,6 +179,10 @@ public class TetrisMinigameController : MonoBehaviour
         }
 
         BuildActiveVisuals();
+        lockPending = false;
+        lockPendingTimer = 0f;
+        jellyScale = Vector2.one;
+        jellyTargetScale = Vector2.one;
         UpdateActiveVisuals();
     }
 
@@ -219,6 +240,7 @@ public class TetrisMinigameController : MonoBehaviour
             {
                 active.cells = rotated;
                 active.position = pos;
+                TriggerRotateJelly();
                 return;
             }
         }
@@ -238,17 +260,21 @@ public class TetrisMinigameController : MonoBehaviour
     {
         ClearActiveVisuals();
 
+        var root = new GameObject("ActivePieceVisual");
+        root.transform.SetParent(transform, false);
+        activeVisualRoot = root.transform;
+
         for (int i = 0; i < active.cells.Length; i++)
         {
             GameObject go;
             if (board.blockPrefab != null)
             {
-                go = Instantiate(board.blockPrefab, transform);
+                go = Instantiate(board.blockPrefab, activeVisualRoot);
             }
             else
             {
                 go = new GameObject("ActiveBlock");
-                go.transform.SetParent(transform);
+                go.transform.SetParent(activeVisualRoot);
                 var sr = go.AddComponent<SpriteRenderer>();
                 // board will create fallback sprite internally only for locked blocks,
                 // so for active blocks we create our own 1x1 sprite.
@@ -269,21 +295,103 @@ public class TetrisMinigameController : MonoBehaviour
     private void UpdateActiveVisuals()
     {
         if (active == null) return;
+        if (activeVisualRoot != null)
+        {
+            activeVisualRoot.position = board.CellToWorld(active.position);
+            activeVisualRoot.localScale = new Vector3(jellyScale.x, jellyScale.y, 1f);
+        }
+
         for (int i = 0; i < activeBlocks.Count; i++)
         {
-            var cell = active.cells[i] + active.position;
-            activeBlocks[i].position = board.CellToWorld(cell);
+            if (activeBlocks[i] == null) continue;
+            var cell = active.cells[i];
+            activeBlocks[i].localPosition = new Vector3(
+                cell.x * board.cellSize,
+                cell.y * board.cellSize,
+                0f);
         }
     }
 
     private void ClearActiveVisuals()
     {
-        for (int i = 0; i < activeBlocks.Count; i++)
+        if (activeVisualRoot != null)
         {
-            if (activeBlocks[i] != null)
-                Destroy(activeBlocks[i].gameObject);
+            Destroy(activeVisualRoot.gameObject);
+            activeVisualRoot = null;
         }
+
         activeBlocks.Clear();
+    }
+
+    private void LockCurrentPieceAndContinue()
+    {
+        if (active == null) return;
+
+        bool overflow = LocksAboveTop(active.cells, active.position);
+        board.LockPiece(active.cells, active.position, active.color);
+        ClearActiveVisuals();
+        lockedCount++;
+        lockPending = false;
+        lockPendingTimer = 0f;
+
+        if (overflow)
+        {
+            End(false);
+            return;
+        }
+
+        if (lockedCount >= targetLockedPieces)
+        {
+            End(true);
+            return;
+        }
+
+        SpawnNewPiece();
+    }
+
+    private bool TickLockPending()
+    {
+        if (!lockPending) return false;
+
+        lockPendingTimer -= Time.deltaTime;
+        if (lockPendingTimer <= 0f)
+        {
+            LockCurrentPieceAndContinue();
+            return true;
+        }
+
+        return false;
+    }
+
+    private void TickJelly()
+    {
+        if (!enableJelly) return;
+
+        float dt = Time.deltaTime;
+        float snapT = 1f - Mathf.Exp(-jellySnapSpeed * dt);
+        float returnT = 1f - Mathf.Exp(-jellyReturnSpeed * dt);
+
+        jellyScale = Vector2.Lerp(jellyScale, jellyTargetScale, snapT);
+        jellyTargetScale = Vector2.Lerp(jellyTargetScale, Vector2.one, returnT);
+    }
+
+    private void TriggerFallStretch()
+    {
+        if (!enableJelly) return;
+        jellyTargetScale = new Vector2(1f - fallStretchAmount, 1f + fallStretchAmount);
+    }
+
+    private void TriggerLandSquash()
+    {
+        if (!enableJelly) return;
+        jellyTargetScale = new Vector2(1f + landSquashAmount, 1f - landSquashAmount);
+    }
+
+    private void TriggerRotateJelly()
+    {
+        if (!enableJelly) return;
+        if (rotateJellyAmount <= 0f) return;
+        jellyTargetScale = new Vector2(1f + rotateJellyAmount, 1f - (rotateJellyAmount * 0.7f));
     }
 
     private Sprite CreateFallbackSprite()
@@ -318,31 +426,26 @@ public class TetrisMinigameController : MonoBehaviour
     // --- input helpers (old Input Manager) ---
     private bool KeyDownLeft()
     {
-        var custom = KeyBindingConfig.Get(KeyBindingConfig.LeftKey, KeyCode.A);
-        return Input.GetKeyDown(custom) || Input.GetKeyDown(KeyCode.LeftArrow);
+        return Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow);
     }
 
     private bool KeyDownRight()
     {
-        var custom = KeyBindingConfig.Get(KeyBindingConfig.RightKey, KeyCode.D);
-        return Input.GetKeyDown(custom) || Input.GetKeyDown(KeyCode.RightArrow);
+        return Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow);
     }
 
     private bool KeyDownDown()
     {
-        var custom = KeyBindingConfig.Get(KeyBindingConfig.DownKey, KeyCode.S);
-        return Input.GetKeyDown(custom) || Input.GetKeyDown(KeyCode.DownArrow);
+        return Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow);
     }
 
     private bool KeyDownRotate()
     {
-        var custom = KeyBindingConfig.Get(KeyBindingConfig.UpKey, KeyCode.W);
-        return Input.GetKeyDown(custom) || Input.GetKeyDown(KeyCode.UpArrow);
+        return Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow);
     }
 
     private bool IsSoftDropping()
     {
-        var custom = KeyBindingConfig.Get(KeyBindingConfig.DownKey, KeyCode.S);
-        return Input.GetKey(custom) || Input.GetKey(KeyCode.DownArrow);
+        return Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow);
     }
 }

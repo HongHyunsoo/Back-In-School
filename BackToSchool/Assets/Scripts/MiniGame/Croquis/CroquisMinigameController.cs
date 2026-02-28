@@ -5,6 +5,18 @@ using UnityEngine.UI;
 
 public class CroquisMinigameController : MonoBehaviour
 {
+    [Header("Config (Optional)")]
+    public CroquisMinigameConfig config;
+    public bool overrideStageGoals;
+    public bool overridePaperArea;
+    public bool overrideStageSketches;
+    public bool overridePromptMix;
+    public bool overridePromptVisual;
+    public bool overrideDragValidation;
+    public bool overrideTeacherBubble;
+    public bool overrideFlow;
+    public bool overrideUIFont;
+
     [Header("Stage Goals")]
     public int[] successesPerStage = new[] { 10, 15, 20 };
 
@@ -16,6 +28,13 @@ public class CroquisMinigameController : MonoBehaviour
 
     [Header("Stage Sketches (3)")]
     public Sprite[] stageSketchSprites = new Sprite[3];
+    [Header("Reveal Frames - Croquis 1 (0~4)")]
+    public Sprite[] stage1RevealSprites = new Sprite[5];
+    [Header("Reveal Frames - Croquis 2 (5~9)")]
+    public Sprite[] stage2RevealSprites = new Sprite[5];
+    [Header("Reveal Frames - Croquis 3 (10~14)")]
+    public Sprite[] stage3RevealSprites = new Sprite[5];
+    [HideInInspector] public Sprite[] stageRevealStepSprites = new Sprite[15]; // legacy
     public Color sketchColor = new Color(0.08f, 0.08f, 0.08f, 1f);
     [Range(0f, 0.25f)] public float stageStartAlpha = 0.02f;
 
@@ -23,6 +42,7 @@ public class CroquisMinigameController : MonoBehaviour
     [Range(0f, 1f)] public float clickPromptChance = 0.55f;
 
     [Header("Prompt Visual")]
+    public GameObject promptVisualPrefab;
     public float markerScale = 0.45f;
     public float markerPulseAmplitude = 0.08f;
     public float markerPulseSpeed = 5f;
@@ -36,6 +56,7 @@ public class CroquisMinigameController : MonoBehaviour
     public float maxGrabDistance = 0.45f;
 
     [Header("Teacher Bubble")]
+    public GameObject teacherBubblePrefab;
     public string[] teacherLineKeys = new[]
     {
         "MINIGAME_CROQUIS_TEACHER_01","MINIGAME_CROQUIS_TEACHER_02","MINIGAME_CROQUIS_TEACHER_03","MINIGAME_CROQUIS_TEACHER_04","MINIGAME_CROQUIS_TEACHER_05",
@@ -46,6 +67,7 @@ public class CroquisMinigameController : MonoBehaviour
     public float bubbleMinInterval = 5f;
     public float bubbleMaxInterval = 9f;
     public float bubbleShowDuration = 2.8f;
+    public float stageCompleteDelay = 3f;
 
     [Header("UI Font")]
     public TMP_FontAsset uiFontAsset;
@@ -112,9 +134,16 @@ public class CroquisMinigameController : MonoBehaviour
     private float bubbleTimer;
     private float bubbleHideTimer;
     private int lastBubbleIndex = -1;
+    private RectTransform bubbleRootRect;
+    private Vector2 bubbleDefaultAnchoredPos;
+    private bool stageTransitionPending;
+    private RectTransform uiRootRect;
 
     private void Awake()
     {
+        ApplyConfigIfNeeded();
+        EnsureRevealSpriteSets();
+
         string flowId = PlayerPrefs.GetString("FLOW_ID", "");
         if (string.IsNullOrEmpty(flowId) || !flowId.StartsWith("CLASS1_"))
         {
@@ -165,6 +194,12 @@ public class CroquisMinigameController : MonoBehaviour
     private void Update()
     {
         if (ended) return;
+
+        if (stageTransitionPending)
+        {
+            TickBubble();
+            return;
+        }
 
         TickBubble();
         TickPromptPulse();
@@ -224,20 +259,45 @@ public class CroquisMinigameController : MonoBehaviour
         if (stageCompleted)
         {
             ForceCurrentStageFullyRevealed();
-
-            stageIndex++;
-            stageSuccessCount = 0;
-
-            if (stageIndex >= 3)
-            {
-                End(true);
-                return;
-            }
+            StartCoroutine(CoAdvanceStageAfterDelay());
+            return;
         }
 
         UpdateStageSketches();
         SpawnNextPrompt();
         RefreshStatus();
+    }
+
+    private System.Collections.IEnumerator CoAdvanceStageAfterDelay()
+    {
+        stageTransitionPending = true;
+        if (markerRoot != null)
+            markerRoot.SetActive(false);
+
+        ShowStageCompleteStatus();
+
+        float wait = Mathf.Max(0f, stageCompleteDelay);
+        if (wait > 0f)
+            yield return new WaitForSeconds(wait);
+
+        if (ended)
+            yield break;
+
+        stageIndex++;
+        stageSuccessCount = 0;
+
+        if (stageIndex >= 3)
+        {
+            End(true);
+            yield break;
+        }
+
+        stageTransitionPending = false;
+        UpdateStageSketches();
+        SpawnNextPrompt();
+        RefreshStatus();
+        if (markerRoot != null)
+            markerRoot.SetActive(true);
     }
 
     private void SpawnNextPrompt()
@@ -343,11 +403,18 @@ public class CroquisMinigameController : MonoBehaviour
 
             var sr = stageGo.AddComponent<SpriteRenderer>();
             sr.sortingOrder = 41 + i;
-            sr.sprite = GetStageSprite(i);
+            sr.sprite = GetInitialStageSprite(i);
             FitSpriteToPaper(sr, paperSize);
             sr.enabled = false;
             stageRenderers[i] = sr;
         }
+    }
+
+    private Sprite GetInitialStageSprite(int stage)
+    {
+        if (TryGetStageStepSprite(stage, 0, out var s) && s != null)
+            return s;
+        return GetStageSprite(stage);
     }
 
     private Sprite GetStageSprite(int idx)
@@ -364,18 +431,30 @@ public class CroquisMinigameController : MonoBehaviour
             var sr = stageRenderers[i];
             if (sr == null) continue;
 
-            if (i < stageIndex)
-            {
-                sr.enabled = true;
-                SetSketchAlpha(sr, 1f);
-            }
-            else if (i == stageIndex)
+            if (i == stageIndex)
             {
                 sr.enabled = true;
                 int goal = CurrentStageGoal();
                 int step = ComputeRevealStep(stageSuccessCount, goal);
-                float alpha = Mathf.Lerp(stageStartAlpha, 1f, step / (float)RevealStepsPerStage);
-                SetSketchAlpha(sr, alpha);
+
+                // step: 0..5
+                // frame index must advance at thresholds:
+                // goal=10 => success 2/4/6/8/10 -> frame 0/1/2/3/4
+                int frameStep = Mathf.Clamp(step - 1, 0, RevealStepsPerStage - 1);
+
+                // If stage frame set (0..4 / 5..9 / 10..14) exists, prioritize it.
+                if (TryGetStageStepSprite(i, Mathf.Clamp(Mathf.Max(step, 1) - 1, 0, RevealStepsPerStage - 1), out var stepSprite))
+                {
+                    sr.sprite = stepSprite;
+                    float alpha = step > 0 ? 1f : stageStartAlpha;
+                    SetSketchAlpha(sr, alpha);
+                }
+                else
+                {
+                    sr.sprite = GetStageSprite(i);
+                    float alpha = Mathf.Lerp(stageStartAlpha, 1f, step / (float)RevealStepsPerStage);
+                    SetSketchAlpha(sr, alpha);
+                }
             }
             else
             {
@@ -391,14 +470,44 @@ public class CroquisMinigameController : MonoBehaviour
         var sr = stageRenderers[stageIndex];
         if (sr == null) return;
         sr.enabled = true;
+        if (TryGetStageStepSprite(stageIndex, RevealStepsPerStage - 1, out var doneSprite))
+            sr.sprite = doneSprite;
+        else
+            sr.sprite = GetStageSprite(stageIndex);
         SetSketchAlpha(sr, 1f);
+    }
+
+    private bool TryGetStageStepSprite(int stage, int step, out Sprite sprite)
+    {
+        sprite = null;
+        var arr = GetStageRevealArray(stage);
+        if (arr == null || arr.Length == 0)
+            return false;
+
+        int t = Mathf.Clamp(step, 0, RevealStepsPerStage - 1);
+        if (t < 0 || t >= arr.Length)
+            return false;
+
+        sprite = arr[t];
+        return sprite != null;
+    }
+
+    private Sprite[] GetStageRevealArray(int stage)
+    {
+        int s = Mathf.Clamp(stage, 0, 2);
+        if (s == 0) return stage1RevealSprites;
+        if (s == 1) return stage2RevealSprites;
+        return stage3RevealSprites;
     }
 
     private int ComputeRevealStep(int success, int goal)
     {
         if (goal <= 0) return RevealStepsPerStage;
-        float p = Mathf.Clamp01(success / (float)goal);
-        int step = Mathf.CeilToInt(p * RevealStepsPerStage);
+        if (success <= 0) return 0;
+
+        // Use floor buckets so, for goal=15, reveal ticks happen at 3/6/9/12/15.
+        float bucket = goal / (float)RevealStepsPerStage;
+        int step = Mathf.FloorToInt(success / Mathf.Max(0.0001f, bucket));
         return Mathf.Clamp(step, 0, RevealStepsPerStage);
     }
 
@@ -411,21 +520,37 @@ public class CroquisMinigameController : MonoBehaviour
 
     private void BuildPromptVisual()
     {
-        markerRoot = new GameObject("CroquisPrompt");
-        markerRoot.transform.SetParent(transform, false);
+        if (promptVisualPrefab != null)
+        {
+            markerRoot = Instantiate(promptVisualPrefab, transform);
+            markerRoot.name = "CroquisPrompt";
+            markerRenderer = markerRoot.GetComponentInChildren<SpriteRenderer>(true);
+            dragLine = markerRoot.GetComponentInChildren<LineRenderer>(true);
+        }
+        else
+        {
+            markerRoot = new GameObject("CroquisPrompt");
+            markerRoot.transform.SetParent(transform, false);
 
-        markerRenderer = markerRoot.AddComponent<SpriteRenderer>();
-        markerRenderer.sprite = CreateSolidSprite();
-        markerRenderer.sortingOrder = 60;
-        markerRenderer.drawMode = SpriteDrawMode.Sliced;
-        markerRenderer.size = new Vector2(0.9f, 0.9f);
+            markerRenderer = markerRoot.AddComponent<SpriteRenderer>();
+            markerRenderer.sprite = CreateSolidSprite();
+            markerRenderer.sortingOrder = 60;
+            markerRenderer.drawMode = SpriteDrawMode.Sliced;
+            markerRenderer.size = new Vector2(0.9f, 0.9f);
 
-        dragLine = markerRoot.AddComponent<LineRenderer>();
-        dragLine.material = new Material(Shader.Find("Sprites/Default"));
-        dragLine.widthMultiplier = 0.08f;
-        dragLine.positionCount = 2;
-        dragLine.sortingOrder = 61;
-        dragLine.useWorldSpace = true;
+            dragLine = markerRoot.AddComponent<LineRenderer>();
+            dragLine.material = new Material(Shader.Find("Sprites/Default"));
+            dragLine.widthMultiplier = 0.08f;
+            dragLine.positionCount = 2;
+            dragLine.sortingOrder = 61;
+            dragLine.useWorldSpace = true;
+        }
+
+        if (dragLine != null)
+        {
+            dragLine.positionCount = 2;
+            dragLine.useWorldSpace = true;
+        }
     }
 
     private void ApplyPromptVisual()
@@ -436,9 +561,13 @@ public class CroquisMinigameController : MonoBehaviour
         markerRoot.transform.localScale = Vector3.one * markerScale;
 
         bool isClick = currentPromptType == PromptType.Click;
-        markerRenderer.color = isClick ? clickColor : dragColor;
-        dragLine.enabled = !isClick;
-        if (!isClick)
+        if (markerRenderer != null)
+            markerRenderer.color = isClick ? clickColor : dragColor;
+
+        if (dragLine != null)
+            dragLine.enabled = !isClick;
+
+        if (!isClick && dragLine != null)
         {
             dragLine.startColor = dragColor;
             dragLine.endColor = dragColor;
@@ -473,6 +602,7 @@ public class CroquisMinigameController : MonoBehaviour
         rootRect.anchorMax = Vector2.one;
         rootRect.offsetMin = Vector2.zero;
         rootRect.offsetMax = Vector2.zero;
+        uiRootRect = rootRect;
 
         var statusGo = new GameObject("Status", typeof(RectTransform), typeof(TextMeshProUGUI));
         statusGo.transform.SetParent(root.transform, false);
@@ -489,35 +619,69 @@ public class CroquisMinigameController : MonoBehaviour
         statusText.color = Color.white;
         if (uiFontAsset != null) statusText.font = uiFontAsset;
 
-        var bubbleBgGo = new GameObject("TeacherBubble", typeof(RectTransform), typeof(Image));
-        bubbleBgGo.transform.SetParent(root.transform, false);
-        var bubbleRect = bubbleBgGo.GetComponent<RectTransform>();
-        bubbleRect.anchorMin = new Vector2(0.5f, 1f);
-        bubbleRect.anchorMax = new Vector2(0.5f, 1f);
-        bubbleRect.pivot = new Vector2(0.5f, 1f);
-        bubbleRect.anchoredPosition = new Vector2(0f, -110f);
-        bubbleRect.sizeDelta = new Vector2(1080f, 120f);
+        GameObject bubbleBgGo;
+        if (teacherBubblePrefab != null)
+        {
+            bubbleBgGo = Instantiate(teacherBubblePrefab, root.transform);
+            bubbleBgGo.name = "TeacherBubble";
+            var prefabRect = bubbleBgGo.GetComponent<RectTransform>();
+            if (prefabRect != null)
+            {
+                prefabRect.anchorMin = new Vector2(0.5f, 0.5f);
+                prefabRect.anchorMax = new Vector2(0.5f, 0.5f);
+                prefabRect.pivot = new Vector2(0.5f, 0.5f);
+                if (prefabRect.anchoredPosition == Vector2.zero)
+                    prefabRect.anchoredPosition = new Vector2(0f, 0f);
+            }
+            bubbleRootRect = prefabRect;
 
-        bubbleBg = bubbleBgGo.GetComponent<Image>();
-        bubbleBg.color = new Color(0f, 0f, 0f, 0.68f);
+            bubbleBg = bubbleBgGo.GetComponentInChildren<Image>(true);
+            bubbleText = bubbleBgGo.GetComponentInChildren<TextMeshProUGUI>(true);
+        }
+        else
+        {
+            bubbleBgGo = new GameObject("TeacherBubble", typeof(RectTransform), typeof(Image));
+            bubbleBgGo.transform.SetParent(root.transform, false);
+            var bubbleRect = bubbleBgGo.GetComponent<RectTransform>();
+            bubbleRect.anchorMin = new Vector2(0.5f, 0.5f);
+            bubbleRect.anchorMax = new Vector2(0.5f, 0.5f);
+            bubbleRect.pivot = new Vector2(0.5f, 0.5f);
+            bubbleRect.anchoredPosition = Vector2.zero;
+            bubbleRect.sizeDelta = new Vector2(1080f, 120f);
+            bubbleRootRect = bubbleRect;
 
-        var bubbleTextGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
-        bubbleTextGo.transform.SetParent(bubbleBgGo.transform, false);
-        var btRect = bubbleTextGo.GetComponent<RectTransform>();
-        btRect.anchorMin = Vector2.zero;
-        btRect.anchorMax = Vector2.one;
-        btRect.offsetMin = new Vector2(28f, 10f);
-        btRect.offsetMax = new Vector2(-28f, -10f);
+            bubbleBg = bubbleBgGo.GetComponent<Image>();
+            bubbleBg.color = new Color(0f, 0f, 0f, 0.68f);
 
-        bubbleText = bubbleTextGo.GetComponent<TextMeshProUGUI>();
-        bubbleText.alignment = TextAlignmentOptions.Center;
-        bubbleText.fontSize = 30f;
-        bubbleText.color = Color.white;
-        bubbleText.text = "";
-        if (uiFontAsset != null) bubbleText.font = uiFontAsset;
+            var bubbleTextGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+            bubbleTextGo.transform.SetParent(bubbleBgGo.transform, false);
+            var btRect = bubbleTextGo.GetComponent<RectTransform>();
+            btRect.anchorMin = Vector2.zero;
+            btRect.anchorMax = Vector2.one;
+            btRect.offsetMin = new Vector2(28f, 10f);
+            btRect.offsetMax = new Vector2(-28f, -10f);
 
-        bubbleBg.enabled = false;
-        bubbleText.enabled = false;
+            bubbleText = bubbleTextGo.GetComponent<TextMeshProUGUI>();
+            bubbleText.alignment = TextAlignmentOptions.Center;
+            bubbleText.fontSize = 30f;
+            bubbleText.color = Color.white;
+            bubbleText.text = "";
+            if (uiFontAsset != null) bubbleText.font = uiFontAsset;
+        }
+
+        if (bubbleText != null && uiFontAsset != null)
+            bubbleText.font = uiFontAsset;
+
+        if (bubbleRootRect != null)
+        {
+            bubbleDefaultAnchoredPos = bubbleRootRect.anchoredPosition;
+            var drag = bubbleRootRect.GetComponent<CroquisBubbleDragHandle>();
+            if (drag == null) drag = bubbleRootRect.gameObject.AddComponent<CroquisBubbleDragHandle>();
+            drag.Initialize(bubbleRootRect, uiCanvas);
+        }
+
+        if (bubbleBg != null) bubbleBg.enabled = false;
+        if (bubbleText != null) bubbleText.enabled = false;
     }
 
     private void RefreshStatus()
@@ -532,6 +696,14 @@ public class CroquisMinigameController : MonoBehaviour
 
         string format = L("MINIGAME_CROQUIS_STATUS_FMT", "Croquis {0}/3 | Success {1}/{2} | {3}");
         statusText.text = string.Format(format, stageNo, stageSuccessCount, goal, promptLabel);
+    }
+
+    private void ShowStageCompleteStatus()
+    {
+        if (statusText == null) return;
+        int stageNo = Mathf.Clamp(stageIndex + 1, 1, 3);
+        string format = L("MINIGAME_CROQUIS_STAGE_DONE_FMT", "Croquis {0} Complete!");
+        statusText.text = string.Format(format, stageNo);
     }
 
     private void TickBubble()
@@ -563,6 +735,8 @@ public class CroquisMinigameController : MonoBehaviour
         string line = L(key, teacherFallbackEN[idx]);
         string prefix = L("MINIGAME_CROQUIS_TEACHER_PREFIX", "Teacher");
 
+        PlaceBubbleOnPaperRandom();
+
         bubbleText.text = $"{prefix}: {line}";
         bubbleBg.enabled = true;
         bubbleText.enabled = true;
@@ -573,6 +747,32 @@ public class CroquisMinigameController : MonoBehaviour
     {
         bubbleBg.enabled = false;
         bubbleText.enabled = false;
+    }
+
+    private void PlaceBubbleOnPaperRandom()
+    {
+        if (bubbleRootRect == null || uiRootRect == null || mainCam == null)
+        {
+            if (bubbleRootRect != null)
+                bubbleRootRect.anchoredPosition = bubbleDefaultAnchoredPos;
+            return;
+        }
+
+        Vector2 world = RandomPointInsidePaper();
+        Vector3 screen = mainCam.WorldToScreenPoint(new Vector3(world.x, world.y, 0f));
+
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(uiRootRect, screen, null, out var local))
+        {
+            Vector2 half = bubbleRootRect.sizeDelta * 0.5f;
+            Vector2 limit = (uiRootRect.rect.size * 0.5f) - half - new Vector2(24f, 24f);
+            local.x = Mathf.Clamp(local.x, -Mathf.Abs(limit.x), Mathf.Abs(limit.x));
+            local.y = Mathf.Clamp(local.y, -Mathf.Abs(limit.y), Mathf.Abs(limit.y));
+            bubbleRootRect.anchoredPosition = local;
+        }
+        else
+        {
+            bubbleRootRect.anchoredPosition = bubbleDefaultAnchoredPos;
+        }
     }
 
     private void ResetBubbleTimer()
@@ -648,6 +848,12 @@ public class CroquisMinigameController : MonoBehaviour
         {
             Destroy(markerRoot);
             markerRoot = null;
+        }
+
+        if (paperRoot != null)
+        {
+            Destroy(paperRoot);
+            paperRoot = null;
         }
     }
 
@@ -762,5 +968,170 @@ public class CroquisMinigameController : MonoBehaviour
         uiFontAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(
             "Assets/Fonts/Galmuri11-Bold SDF.asset");
         #endif
+    }
+
+    private void ApplyConfigIfNeeded()
+    {
+        if (config == null)
+            return;
+
+        if (!overrideStageGoals)
+            successesPerStage = CloneOrFallback(config.successesPerStage, new[] { 10, 15, 20 });
+
+        if (!overridePaperArea)
+        {
+            paperSize = config.paperSize;
+            paperCenter = config.paperCenter;
+            paperPadding = config.paperPadding;
+            paperColor = config.paperColor;
+        }
+
+        if (!overrideStageSketches)
+        {
+            if (HasAnySprite(config.stageSketchSprites))
+                stageSketchSprites = CloneOrFallback(config.stageSketchSprites, stageSketchSprites);
+
+            if (HasAnySprite(config.stage1RevealSprites))
+                stage1RevealSprites = CloneOrFallback(config.stage1RevealSprites, stage1RevealSprites);
+            if (HasAnySprite(config.stage2RevealSprites))
+                stage2RevealSprites = CloneOrFallback(config.stage2RevealSprites, stage2RevealSprites);
+            if (HasAnySprite(config.stage3RevealSprites))
+                stage3RevealSprites = CloneOrFallback(config.stage3RevealSprites, stage3RevealSprites);
+
+            // Legacy migration path (single 15-array -> 3x5 arrays)
+            if (HasAnySprite(config.stageRevealStepSprites))
+                MigrateLegacyRevealArray(config.stageRevealStepSprites);
+
+            sketchColor = config.sketchColor;
+            stageStartAlpha = config.stageStartAlpha;
+        }
+
+        if (!overridePromptMix)
+            clickPromptChance = config.clickPromptChance;
+
+        if (!overridePromptVisual)
+        {
+            promptVisualPrefab = config.promptVisualPrefab;
+            markerScale = config.markerScale;
+            markerPulseAmplitude = config.markerPulseAmplitude;
+            markerPulseSpeed = config.markerPulseSpeed;
+            clickColor = config.clickColor;
+            dragColor = config.dragColor;
+            dragArrowLength = config.dragArrowLength;
+        }
+
+        if (!overrideDragValidation)
+        {
+            requiredDragDistance = config.requiredDragDistance;
+            requiredDirectionDot = config.requiredDirectionDot;
+            maxGrabDistance = config.maxGrabDistance;
+        }
+
+        if (!overrideTeacherBubble)
+        {
+            teacherBubblePrefab = config.teacherBubblePrefab;
+            teacherLineKeys = CloneOrFallback(config.teacherLineKeys, teacherLineKeys);
+            bubbleMinInterval = config.bubbleMinInterval;
+            bubbleMaxInterval = config.bubbleMaxInterval;
+            bubbleShowDuration = config.bubbleShowDuration;
+        }
+
+        if (!overrideFlow)
+            penaltyOnGiveUp = config.penaltyOnGiveUp;
+
+        if (!overrideUIFont && config.uiFontAsset != null)
+            uiFontAsset = config.uiFontAsset;
+    }
+
+    private static T[] CloneOrFallback<T>(T[] source, T[] fallback)
+    {
+        if (source == null || source.Length == 0)
+            return fallback;
+
+        var clone = new T[source.Length];
+        for (int i = 0; i < source.Length; i++)
+            clone[i] = source[i];
+        return clone;
+    }
+
+    private static bool HasAnySprite(Sprite[] arr)
+    {
+        if (arr == null || arr.Length == 0)
+            return false;
+
+        for (int i = 0; i < arr.Length; i++)
+        {
+            if (arr[i] != null)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void EnsureRevealSpriteSets()
+    {
+        bool groupedExists = HasAnySprite(stage1RevealSprites) || HasAnySprite(stage2RevealSprites) || HasAnySprite(stage3RevealSprites);
+        if (groupedExists)
+            return;
+
+        if (HasAnySprite(stageRevealStepSprites))
+            MigrateLegacyRevealArray(stageRevealStepSprites);
+    }
+
+    private void MigrateLegacyRevealArray(Sprite[] legacy)
+    {
+        if (legacy == null || legacy.Length == 0)
+            return;
+
+        if (stage1RevealSprites == null || stage1RevealSprites.Length != RevealStepsPerStage)
+            stage1RevealSprites = new Sprite[RevealStepsPerStage];
+        if (stage2RevealSprites == null || stage2RevealSprites.Length != RevealStepsPerStage)
+            stage2RevealSprites = new Sprite[RevealStepsPerStage];
+        if (stage3RevealSprites == null || stage3RevealSprites.Length != RevealStepsPerStage)
+            stage3RevealSprites = new Sprite[RevealStepsPerStage];
+
+        for (int i = 0; i < RevealStepsPerStage; i++)
+        {
+            int idx1 = i;
+            int idx2 = RevealStepsPerStage + i;
+            int idx3 = (RevealStepsPerStage * 2) + i;
+
+            if (idx1 < legacy.Length && stage1RevealSprites[i] == null)
+                stage1RevealSprites[i] = legacy[idx1];
+            if (idx2 < legacy.Length && stage2RevealSprites[i] == null)
+                stage2RevealSprites[i] = legacy[idx2];
+            if (idx3 < legacy.Length && stage3RevealSprites[i] == null)
+                stage3RevealSprites[i] = legacy[idx3];
+        }
+    }
+}
+
+public class CroquisBubbleDragHandle : MonoBehaviour, IBeginDragHandler, IDragHandler
+{
+    private RectTransform dragTarget;
+    private Canvas canvasRef;
+
+    public void Initialize(RectTransform target, Canvas canvas)
+    {
+        dragTarget = target;
+        canvasRef = canvas;
+    }
+
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (dragTarget == null)
+            dragTarget = transform as RectTransform;
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        if (dragTarget == null)
+            return;
+
+        float scale = 1f;
+        if (canvasRef != null)
+            scale = Mathf.Max(0.01f, canvasRef.scaleFactor);
+
+        dragTarget.anchoredPosition += eventData.delta / scale;
     }
 }
