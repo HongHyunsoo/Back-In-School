@@ -2240,7 +2240,7 @@ MonoBehaviour:
   speechBubblePrefab: {fileID: 4292250099378932359, guid: 27d4c5c701f249549ae1c37441304302, type: 3}
   speechBubbleParent: {fileID: 0}
   typingSpeed: 0.03
-  worldOffset: {x: 0, y: 2, z: 0}
+  worldOffset: {x: 0, y: 1.2, z: 0}
   playerController: {fileID: 0}
   nextSentenceKey: 101
   choicePanel: {fileID: 0}

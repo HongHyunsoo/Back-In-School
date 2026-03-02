@@ -1,0 +1,96 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55af1ce3d869b474bbe76794a5a584dd, type: 3}
+  m_Name: TetrisConfig
+  m_EditorClassIdentifier: 
+  targetLockedPieces: 15
+  fallInterval: 0.75
+  softDropInterval: 0.06
+  penaltyOnFail: 1
+  enableJelly: 1
+  fallStretchAmount: 0.08
+  landSquashAmount: 0.16
+  rotateJellyAmount: 0.06
+  landLockDelay: 0.06
+  jellySnapSpeed: 22
+  jellyReturnSpeed: 14
+  boardWidth: 9
+  boardHeight: 10
+  boardCellSize: 0.5
+  boardOrigin: {x: -2.25, y: -2.5}
+  autoFitGridToBoardSprite: 0
+  autoCenterGridToBoardSprite: 0
+  blockPrefab: {fileID: 0}
+  boardMaskTexture: {fileID: 2800000, guid: 85b00c379890a2e48b0728ee5a12aeb5, type: 3}
+  useBoardMask: 1
+  boardMaskMode: 2
+  boardMaskThreshold: 0.5
+  invertBoardMask: 0
+  boardMaskFlipX: 0
+  boardMaskFlipY: 0
+  tintBlocksByShape: 0
+  useCompositePieceVisuals: 1
+  useSpriteDrivenCollision: 0
+  applyCompositePivotCompensation: 0
+  applyCompositeShapeCenterOffset: 1
+  dayBlockSets:
+  - day: 1
+    defaultBlockPrefab: {fileID: 0}
+    shapePrefabsByName:
+      I: {fileID: 6252356135299374849, guid: 942273240d88c154285af0e23a34e9d8, type: 3}
+      O: {fileID: 6051737319861534099, guid: afa63daa54a08a240a255787a449241c, type: 3}
+      T: {fileID: 1476376768881642323, guid: bb004dbc6ea27964d8e8e8425985baec, type: 3}
+      S: {fileID: 3330372159403695482, guid: b735edcf61f260749b2debff606b1542, type: 3}
+      Z: {fileID: 6737857887599920566, guid: f8c7ddf526572bb439d577fde0a8c62d, type: 3}
+      J: {fileID: 2350655758439045025, guid: 6328640f33842934dad04136479a037a, type: 3}
+      L: {fileID: 5759069386925122212, guid: e73d1f8b19db2fe438d0271f9cfbfe84, type: 3}
+    shapeVisualOffsetsByName:
+      I: {x: 0, y: 0}
+      O: {x: 0, y: 0}
+      T: {x: 0, y: 0}
+      S: {x: 0, y: 0}
+      Z: {x: 0, y: 0}
+      J: {x: 0, y: 0}
+      L: {x: 0, y: 0}
+    shapeBaseRotationsByName:
+      I: -90
+      O: 0
+      T: 0
+      S: 0
+      Z: 0
+      J: 0
+      L: 0
+    migratedFromLegacyArrays: 1
+    shapePrefabs:
+    - {fileID: 6252356135299374849, guid: 942273240d88c154285af0e23a34e9d8, type: 3}
+    - {fileID: 6051737319861534099, guid: afa63daa54a08a240a255787a449241c, type: 3}
+    - {fileID: 1476376768881642323, guid: bb004dbc6ea27964d8e8e8425985baec, type: 3}
+    - {fileID: 3330372159403695482, guid: b735edcf61f260749b2debff606b1542, type: 3}
+    - {fileID: 6737857887599920566, guid: f8c7ddf526572bb439d577fde0a8c62d, type: 3}
+    - {fileID: 2350655758439045025, guid: 6328640f33842934dad04136479a037a, type: 3}
+    - {fileID: 5759069386925122212, guid: e73d1f8b19db2fe438d0271f9cfbfe84, type: 3}
+    shapeVisualOffsets:
+    - {x: 0, y: 0}
+    - {x: 0, y: 0}
+    - {x: 0, y: 0}
+    - {x: 0, y: 0}
+    - {x: 0, y: 0}
+    - {x: 0, y: 0}
+    - {x: 0, y: 0}
+    shapeBaseRotations:
+    - -90
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0
+    - 0

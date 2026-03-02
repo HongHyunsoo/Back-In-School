@@ -78,6 +78,12 @@ public class GameManager : MonoBehaviour
 
     private void ForceStateByScene(string sceneName)
     {
+        if (!string.IsNullOrEmpty(sceneName) && sceneName.StartsWith("FREEROAM"))
+        {
+            currentState = GameState.Lunch_FreeTime;
+            return;
+        }
+
         switch (sceneName)
         {
             case "CHAT":

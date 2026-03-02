@@ -62,6 +62,70 @@ public class DialogueManager : MonoBehaviour
     private Dictionary<string, Transform> actorCache = new Dictionary<string, Transform>();
     private bool blockAdvanceInputThisFrame = false;
 
+    private void StopPlayerMotionImmediate()
+    {
+        Transform t = null;
+        if (playerController != null)
+            t = playerController.transform;
+        if (t == null)
+        {
+            var p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null) t = p.transform;
+        }
+        if (t == null)
+            return;
+
+        var rb = t.GetComponent<Rigidbody2D>();
+        if (rb == null)
+            return;
+
+        rb.velocity = Vector2.zero;
+        rb.angularVelocity = 0f;
+
+        var anim = t.GetComponent<Animator>();
+        if (anim == null)
+            return;
+
+        // Force immediate visual state sync so run animation does not remain while dialogue starts.
+        SetAnimatorIfExists(anim, "moveSpeed", 0f);
+        SetAnimatorIfExists(anim, "yVelocity", 0f);
+        SetAnimatorIfExists(anim, "isGrounded", true);
+    }
+
+    private static void SetAnimatorIfExists(Animator anim, string paramName, float value)
+    {
+        if (anim == null || string.IsNullOrEmpty(paramName))
+            return;
+
+        int hash = Animator.StringToHash(paramName);
+        var ps = anim.parameters;
+        for (int i = 0; i < ps.Length; i++)
+        {
+            if (ps[i].nameHash == hash && ps[i].type == AnimatorControllerParameterType.Float)
+            {
+                anim.SetFloat(hash, value);
+                return;
+            }
+        }
+    }
+
+    private static void SetAnimatorIfExists(Animator anim, string paramName, bool value)
+    {
+        if (anim == null || string.IsNullOrEmpty(paramName))
+            return;
+
+        int hash = Animator.StringToHash(paramName);
+        var ps = anim.parameters;
+        for (int i = 0; i < ps.Length; i++)
+        {
+            if (ps[i].nameHash == hash && ps[i].type == AnimatorControllerParameterType.Bool)
+            {
+                anim.SetBool(hash, value);
+                return;
+            }
+        }
+    }
+
     void Start()
     {
         lines = new Queue<DialogueLine>();
@@ -151,7 +215,7 @@ public class DialogueManager : MonoBehaviour
 
                 if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, uiCam, out var localPoint))
                 {
-                    bubbleRect.anchoredPosition = localPoint + new Vector2(0f, 120f);
+                    bubbleRect.anchoredPosition = localPoint + new Vector2(0f, 70f);
 
                 }
             }
@@ -382,6 +446,7 @@ public class DialogueManager : MonoBehaviour
         currentNpcSpeaker = npcSpeaker;
 
         if (playerController != null) playerController.enabled = false;
+        StopPlayerMotionImmediate();
 
         lines.Clear();
         foreach (DialogueLine line in dialogueLines) lines.Enqueue(line);

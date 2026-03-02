@@ -34,56 +34,44 @@ public class DialogueBubbleRuntimeFix : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (dm == null) return;
-        if (!dm.IsDialogueActive) return;
+        if (dm == null || !dm.IsDialogueActive)
+            return;
 
         var bubble = fiSpeechBubble != null ? fiSpeechBubble.GetValue(dm) as SpeechBubbleUI : null;
         if (bubble == null)
         {
             dm.RebindForScene();
             bubble = fiSpeechBubble != null ? fiSpeechBubble.GetValue(dm) as SpeechBubbleUI : null;
-            if (bubble == null) return;
+            if (bubble == null)
+                return;
         }
 
+        // This runtime fix only applies when there is no speaker transform.
         var speaker = fiCurrentSpeaker != null ? fiCurrentSpeaker.GetValue(dm) as Transform : null;
-        if (speaker != null) return;
+        if (speaker != null)
+            return;
 
         var canvas = FindSceneCanvas();
-        if (canvas == null) return;
+        if (canvas == null)
+            return;
 
         if (bubble.transform.parent != canvas.transform)
             bubble.transform.SetParent(canvas.transform, false);
 
         bubble.gameObject.SetActive(true);
         var rt = bubble.transform as RectTransform;
-        if (rt == null) return;
+        if (rt == null)
+            return;
 
-        if (speaker != null)
-        {
-            var cam = Camera.main;
-            if (cam != null)
-            {
-                var canvasRect = canvas.transform as RectTransform;
-                Camera uiCam = (canvas.renderMode == RenderMode.ScreenSpaceOverlay) ? null : canvas.worldCamera;
-
-                Vector3 screenPos = cam.WorldToScreenPoint(speaker.position + new Vector3(0f, 0.5f, 0f));
-                if (screenPos.z >= 0f &&
-                    RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, uiCam, out var localPoint))
-                {
-                    rt.anchoredPosition = localPoint + new Vector2(0f, -150f);
-                    return;
-                }
-            }
-        }
-
-        // speaker가 없거나 화면 밖이면 고정 위치 폴백
+        // No speaker: keep bubble at a stable lower-center position.
         rt.anchoredPosition = new Vector2(0f, -220f);
     }
 
     private void CacheReflection()
     {
         dm = FindAnyObjectByType<DialogueManager>();
-        if (dm == null) return;
+        if (dm == null)
+            return;
 
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         fiSpeechBubble = typeof(DialogueManager).GetField("speechBubble", flags);
@@ -100,6 +88,7 @@ public class DialogueBubbleRuntimeFix : MonoBehaviour
             if (canvases.Length > 0)
                 return canvases[0];
         }
+
         return null;
     }
 }

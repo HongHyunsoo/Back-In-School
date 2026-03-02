@@ -13,9 +13,12 @@ public class MinigameSceneBootstrap : MonoBehaviour
     public string class1Prefix = "CLASS1_";
     [Tooltip("If FLOW_ID starts with this prefix, we run Pixel Paint.")]
     public string class2Prefix = "CLASS2_";
+    [Tooltip("Auto-create missing minigame controllers at runtime. Disable for strict scene validation.")]
+    public bool autoCreateMissingControllers = false;
 
     [Header("Tetris")]
     public TetrisMinigameController tetris;
+    public TetrisMinigameConfig tetrisConfig;
 
     [Header("Croquis Doodle")]
     public CroquisMinigameController croquis;
@@ -54,16 +57,32 @@ public class MinigameSceneBootstrap : MonoBehaviour
             tetris = FindAnyObjectByType<TetrisMinigameController>();
         if (tetris == null)
         {
-            var go = new GameObject("TetrisMinigame");
-            tetris = go.AddComponent<TetrisMinigameController>();
+            if (autoCreateMissingControllers)
+            {
+                var go = new GameObject("TetrisMinigame");
+                tetris = go.AddComponent<TetrisMinigameController>();
+            }
+            else
+            {
+                Debug.LogError("[MinigameSceneBootstrap] Missing TetrisMinigameController in scene.");
+            }
         }
+        if (tetris != null && tetris.config == null && tetrisConfig != null)
+            tetris.config = tetrisConfig;
 
         if (croquis == null)
             croquis = FindAnyObjectByType<CroquisMinigameController>();
         if (croquis == null)
         {
-            var go = new GameObject("CroquisMinigame");
-            croquis = go.AddComponent<CroquisMinigameController>();
+            if (autoCreateMissingControllers)
+            {
+                var go = new GameObject("CroquisMinigame");
+                croquis = go.AddComponent<CroquisMinigameController>();
+            }
+            else
+            {
+                Debug.LogError("[MinigameSceneBootstrap] Missing CroquisMinigameController in scene.");
+            }
         }
         if (croquis != null && croquis.config == null && croquisConfig != null)
             croquis.config = croquisConfig;
@@ -72,8 +91,15 @@ public class MinigameSceneBootstrap : MonoBehaviour
             pixelPaint = FindAnyObjectByType<PixelPaintMinigameController>();
         if (pixelPaint == null)
         {
-            var go = new GameObject("PixelPaintMinigame");
-            pixelPaint = go.AddComponent<PixelPaintMinigameController>();
+            if (autoCreateMissingControllers)
+            {
+                var go = new GameObject("PixelPaintMinigame");
+                pixelPaint = go.AddComponent<PixelPaintMinigameController>();
+            }
+            else
+            {
+                Debug.LogError("[MinigameSceneBootstrap] Missing PixelPaintMinigameController in scene.");
+            }
         }
     }
 

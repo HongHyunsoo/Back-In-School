@@ -17,6 +17,12 @@ public class PhoneSubwayFlowGate : MonoBehaviour
 {
     private static readonly HashSet<int> healthCheckedDays = new();
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticStateOnPlay()
+    {
+        healthCheckedDays.Clear();
+    }
+
     private Button powerButton;
     private Button closePhoneButton;
 
@@ -209,6 +215,11 @@ public class PhoneSubwayFlowGate : MonoBehaviour
     public static bool IsHealthChecked(int day)
     {
         return healthCheckedDays.Contains(day);
+    }
+
+    public static void ClearHealthChecks()
+    {
+        healthCheckedDays.Clear();
     }
 
     public static bool MarkHealthCheckedForDay(int day)

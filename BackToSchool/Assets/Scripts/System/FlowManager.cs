@@ -163,17 +163,11 @@ public class FlowManager : MonoBehaviour
         PlayerPrefs.SetString("FLOW_ID", resolvedId);
         PlayerPrefs.SetString("FLOW_TYPE", ev.type.ToString());
 
-        // ✅ GameManager 상태는 필요한 모드만 건드림
+        // Keep day in sync only. Scene-based state enter is handled by GameManager.OnSceneLoaded.
         var gm = FindAnyObjectByType<GameManager>();
         if (gm != null)
         {
             gm.currentDay = day;
-
-            if (ev.type == FlowEventType.CHAT)
-                gm.ChangeState(GameState.Subway);
-
-            else if (ev.type == FlowEventType.FREEROAM)
-                gm.ChangeState(GameState.Lunch_FreeTime);
         }
 
         switch (ev.type)
@@ -242,6 +236,7 @@ public class FlowManager : MonoBehaviour
         isWearingSlippers = false;
         changedToSlippersToday = false;
         noSlippersPenaltyAppliedToday = false;
+        PhoneSubwayFlowGate.ClearHealthChecks();
         PlayerPrefs.DeleteKey(StoryAppendConversationPrefKey);
     }
 
