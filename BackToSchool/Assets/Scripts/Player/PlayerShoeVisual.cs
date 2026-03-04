@@ -1,4 +1,7 @@
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class PlayerShoeVisual : MonoBehaviour
 {
@@ -12,6 +15,7 @@ public class PlayerShoeVisual : MonoBehaviour
 
     bool lastAppliedIsSlippers = false;
     bool hasAppliedOnce = false;
+    bool warnedInvalidControllerSetup = false;
 
     private void Awake()
     {
@@ -48,6 +52,7 @@ public class PlayerShoeVisual : MonoBehaviour
     {
         hasAppliedOnce = true;
         lastAppliedIsSlippers = isSlippers;
+        ValidateControllerSetup();
 
         if (targetAnimator != null)
         {
@@ -60,25 +65,57 @@ public class PlayerShoeVisual : MonoBehaviour
             {
                 RuntimeAnimatorController next = isSlippers ? slippersController : sneakersController;
                 if (next != null && targetAnimator.runtimeAnimatorController != next)
-                    SwapControllerPreservingState(next);
+                    SwapControllerResetState(next, isSlippers);
             }
         }
     }
 
-    private void SwapControllerPreservingState(RuntimeAnimatorController next)
+    private void ValidateControllerSetup()
+    {
+        if (warnedInvalidControllerSetup)
+            return;
+
+        bool shouldSwap = swapRuntimeController ||
+                          (autoSwapIfControllersAssigned && sneakersController != null && slippersController != null);
+        if (!shouldSwap)
+            return;
+
+        if (sneakersController == null || slippersController == null)
+        {
+            warnedInvalidControllerSetup = true;
+            Debug.LogWarning("[PlayerShoeVisual] Sneakers/Slippers controller reference is missing.", this);
+            return;
+        }
+
+        if (sneakersController == slippersController)
+        {
+            warnedInvalidControllerSetup = true;
+            Debug.LogWarning(
+                $"[PlayerShoeVisual] Invalid setup: both controllers are '{sneakersController.name}'. " +
+                "Assign slippersController to PlayerAnimController_Shoes.",
+                this);
+        }
+    }
+
+    private void SwapControllerResetState(RuntimeAnimatorController next, bool isSlippers)
     {
         if (targetAnimator == null || next == null)
             return;
 
-        var state = targetAnimator.GetCurrentAnimatorStateInfo(0);
-        int stateHash = state.shortNameHash;
-        float normalized = state.normalizedTime % 1f;
-
         targetAnimator.runtimeAnimatorController = next;
+        targetAnimator.Rebind();
         targetAnimator.Update(0f);
 
-        if (stateHash != 0)
-            targetAnimator.Play(stateHash, 0, normalized);
+        // Re-apply shoe flag after rebind.
+        if (HasBoolParameter(targetAnimator, slippersBoolParam))
+            targetAnimator.SetBool(slippersBoolParam, isSlippers);
+
+        // Keep locomotion params in sane defaults right after controller swap.
+        SetFloatIfHas(targetAnimator, "moveSpeed", 0f);
+        SetFloatIfHas(targetAnimator, "yVelocity", 0f);
+        SetBoolIfHas(targetAnimator, "isGrounded", true);
+
+        Debug.Log($"[PlayerShoeVisual] Swapped animator controller -> {next.name} (isSlippers={isSlippers})", this);
     }
 
     private static bool HasBoolParameter(Animator animator, string paramName)
@@ -97,4 +134,72 @@ public class PlayerShoeVisual : MonoBehaviour
         }
         return false;
     }
+
+    private static bool HasFloatParameter(Animator animator, string paramName)
+    {
+        if (animator == null || string.IsNullOrEmpty(paramName))
+            return false;
+
+        var parameters = animator.parameters;
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            if (parameters[i].type == AnimatorControllerParameterType.Float &&
+                parameters[i].name == paramName)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void SetFloatIfHas(Animator animator, string paramName, float value)
+    {
+        if (HasFloatParameter(animator, paramName))
+            animator.SetFloat(paramName, value);
+    }
+
+    private static void SetBoolIfHas(Animator animator, string paramName, bool value)
+    {
+        if (HasBoolParameter(animator, paramName))
+            animator.SetBool(paramName, value);
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        AutoAssignControllersByName();
+    }
+
+    [ContextMenu("Auto Assign Shoe Controllers")]
+    private void AutoAssignControllersByName()
+    {
+        if (targetAnimator == null)
+        {
+            targetAnimator = GetComponent<Animator>();
+            if (targetAnimator == null)
+                targetAnimator = GetComponentInChildren<Animator>(true);
+        }
+
+        RuntimeAnimatorController defaultCtrl = FindControllerByExactName("PlayerAnimController");
+        RuntimeAnimatorController shoesCtrl = FindControllerByExactName("PlayerAnimController_Shoes");
+
+        if (defaultCtrl != null)
+            sneakersController = defaultCtrl;
+        if (shoesCtrl != null)
+            slippersController = shoesCtrl;
+    }
+
+    private static RuntimeAnimatorController FindControllerByExactName(string name)
+    {
+        string[] guids = AssetDatabase.FindAssets($"t:RuntimeAnimatorController {name}");
+        for (int i = 0; i < guids.Length; i++)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+            RuntimeAnimatorController ctrl = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(path);
+            if (ctrl != null && ctrl.name == name)
+                return ctrl;
+        }
+        return null;
+    }
+#endif
 }
