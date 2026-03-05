@@ -1,4 +1,3 @@
-﻿#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using UnityEngine;
 
 public class FlowDebugController : MonoBehaviour
@@ -42,4 +41,3 @@ public class FlowDebugController : MonoBehaviour
  
 
 }
-#endif

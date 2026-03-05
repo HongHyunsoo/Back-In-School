@@ -522,6 +522,18 @@ public class DialogueManager : MonoBehaviour
         currentLine = lines.Dequeue();
         string currentSpeakerID = currentLine.speakerID;
 
+        // STORY line-level set switching: lineID -> setId
+        if (SceneManager.GetActiveScene().name == "STORY")
+        {
+            string setId = StoryLineSetMeta.GetSetIdForLine(currentLine.lineID);
+            if (!string.IsNullOrEmpty(setId))
+            {
+                var switcher = FindAnyObjectByType<StorySetSwitcher>();
+                if (switcher != null && switcher.ApplySetById(setId))
+                    RefreshCharacterCache();
+            }
+        }
+
         // 캐시에서 캐릭터 찾기 (CharacterIdentifier + CharacterActor 모두 지원)
         currentSpeaker = ResolveSpeakerTransform(currentSpeakerID);
         if (currentSpeaker == null)

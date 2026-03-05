@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -209,8 +209,6 @@ public class FlowManager : MonoBehaviour
         penaltyPoints += penaltyDelta;
         PenaltyReasonLog.Add(reasonId, penaltyDelta, day);
     }
-
-    #if UNITY_EDITOR || DEVELOPMENT_BUILD
     // 지금 이벤트 강제 완료(개발용)
     public void DebugSkip(int penaltyDelta = 0)
     {
@@ -225,8 +223,6 @@ public class FlowManager : MonoBehaviour
         penaltyPoints = penalty;
         PlayCurrent();
     }
-    #endif
-
     public bool IsWearingSlippers => isWearingSlippers;
     public bool ChangedToSlippersToday => changedToSlippersToday;
 

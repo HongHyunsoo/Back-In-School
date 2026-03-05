@@ -25,6 +25,9 @@ public class PixelPaintMinigameController : MonoBehaviour
 
         [Tooltip("Rows for paint-by-number map.\nUse one of these formats:\n1) \"00112200\" (char per cell)\n2) \"0 0 1 1 2 2 0 0\" (space/comma separated)\n0 means empty.")]
         public string[] rows;
+
+        [Tooltip("Optional per-puzzle palette override. If empty, controller palette is used.")]
+        public Color[] customPalette;
     }
 
     [Header("Puzzle")]
@@ -88,6 +91,7 @@ public class PixelPaintMinigameController : MonoBehaviour
     private bool solvedWaitForContinue;
     private int activePuzzleIndex = -1;
     private string activePuzzleTitle = "";
+    private Color[] defaultPalette;
 
     private Camera mainCam;
     private Sprite cellSprite;
@@ -129,6 +133,7 @@ public class PixelPaintMinigameController : MonoBehaviour
         if (mainCam == null)
             mainCam = FindAnyObjectByType<Camera>();
 
+        defaultPalette = palette != null ? (Color[])palette.Clone() : Array.Empty<Color>();
         EnsureNumberFont();
 
         EnsurePuzzlesOrFallback();
@@ -298,6 +303,18 @@ public class PixelPaintMinigameController : MonoBehaviour
         activePuzzleTitle = string.IsNullOrEmpty(puzzles[activePuzzleIndex].title)
             ? $"Puzzle {activePuzzleIndex + 1}"
             : puzzles[activePuzzleIndex].title;
+        ApplyPuzzlePalette(puzzles[activePuzzleIndex]);
+    }
+
+    private void ApplyPuzzlePalette(PixelPaintPuzzleDefinition puzzle)
+    {
+        if (puzzle != null && puzzle.customPalette != null && puzzle.customPalette.Length > 0)
+        {
+            palette = (Color[])puzzle.customPalette.Clone();
+            return;
+        }
+
+        palette = defaultPalette != null ? (Color[])defaultPalette.Clone() : Array.Empty<Color>();
     }
 
     private void ParsePuzzle(PixelPaintPuzzleDefinition puzzle)
