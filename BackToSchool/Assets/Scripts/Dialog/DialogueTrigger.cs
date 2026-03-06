@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 [System.Serializable]
 public class ContextualDialogue
@@ -52,6 +53,9 @@ public class DialogueTrigger : MonoBehaviour
     [Header("Interaction")]
     public KeyCode interactKey = KeyCode.E;
     public GameObject interactPrompt;
+    public TMP_Text interactKeyText;
+    public string interactKeyFormat = "[{0}]";
+    public float promptFontSize = 4f;
 
     [Header("Contextual Dialogues")]
     public List<ContextualDialogue> contextualDialogues;
@@ -63,19 +67,23 @@ public class DialogueTrigger : MonoBehaviour
     private DialogueManager manager;
     private bool isPlayerInRange = false;
     private GameManager gameManager;
+    private KeyCode lastInteractKey = KeyCode.None;
 
     void Start()
     {
         manager = FindObjectOfType<DialogueManager>();
         gameManager = FindObjectOfType<GameManager>();
-        if (manager == null) UnityEngine.Debug.LogError("DialogueManager瑜?李얠쓣 ???놁뒿?덈떎!");
-        if (gameManager == null) UnityEngine.Debug.LogError("GameManager瑜?李얠쓣 ???놁뒿?덈떎!");
+        if (manager == null) UnityEngine.Debug.LogError("DialogueManager를 찾을 수 없습니다!");
+        if (gameManager == null) UnityEngine.Debug.LogError("GameManager를 찾을 수 없습니다!");
         if (interactPrompt != null) interactPrompt.SetActive(false);
+        RefreshInteractPromptText(KeyBindingConfig.Get(KeyBindingConfig.InteractKey, KeyCode.E));
     }
 
     void Update()
     {
         interactKey = KeyBindingConfig.Get(KeyBindingConfig.InteractKey, KeyCode.E);
+        if (interactKey != lastInteractKey)
+            RefreshInteractPromptText(interactKey);
 
         if (isPlayerInRange)
         {
@@ -100,6 +108,18 @@ public class DialogueTrigger : MonoBehaviour
         {
             if (interactPrompt != null) interactPrompt.SetActive(false);
         }
+    }
+
+    private void RefreshInteractPromptText(KeyCode key)
+    {
+        lastInteractKey = key;
+        if (interactKeyText == null)
+            return;
+
+        interactKeyText.enableWordWrapping = false;
+        interactKeyText.overflowMode = TextOverflowModes.Overflow;
+        interactKeyText.fontSize = promptFontSize;
+        interactKeyText.text = string.Format(interactKeyFormat, key.ToString().ToUpperInvariant());
     }
 
     private ContextualDialogue FindCurrentDialogue()
@@ -249,5 +269,9 @@ public class DialogueTrigger : MonoBehaviour
     private void OnTriggerExit2D(Collider2D other) 
     { 
         if (other.CompareTag("Player")) isPlayerInRange = false; 
+        if (interactPrompt != null) interactPrompt.SetActive(false);
     }
 }
+
+
+

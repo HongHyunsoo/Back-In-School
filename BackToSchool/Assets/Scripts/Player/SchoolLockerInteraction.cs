@@ -1,23 +1,32 @@
 using UnityEngine;
+using TMPro;
 
 public class SchoolLockerInteraction : MonoBehaviour
 {
     [Header("Interaction")]
     [SerializeField] private GameObject interactPrompt;
+    [SerializeField] private TMP_Text interactKeyText;
+    [SerializeField] private string interactKeyFormat = "[{0}]";
+    [SerializeField] private float promptFontSize = 4f;
     [SerializeField] private bool onlyMorningBeforeAssembly = true;
     [SerializeField] private string changedToSlippersConversationId = "SLIPPERS_CHANGED";
 
     bool isPlayerInRange;
+    private KeyCode lastInteractKey = KeyCode.None;
 
     private void Start()
     {
         if (interactPrompt != null)
             interactPrompt.SetActive(false);
+
+        RefreshInteractPromptText(KeyBindingConfig.Get(KeyBindingConfig.InteractKey, KeyCode.E));
     }
 
     private void Update()
     {
         KeyCode interactKey = KeyBindingConfig.Get(KeyBindingConfig.InteractKey, KeyCode.E);
+        if (interactKey != lastInteractKey)
+            RefreshInteractPromptText(interactKey);
 
         bool canShowPrompt = isPlayerInRange && IsInAllowedFlow();
         if (interactPrompt != null)
@@ -67,6 +76,21 @@ public class SchoolLockerInteraction : MonoBehaviour
     {
         if (other.CompareTag("Player"))
             isPlayerInRange = false;
+
+        if (interactPrompt != null)
+            interactPrompt.SetActive(false);
+    }
+
+    private void RefreshInteractPromptText(KeyCode interactKey)
+    {
+        lastInteractKey = interactKey;
+        if (interactKeyText == null)
+            return;
+
+        interactKeyText.enableWordWrapping = false;
+        interactKeyText.overflowMode = TextOverflowModes.Overflow;
+        interactKeyText.fontSize = promptFontSize;
+        interactKeyText.text = string.Format(interactKeyFormat, interactKey.ToString().ToUpperInvariant());
     }
 
     private void TryPlayChangedMessageDialogue()

@@ -97,6 +97,7 @@ public class PlayerShoeVisual : MonoBehaviour
         }
     }
 
+
     private void SwapControllerResetState(RuntimeAnimatorController next, bool isSlippers)
     {
         if (targetAnimator == null || next == null)
@@ -167,7 +168,13 @@ public class PlayerShoeVisual : MonoBehaviour
 #if UNITY_EDITOR
     private void OnValidate()
     {
-        AutoAssignControllersByName();
+        // Keep manual inspector assignments intact.
+        if (targetAnimator == null)
+        {
+            targetAnimator = GetComponent<Animator>();
+            if (targetAnimator == null)
+                targetAnimator = GetComponentInChildren<Animator>(true);
+        }
     }
 
     [ContextMenu("Auto Assign Shoe Controllers")]
@@ -181,7 +188,9 @@ public class PlayerShoeVisual : MonoBehaviour
         }
 
         RuntimeAnimatorController defaultCtrl = FindControllerByExactName("PlayerAnimController");
-        RuntimeAnimatorController shoesCtrl = FindControllerByExactName("PlayerAnimController_Shoes");
+        RuntimeAnimatorController shoesCtrl = FindControllerByExactName("PlayerAnimController_Sneakers");
+        if (shoesCtrl == null)
+            shoesCtrl = FindControllerByExactName("PlayerAnimController_Shoes");
 
         if (defaultCtrl != null)
             sneakersController = defaultCtrl;

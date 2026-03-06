@@ -1,4 +1,4 @@
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,6 +12,8 @@ public class PhoneSettingsAppController : MonoBehaviour
     [SerializeField] private Button bindLeftButton;
     [SerializeField] private Button bindRightButton;
     [SerializeField] private Button bindJumpButton;
+    [SerializeField] private Button bindStairDownButton;
+    [SerializeField] private Button bindStairUpButton;
     [SerializeField] private Button bindInteractButton;
     [SerializeField] private Button bindPhoneButton;
 
@@ -20,6 +22,8 @@ public class PhoneSettingsAppController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI bindLeftLabel;
     [SerializeField] private TextMeshProUGUI bindRightLabel;
     [SerializeField] private TextMeshProUGUI bindJumpLabel;
+    [SerializeField] private TextMeshProUGUI bindStairDownLabel;
+    [SerializeField] private TextMeshProUGUI bindStairUpLabel;
     [SerializeField] private TextMeshProUGUI bindInteractLabel;
     [SerializeField] private TextMeshProUGUI bindPhoneLabel;
 
@@ -63,26 +67,30 @@ public class PhoneSettingsAppController : MonoBehaviour
     private void ResolveReferences()
     {
         if (settingsPanel == null)
-            settingsPanel = FindObjectByNameOrToken("App_Settings", "Settings", "설정");
+            settingsPanel = FindObjectByNameOrToken("App_Settings", "Settings");
 
         Transform root = settingsPanel != null ? settingsPanel.transform : transform;
 
         if (masterVolumeSlider == null)
-            masterVolumeSlider = FindSlider(root, "Volume", "Sound", "볼륨", "사운드");
+            masterVolumeSlider = FindSlider(root, "Volume", "Sound");
 
         if (languageButton == null)
-            languageButton = FindButton(root, "Language", "언어");
+            languageButton = FindButton(root, "Language");
 
         if (bindLeftButton == null)
-            bindLeftButton = FindButton(root, "Left", "왼쪽");
+            bindLeftButton = FindButton(root, "Left");
         if (bindRightButton == null)
-            bindRightButton = FindButton(root, "Right", "오른쪽");
+            bindRightButton = FindButton(root, "Right");
         if (bindJumpButton == null)
-            bindJumpButton = FindButton(root, "Jump", "점프");
+            bindJumpButton = FindButton(root, "Jump");
+        if (bindStairDownButton == null)
+            bindStairDownButton = FindButton(root, "StairDown", "Stair Down", "Down");
+        if (bindStairUpButton == null)
+            bindStairUpButton = FindButton(root, "StairUp", "Stair Up", "Up");
         if (bindInteractButton == null)
-            bindInteractButton = FindButton(root, "Interact", "상호작용");
+            bindInteractButton = FindButton(root, "Interact");
         if (bindPhoneButton == null)
-            bindPhoneButton = FindButton(root, "Phone", "휴대폰", "TAB");
+            bindPhoneButton = FindButton(root, "Phone", "TAB");
 
         if (languageButtonLabel == null)
             languageButtonLabel = FindLabelUnder(languageButton);
@@ -92,6 +100,10 @@ public class PhoneSettingsAppController : MonoBehaviour
             bindRightLabel = FindLabelUnder(bindRightButton);
         if (bindJumpLabel == null)
             bindJumpLabel = FindLabelUnder(bindJumpButton);
+        if (bindStairDownLabel == null)
+            bindStairDownLabel = FindLabelUnder(bindStairDownButton);
+        if (bindStairUpLabel == null)
+            bindStairUpLabel = FindLabelUnder(bindStairUpButton);
         if (bindInteractLabel == null)
             bindInteractLabel = FindLabelUnder(bindInteractButton);
         if (bindPhoneLabel == null)
@@ -112,6 +124,10 @@ public class PhoneSettingsAppController : MonoBehaviour
             bindRightButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.RightKey));
         if (bindJumpButton != null)
             bindJumpButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.JumpKey));
+        if (bindStairDownButton != null)
+            bindStairDownButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.StairDownKey));
+        if (bindStairUpButton != null)
+            bindStairUpButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.StairUpKey));
         if (bindInteractButton != null)
             bindInteractButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.InteractKey));
         if (bindPhoneButton != null)
@@ -162,6 +178,8 @@ public class PhoneSettingsAppController : MonoBehaviour
         UpdateBindingVisual(bindLeftButton, bindLeftLabel, KeyBindingConfig.LeftKey, KeyCode.A);
         UpdateBindingVisual(bindRightButton, bindRightLabel, KeyBindingConfig.RightKey, KeyCode.D);
         UpdateBindingVisual(bindJumpButton, bindJumpLabel, KeyBindingConfig.JumpKey, KeyCode.Space);
+        UpdateBindingVisual(bindStairDownButton, bindStairDownLabel, KeyBindingConfig.StairDownKey, KeyCode.S);
+        UpdateBindingVisual(bindStairUpButton, bindStairUpLabel, KeyBindingConfig.StairUpKey, KeyCode.W);
         UpdateBindingVisual(bindInteractButton, bindInteractLabel, KeyBindingConfig.InteractKey, KeyCode.E);
         UpdateBindingVisual(bindPhoneButton, bindPhoneLabel, KeyBindingConfig.PhoneKey, KeyCode.Tab);
     }

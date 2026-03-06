@@ -55,6 +55,8 @@ public class MainMenuController : MonoBehaviour
     private Button resolvedJumpBindButton;
     private Button resolvedPhoneBindButton;
     private Button resolvedInteractBindButton;
+    private Button resolvedStairUpBindButton;
+    private Button resolvedStairDownBindButton;
 
     private void Start()
     {
@@ -104,6 +106,8 @@ public class MainMenuController : MonoBehaviour
         if (bindLeftButton != null) bindLeftButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.LeftKey));
         if (bindRightButton != null) bindRightButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.RightKey));
         if (resolvedJumpBindButton != null) resolvedJumpBindButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.JumpKey));
+        if (resolvedStairDownBindButton != null) resolvedStairDownBindButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.StairDownKey));
+        if (resolvedStairUpBindButton != null) resolvedStairUpBindButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.StairUpKey));
         if (resolvedInteractBindButton != null) resolvedInteractBindButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.InteractKey));
         if (resolvedPhoneBindButton != null) resolvedPhoneBindButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.PhoneKey));
     }
@@ -259,9 +263,11 @@ public class MainMenuController : MonoBehaviour
 
         UpdateBindingVisual(bindLeftButton, bindLeftLabel, L("왼쪽", "Left"), KeyBindingConfig.LeftKey, KeyCode.A);
         UpdateBindingVisual(bindRightButton, bindRightLabel, L("오른쪽", "Right"), KeyBindingConfig.RightKey, KeyCode.D);
-        UpdateBindingVisual(resolvedJumpBindButton, bindJumpLabel != null ? bindJumpLabel : bindDownLabel, L("점프", "Jump"), KeyBindingConfig.JumpKey, KeyCode.Space);
+        UpdateBindingVisual(resolvedJumpBindButton, bindJumpLabel, L("점프", "Jump"), KeyBindingConfig.JumpKey, KeyCode.Space);
+        UpdateBindingVisual(resolvedStairDownBindButton, bindDownLabel, L("계단 아래", "Stair Down"), KeyBindingConfig.StairDownKey, KeyCode.S);
+        UpdateBindingVisual(resolvedStairUpBindButton, bindUpLabel, L("계단 위", "Stair Up"), KeyBindingConfig.StairUpKey, KeyCode.W);
         UpdateBindingVisual(resolvedInteractBindButton, bindInteractLabel, L("상호작용", "Interact"), KeyBindingConfig.InteractKey, KeyCode.E);
-        UpdateBindingVisual(resolvedPhoneBindButton, bindPhoneLabel != null ? bindPhoneLabel : bindUpLabel, L("휴대폰", "Phone"), KeyBindingConfig.PhoneKey, KeyCode.Tab);
+        UpdateBindingVisual(resolvedPhoneBindButton, bindPhoneLabel, L("휴대폰", "Phone"), KeyBindingConfig.PhoneKey, KeyCode.Tab);
     }
 
     private void UpdateBindingVisual(Button button, TextMeshProUGUI label, string actionName, string keyId, KeyCode fallback)
@@ -325,9 +331,14 @@ public class MainMenuController : MonoBehaviour
 
     private void ResolveBindingButtons()
     {
-        resolvedJumpBindButton = bindJumpButton != null ? bindJumpButton : bindDownButton;
+        if (settingsPanel == null)
+            settingsPanel = FindObjectByNameOrToken("Settings", "App_Settings", "Option");
+
+        resolvedJumpBindButton = bindJumpButton;
+        resolvedStairDownBindButton = bindDownButton;
+        resolvedStairUpBindButton = bindUpButton;
         resolvedInteractBindButton = bindInteractButton;
-        resolvedPhoneBindButton = bindPhoneButton != null ? bindPhoneButton : bindUpButton;
+        resolvedPhoneBindButton = bindPhoneButton;
 
         if (resolvedJumpBindButton == null)
             resolvedJumpBindButton = FindSettingsButtonByNameOrText("Jump", "점프");
@@ -337,6 +348,12 @@ public class MainMenuController : MonoBehaviour
 
         if (resolvedPhoneBindButton == null)
             resolvedPhoneBindButton = FindSettingsButtonByNameOrText("Phone", "휴대폰", "PhoneUI");
+
+        if (resolvedStairUpBindButton == null)
+            resolvedStairUpBindButton = FindSettingsButtonByNameOrText("StairUp", "Stair Up", "Up", "계단 위", "위층");
+
+        if (resolvedStairDownBindButton == null)
+            resolvedStairDownBindButton = FindSettingsButtonByNameOrText("StairDown", "Stair Down", "Down", "계단 아래", "아래층");
     }
 
     private Button FindSettingsButtonByNameOrText(params string[] tokens)
@@ -353,6 +370,28 @@ public class MainMenuController : MonoBehaviour
             var text = buttons[i].GetComponentInChildren<TextMeshProUGUI>(true);
             if (text != null && HasAnyToken(text.text, tokens))
                 return buttons[i];
+        }
+
+        return null;
+    }
+
+    private GameObject FindObjectByNameOrToken(params string[] tokens)
+    {
+        if (tokens == null || tokens.Length == 0)
+            return null;
+
+        var all = GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < all.Length; i++)
+        {
+            string n = all[i].name;
+            for (int j = 0; j < tokens.Length; j++)
+            {
+                if (string.IsNullOrEmpty(tokens[j]))
+                    continue;
+
+                if (n.IndexOf(tokens[j], System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    return all[i].gameObject;
+            }
         }
 
         return null;

@@ -77,6 +77,10 @@ public class PixelPaintMinigameController : MonoBehaviour
 
     [Header("Flow")]
     public int penaltyOnGiveUp = 1;
+    [Tooltip("If true, all puzzles in list are played in one run.")]
+    public bool playAllPuzzlesInOneRun = true;
+    [Tooltip("Seconds to show solved picture before moving to next puzzle/end.")]
+    public float solvedPreviewSeconds = 1.0f;
 
     private static int sequentialCursor = 0;
 
@@ -89,9 +93,12 @@ public class PixelPaintMinigameController : MonoBehaviour
     private int selectedColor = 1;
     private bool ended;
     private bool solvedWaitForContinue;
+    private float solvedContinueAtUnscaledTime;
     private int activePuzzleIndex = -1;
     private string activePuzzleTitle = "";
     private Color[] defaultPalette;
+    private readonly List<int> sessionPuzzleOrder = new List<int>();
+    private int sessionPuzzleCursor;
 
     private Camera mainCam;
     private Sprite cellSprite;
@@ -114,8 +121,8 @@ public class PixelPaintMinigameController : MonoBehaviour
         public TextMeshPro label;
     }
 
-    private const float RuntimeNumberScale = 0.52f;
-    private static readonly Color RuntimeNumberColor = new Color(0.08f, 0.08f, 0.08f, 1f);
+    private const float RuntimeNumberScale = 0.38f;
+    private static readonly Color RuntimeNumberColor = new Color(0.08f, 0.08f, 0.08f, 0.58f);
     private static readonly Color RuntimeNumberOutlineColor = new Color(0f, 0f, 0f, 1f);
     private const float RuntimeNumberOutlineWidth = 0.0f;
     private const float RuntimeNumberOutlineSoftness = 0.0f;
@@ -137,6 +144,7 @@ public class PixelPaintMinigameController : MonoBehaviour
         EnsureNumberFont();
 
         EnsurePuzzlesOrFallback();
+        BuildSessionPuzzleOrder();
         SelectAndLoadPuzzle();
         EnsurePaletteCapacityForPuzzle();
         AutoFitBoardToCamera();
@@ -173,8 +181,9 @@ public class PixelPaintMinigameController : MonoBehaviour
 
         if (solvedWaitForContinue)
         {
-            if (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space))
-                End(true);
+            bool manualContinue = Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.Space);
+            if (manualContinue || Time.unscaledTime >= solvedContinueAtUnscaledTime)
+                ContinueAfterSolved();
             return;
         }
 
@@ -278,32 +287,79 @@ public class PixelPaintMinigameController : MonoBehaviour
 
     private void SelectAndLoadPuzzle()
     {
-        int count = puzzles.Count;
-        if (count <= 0)
+        if (sessionPuzzleOrder.Count <= 0)
+            BuildSessionPuzzleOrder();
+
+        if (sessionPuzzleOrder.Count <= 0)
             throw new InvalidOperationException("PixelPaint puzzle list is empty.");
 
-        switch (selectMode)
-        {
-            case PuzzleSelectMode.FixedIndex:
-                activePuzzleIndex = Mathf.Clamp(fixedPuzzleIndex, 0, count - 1);
-                break;
-
-            case PuzzleSelectMode.Random:
-                activePuzzleIndex = UnityEngine.Random.Range(0, count);
-                break;
-
-            case PuzzleSelectMode.SequentialLoop:
-            default:
-                activePuzzleIndex = Mathf.Abs(sequentialCursor) % count;
-                sequentialCursor++;
-                break;
-        }
+        sessionPuzzleCursor = Mathf.Clamp(sessionPuzzleCursor, 0, sessionPuzzleOrder.Count - 1);
+        activePuzzleIndex = sessionPuzzleOrder[sessionPuzzleCursor];
 
         ParsePuzzle(puzzles[activePuzzleIndex]);
         activePuzzleTitle = string.IsNullOrEmpty(puzzles[activePuzzleIndex].title)
             ? $"Puzzle {activePuzzleIndex + 1}"
             : puzzles[activePuzzleIndex].title;
         ApplyPuzzlePalette(puzzles[activePuzzleIndex]);
+    }
+
+    private void BuildSessionPuzzleOrder()
+    {
+        sessionPuzzleOrder.Clear();
+
+        int count = puzzles != null ? puzzles.Count : 0;
+        if (count <= 0)
+            return;
+
+        if (!playAllPuzzlesInOneRun)
+        {
+            sessionPuzzleOrder.Add(ResolveInitialPuzzleIndex(count));
+            sessionPuzzleCursor = 0;
+            return;
+        }
+
+        if (selectMode == PuzzleSelectMode.Random)
+        {
+            for (int i = 0; i < count; i++)
+                sessionPuzzleOrder.Add(i);
+
+            for (int i = sessionPuzzleOrder.Count - 1; i > 0; i--)
+            {
+                int j = UnityEngine.Random.Range(0, i + 1);
+                int tmp = sessionPuzzleOrder[i];
+                sessionPuzzleOrder[i] = sessionPuzzleOrder[j];
+                sessionPuzzleOrder[j] = tmp;
+            }
+        }
+        else
+        {
+            int start = ResolveInitialPuzzleIndex(count);
+            for (int i = 0; i < count; i++)
+                sessionPuzzleOrder.Add((start + i) % count);
+        }
+
+        sessionPuzzleCursor = 0;
+    }
+
+    private int ResolveInitialPuzzleIndex(int count)
+    {
+        if (count <= 0)
+            return 0;
+
+        switch (selectMode)
+        {
+            case PuzzleSelectMode.FixedIndex:
+                return Mathf.Clamp(fixedPuzzleIndex, 0, count - 1);
+
+            case PuzzleSelectMode.Random:
+                return UnityEngine.Random.Range(0, count);
+
+            case PuzzleSelectMode.SequentialLoop:
+            default:
+                int index = Mathf.Abs(sequentialCursor) % count;
+                sequentialCursor++;
+                return index;
+        }
     }
 
     private void ApplyPuzzlePalette(PixelPaintPuzzleDefinition puzzle)
@@ -495,7 +551,7 @@ public class PixelPaintMinigameController : MonoBehaviour
                 textGo.transform.SetParent(root.transform, false);
                 var number = textGo.AddComponent<TextMeshPro>();
                 number.alignment = TextAlignmentOptions.Center;
-                number.fontSize = Mathf.Clamp(cellSize * 55f, 4f, 24f);
+                number.fontSize = Mathf.Clamp(cellSize * 38f, 4f, 18f);
                 number.fontStyle = FontStyles.Bold;
                 number.sortingOrder = 12;
                 ApplyRuntimeNumberStyle(number);
@@ -921,14 +977,23 @@ public class PixelPaintMinigameController : MonoBehaviour
         if (paint <= 0)
         {
             v.fill.color = Color.white;
-            if (v.label != null) v.label.enabled = true;
+            if (v.label != null)
+            {
+                v.label.enabled = true;
+                v.label.color = new Color(RuntimeNumberColor.r, RuntimeNumberColor.g, RuntimeNumberColor.b, 0.58f);
+            }
             if (v.edge != null) v.edge.enabled = true;
             return;
         }
 
         int idx = Mathf.Clamp(paint - 1, 0, palette.Length - 1);
         v.fill.color = palette[idx];
-        if (v.label != null) v.label.enabled = false;
+        if (v.label != null)
+        {
+            // Keep number visible after painting so player can verify target color index.
+            v.label.enabled = true;
+            v.label.color = new Color(RuntimeNumberColor.r, RuntimeNumberColor.g, RuntimeNumberColor.b, 0.40f);
+        }
         if (v.edge != null) v.edge.enabled = true;
     }
 
@@ -950,8 +1015,60 @@ public class PixelPaintMinigameController : MonoBehaviour
         if (solvedWaitForContinue || ended) return;
 
         solvedWaitForContinue = true;
+        solvedContinueAtUnscaledTime = Time.unscaledTime + Mathf.Max(0.05f, solvedPreviewSeconds);
+        FitCameraToBoardOverview();
         HideBoardOutlinesAndNumbers();
-        RefreshHeader(L("MINIGAME_PIXELPAINT_COMPLETED", "완성! 클릭해서 계속 진행", "Completed! Click to continue."));
+        RefreshHeader(L("MINIGAME_PIXELPAINT_COMPLETED", "완성! 잠시 후 다음 퍼즐", "Completed! Moving to next puzzle."));
+    }
+
+    private void ContinueAfterSolved()
+    {
+        if (!solvedWaitForContinue || ended)
+            return;
+
+        solvedWaitForContinue = false;
+
+        bool hasNext = sessionPuzzleCursor + 1 < sessionPuzzleOrder.Count;
+        if (!hasNext)
+        {
+            End(true);
+            return;
+        }
+
+        sessionPuzzleCursor++;
+        SelectAndLoadPuzzle();
+        EnsurePaletteCapacityForPuzzle();
+        AutoFitBoardToCamera();
+        ClearBoardVisuals();
+        BuildBoardVisuals();
+
+        // Palette size can change per puzzle.
+        CleanupRuntimeUI();
+        BuildRuntimeUI();
+
+        selectedColor = 1;
+        RefreshHeader();
+        RefreshPaletteUI();
+    }
+
+    private void FitCameraToBoardOverview()
+    {
+        if (mainCam == null || !mainCam.orthographic || width <= 0 || height <= 0)
+            return;
+
+        float ratio = Mathf.Clamp(fitRatio, 0.5f, 0.98f);
+        float boardWorldWidth = width * cellSize;
+        float boardWorldHeight = height * cellSize;
+
+        float sizeByHeight = boardWorldHeight / (2f * ratio);
+        float sizeByWidth = boardWorldWidth / (2f * Mathf.Max(0.01f, mainCam.aspect) * ratio);
+        float targetSize = Mathf.Max(sizeByHeight, sizeByWidth);
+
+        Vector3 camPos = mainCam.transform.position;
+        camPos.x = boardOrigin.x + (boardWorldWidth * 0.5f);
+        camPos.y = boardOrigin.y + (boardWorldHeight * 0.5f);
+        mainCam.transform.position = camPos;
+        mainCam.orthographicSize = Mathf.Clamp(targetSize, minOrthoSize, maxOrthoSize);
     }
 
     private void HideBoardOutlinesAndNumbers()
@@ -998,6 +1115,14 @@ public class PixelPaintMinigameController : MonoBehaviour
             Destroy(uiCanvas.gameObject);
             uiCanvas = null;
         }
+    }
+
+    private void ClearBoardVisuals()
+    {
+        views = null;
+
+        for (int i = transform.childCount - 1; i >= 0; i--)
+            Destroy(transform.GetChild(i).gameObject);
     }
 
     private void OnLanguageChanged(Language _)

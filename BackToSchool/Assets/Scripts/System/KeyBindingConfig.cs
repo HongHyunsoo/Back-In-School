@@ -9,6 +9,8 @@ public static class KeyBindingConfig
     public const string UpKey = "INPUT_UP";
     public const string InteractKey = "INPUT_INTERACT";
     public const string PhoneKey = "INPUT_PHONE";
+    public const string StairUpKey = "INPUT_STAIR_UP";
+    public const string StairDownKey = "INPUT_STAIR_DOWN";
 
     public static KeyCode Get(string key, KeyCode fallback)
     {
