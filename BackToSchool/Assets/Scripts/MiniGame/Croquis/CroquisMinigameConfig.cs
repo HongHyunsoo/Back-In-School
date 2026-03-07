@@ -47,6 +47,8 @@ public class CroquisMinigameConfig : ScriptableObject
 
     [Header("Teacher Bubble")]
     public GameObject teacherBubblePrefab;
+    [Tooltip("Conversation_ID in Conversations.csv (ex: D1_CLASS1_MINIGAME). If found, this is used first.")]
+    public string teacherConversationId = "D1_CLASS1_MINIGAME";
     public string[] teacherLineKeys = new[]
     {
         "MINIGAME_CROQUIS_TEACHER_01","MINIGAME_CROQUIS_TEACHER_02","MINIGAME_CROQUIS_TEACHER_03","MINIGAME_CROQUIS_TEACHER_04","MINIGAME_CROQUIS_TEACHER_05",

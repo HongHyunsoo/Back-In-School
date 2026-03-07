@@ -21,6 +21,7 @@ public class MapDayLayoutGroup : MonoBehaviour
     [SerializeField] private bool hideAllWhenNoMatch = false;
 
     private int _lastAppliedDay = -1;
+    private GameManager _cachedGameManager;
 
     private void OnEnable()
     {
@@ -45,6 +46,7 @@ public class MapDayLayoutGroup : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        _cachedGameManager = null;
         RefreshNow();
     }
 
@@ -56,7 +58,12 @@ public class MapDayLayoutGroup : MonoBehaviour
 
     private int ResolveCurrentDay()
     {
-        GameManager gm = FindAnyObjectByType<GameManager>();
+        GameManager gm = _cachedGameManager;
+        if (gm == null)
+        {
+            gm = FindAnyObjectByType<GameManager>();
+            _cachedGameManager = gm;
+        }
 
         if (gm == null)
             return 1;

@@ -21,9 +21,7 @@ public class ChatRoomDetailUI : MonoBehaviour
     [SerializeField] private Transform contentRoot;
     [SerializeField] private ChatMessageItem msgOtherPrefab;
     [SerializeField] private ChatMessageItem msgMePrefab;
-    [SerializeField] private float bottomSafeScrollOffset = 22f;
     [SerializeField] private int messageSpacing = 6;
-    [SerializeField] private int contentHorizontalPadding = 0;
     [SerializeField] private int contentBottomPadding = 96;
 
     [Header("Send")]
@@ -68,7 +66,6 @@ public class ChatRoomDetailUI : MonoBehaviour
         EnsureScrollRectStableSettings();
         EnsureContentRootBinding();
         SanitizeChatContentRect();
-        NormalizeContentRectForScroll();
         EnsureViewportIsValid();
         if (btnBack) btnBack.onClick.AddListener(OnBack);
         if (btnSendNext) btnSendNext.onClick.AddListener(OnSendNext);
@@ -110,7 +107,6 @@ public class ChatRoomDetailUI : MonoBehaviour
         EnsureScrollRectStableSettings();
         EnsureContentRootBinding();
         SanitizeChatContentRect();
-        NormalizeContentRectForScroll();
         EnsureViewportIsValid();
 
         if (LocalizationManager.Instance == null)
@@ -395,7 +391,6 @@ public class ChatRoomDetailUI : MonoBehaviour
     private void SpawnMessage(DialogueLine line, bool isMe)
     {
         EnsureContentRootBinding();
-        NormalizeContentRectForScroll();
 
         if (contentRoot == null) { Debug.LogError("[ChatUI] contentRoot null"); return; }
 
@@ -583,11 +578,6 @@ public class ChatRoomDetailUI : MonoBehaviour
             p.bottom = contentBottomPadding;
             vlg.padding = p;
         }
-    }
-
-    private void NormalizeContentRectForScroll()
-    {
-        // Keep prefab-authored anchors/pivot and layout untouched.
     }
 
     private void EnsureScrollRectStableSettings()

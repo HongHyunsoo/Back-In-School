@@ -57,6 +57,7 @@ public class CroquisMinigameController : MonoBehaviour
 
     [Header("Teacher Bubble")]
     public GameObject teacherBubblePrefab;
+    public string teacherConversationId = "D1_CLASS1_MINIGAME";
     public string[] teacherLineKeys = new[]
     {
         "MINIGAME_CROQUIS_TEACHER_01","MINIGAME_CROQUIS_TEACHER_02","MINIGAME_CROQUIS_TEACHER_03","MINIGAME_CROQUIS_TEACHER_04","MINIGAME_CROQUIS_TEACHER_05",
@@ -134,6 +135,7 @@ public class CroquisMinigameController : MonoBehaviour
     private float bubbleTimer;
     private float bubbleHideTimer;
     private int lastBubbleIndex = -1;
+    private readonly System.Collections.Generic.List<DialogueLine> teacherConversationLines = new();
     private RectTransform bubbleRootRect;
     private Vector2 bubbleDefaultAnchoredPos;
     private bool stageTransitionPending;
@@ -170,6 +172,7 @@ public class CroquisMinigameController : MonoBehaviour
         SpawnNextPrompt();
         ResetBubbleTimer();
         RefreshStatus();
+        ReloadTeacherConversationLines();
 
         if (LocalizationManager.Instance != null)
             LocalizationManager.Instance.OnLanguageChanged += OnLanguageChanged;
@@ -725,15 +728,14 @@ public class CroquisMinigameController : MonoBehaviour
 
     private void ShowRandomBubble()
     {
-        int count = Mathf.Min(20, Mathf.Min(teacherLineKeys.Length, teacherFallbackEN.Length));
+        int count = GetTeacherLineCount();
         if (count <= 0) return;
 
         int idx = rng.Next(0, count);
         lastBubbleIndex = idx;
 
-        string key = teacherLineKeys[idx];
-        string line = L(key, teacherFallbackEN[idx]);
-        string prefix = L("MINIGAME_CROQUIS_TEACHER_PREFIX", "Teacher");
+        string line = ResolveTeacherLineAt(idx);
+        string prefix = ResolveTeacherPrefixAt(idx);
 
         PlaceBubbleOnPaperRandom();
 
@@ -799,14 +801,72 @@ public class CroquisMinigameController : MonoBehaviour
 
     private void OnLanguageChanged(Language _)
     {
+        ReloadTeacherConversationLines();
         RefreshStatus();
-        if (bubbleText != null && bubbleText.enabled && lastBubbleIndex >= 0 && lastBubbleIndex < teacherLineKeys.Length)
+        if (bubbleText != null && bubbleText.enabled && lastBubbleIndex >= 0 && lastBubbleIndex < GetTeacherLineCount())
         {
-            string key = teacherLineKeys[lastBubbleIndex];
-            string line = L(key, teacherFallbackEN[lastBubbleIndex]);
-            string prefix = L("MINIGAME_CROQUIS_TEACHER_PREFIX", "Teacher");
+            string line = ResolveTeacherLineAt(lastBubbleIndex);
+            string prefix = ResolveTeacherPrefixAt(lastBubbleIndex);
             bubbleText.text = $"{prefix}: {line}";
         }
+    }
+
+    private void ReloadTeacherConversationLines()
+    {
+        teacherConversationLines.Clear();
+
+        if (LocalizationManager.Instance == null || string.IsNullOrEmpty(teacherConversationId))
+            return;
+
+        var lines = LocalizationManager.Instance.GetConversation(teacherConversationId);
+        if (lines == null || lines.Count == 0)
+            return;
+
+        for (int i = 0; i < lines.Count; i++)
+        {
+            if (lines[i] == null || string.IsNullOrEmpty(lines[i].lineID))
+                continue;
+            teacherConversationLines.Add(lines[i]);
+        }
+    }
+
+    private int GetTeacherLineCount()
+    {
+        if (teacherConversationLines.Count > 0)
+            return teacherConversationLines.Count;
+
+        return Mathf.Min(20, Mathf.Min(teacherLineKeys.Length, teacherFallbackEN.Length));
+    }
+
+    private string ResolveTeacherLineAt(int idx)
+    {
+        if (teacherConversationLines.Count > 0)
+        {
+            int safe = Mathf.Clamp(idx, 0, teacherConversationLines.Count - 1);
+            var line = teacherConversationLines[safe];
+            return L(line.lineID, line.lineID);
+        }
+
+        int legacySafe = Mathf.Clamp(idx, 0, Mathf.Min(teacherLineKeys.Length, teacherFallbackEN.Length) - 1);
+        string key = teacherLineKeys[legacySafe];
+        return L(key, teacherFallbackEN[legacySafe]);
+    }
+
+    private string ResolveTeacherPrefixAt(int idx)
+    {
+        if (teacherConversationLines.Count > 0)
+        {
+            int safe = Mathf.Clamp(idx, 0, teacherConversationLines.Count - 1);
+            string speakerId = teacherConversationLines[safe].speakerID;
+            if (LocalizationManager.Instance != null && !string.IsNullOrEmpty(speakerId))
+            {
+                string localizedName = LocalizationManager.Instance.GetName(speakerId);
+                if (!string.IsNullOrEmpty(localizedName) && localizedName != speakerId)
+                    return localizedName;
+            }
+        }
+
+        return L("MINIGAME_CROQUIS_TEACHER_PREFIX", "Teacher");
     }
 
     private Vector2 MouseWorld()
@@ -1030,6 +1090,9 @@ public class CroquisMinigameController : MonoBehaviour
         if (!overrideTeacherBubble)
         {
             teacherBubblePrefab = config.teacherBubblePrefab;
+            teacherConversationId = string.IsNullOrEmpty(config.teacherConversationId)
+                ? teacherConversationId
+                : config.teacherConversationId;
             teacherLineKeys = CloneOrFallback(config.teacherLineKeys, teacherLineKeys);
             bubbleMinInterval = config.bubbleMinInterval;
             bubbleMaxInterval = config.bubbleMaxInterval;

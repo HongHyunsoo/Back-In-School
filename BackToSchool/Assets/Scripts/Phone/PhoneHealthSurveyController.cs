@@ -17,6 +17,9 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class PhoneHealthSurveyController : MonoBehaviour
 {
+    [Header("Bubble Template (Optional)")]
+    [SerializeField] private SpeechBubbleUI warningBubbleTemplate;
+
     private GameObject healthPanel;
     private GameObject questionPage;
     private GameObject surmitPage;
@@ -33,6 +36,9 @@ public class PhoneHealthSurveyController : MonoBehaviour
     private TextMeshProUGUI warningNameText;
     private TextMeshProUGUI warningBodyText;
     private Coroutine warningRoutine;
+    private GameManager cachedGameManager;
+    private Camera cachedWorldCamera;
+    private DialogueManager cachedDialogueManager;
 
     private const string WarningMessage = "\uC624\uB298 \uC544\uCE68\uBD80\uD130 \uBCF4\uAC74\uC30C\uC774\uB791 \uBA74\uB2F4\uD558\uACE0 \uC2F6\uC740 \uAC8C \uC544\uB2C8\uB77C\uBA74 \uB2E4\uC2DC \uCCB4\uD06C\uD574\uC57C \uD560 \uAC70\uC57C";
 
@@ -324,7 +330,15 @@ public class PhoneHealthSurveyController : MonoBehaviour
 
     private SpeechBubbleUI TryGetDialogBoxTemplateFromDialogueManager()
     {
-        var dm = FindAnyObjectByType<DialogueManager>();
+        if (warningBubbleTemplate != null)
+            return warningBubbleTemplate;
+
+        var dm = cachedDialogueManager;
+        if (dm == null)
+        {
+            dm = FindAnyObjectByType<DialogueManager>();
+            cachedDialogueManager = dm;
+        }
         if (dm == null) return null;
 
         // Try to read private serialized field: speechBubblePrefab
@@ -375,11 +389,25 @@ public class PhoneHealthSurveyController : MonoBehaviour
         var canvas = parentRect.GetComponentInParent<Canvas>();
         Camera uiCam = (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay) ? canvas.worldCamera : null;
         var world = sceneRobotTransform.position + new Vector3(0f, 1.2f, 0f);
-        var worldCam = Camera.main != null ? Camera.main : FindAnyObjectByType<Camera>();
+        var worldCam = GetWorldCamera();
         if (worldCam == null) return;
         Vector2 screen = RectTransformUtility.WorldToScreenPoint(worldCam, world);
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, screen, uiCam, out var local))
             warningBubbleRoot.anchoredPosition = local + new Vector2(0f, 20f);
+    }
+
+    private Camera GetWorldCamera()
+    {
+        if (Camera.main != null)
+        {
+            cachedWorldCamera = Camera.main;
+            return cachedWorldCamera;
+        }
+
+        if (cachedWorldCamera == null)
+            cachedWorldCamera = FindAnyObjectByType<Camera>();
+
+        return cachedWorldCamera;
     }
 
     private Transform FindSceneRobotTransform()
@@ -427,7 +455,12 @@ public class PhoneHealthSurveyController : MonoBehaviour
         if (FlowManager.Instance != null)
             return FlowManager.Instance.day;
 
-        var gm = FindAnyObjectByType<GameManager>();
+        var gm = cachedGameManager;
+        if (gm == null)
+        {
+            gm = FindAnyObjectByType<GameManager>();
+            cachedGameManager = gm;
+        }
         if (gm != null)
             return gm.currentDay;
 

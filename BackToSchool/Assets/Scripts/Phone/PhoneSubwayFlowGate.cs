@@ -15,6 +15,9 @@ using UnityEngine.UI;
 /// </summary>
 public class PhoneSubwayFlowGate : MonoBehaviour
 {
+    [Header("Bubble Template (Optional)")]
+    [SerializeField] private SpeechBubbleUI warningBubbleTemplate;
+
     private static readonly HashSet<int> healthCheckedDays = new();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -34,6 +37,9 @@ public class PhoneSubwayFlowGate : MonoBehaviour
     private Coroutine messageRoutine;
     private bool isProcessingPower;
     private PhoneAppManager phoneAppManager;
+    private GameManager cachedGameManager;
+    private Camera cachedWorldCamera;
+    private DialogueManager cachedDialogueManager;
 
     private void Start()
     {
@@ -205,7 +211,12 @@ public class PhoneSubwayFlowGate : MonoBehaviour
         if (FlowManager.Instance != null)
             return FlowManager.Instance.day;
 
-        var gm = FindAnyObjectByType<GameManager>();
+        var gm = cachedGameManager;
+        if (gm == null)
+        {
+            gm = FindAnyObjectByType<GameManager>();
+            cachedGameManager = gm;
+        }
         if (gm != null)
             return gm.currentDay;
 
@@ -362,13 +373,27 @@ public class PhoneSubwayFlowGate : MonoBehaviour
         var canvas = parentRect.GetComponentInParent<Canvas>();
         Camera uiCam = (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay) ? canvas.worldCamera : null;
 
-        var worldCam = Camera.main != null ? Camera.main : FindAnyObjectByType<Camera>();
+        var worldCam = GetWorldCamera();
         if (worldCam == null) return;
 
         Vector3 world = sceneRobotTransform.position + new Vector3(0f, 1.2f, 0f);
         Vector2 screen = RectTransformUtility.WorldToScreenPoint(worldCam, world);
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, screen, uiCam, out var local))
             warningBubbleRoot.anchoredPosition = local + new Vector2(0f, 20f);
+    }
+
+    private Camera GetWorldCamera()
+    {
+        if (Camera.main != null)
+        {
+            cachedWorldCamera = Camera.main;
+            return cachedWorldCamera;
+        }
+
+        if (cachedWorldCamera == null)
+            cachedWorldCamera = FindAnyObjectByType<Camera>();
+
+        return cachedWorldCamera;
     }
 
     private Transform FindSceneRobotTransform()
@@ -410,7 +435,15 @@ public class PhoneSubwayFlowGate : MonoBehaviour
 
     private SpeechBubbleUI TryGetDialogBoxTemplateFromDialogueManager()
     {
-        var dm = FindAnyObjectByType<DialogueManager>();
+        if (warningBubbleTemplate != null)
+            return warningBubbleTemplate;
+
+        var dm = cachedDialogueManager;
+        if (dm == null)
+        {
+            dm = FindAnyObjectByType<DialogueManager>();
+            cachedDialogueManager = dm;
+        }
         if (dm == null) return null;
 
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
