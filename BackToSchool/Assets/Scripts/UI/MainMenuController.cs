@@ -123,6 +123,7 @@ public class MainMenuController : MonoBehaviour
             masterVolumeSlider.onValueChanged.AddListener(v => AudioListener.volume = v);
         }
 
+        RefreshLocalizedStaticLabels();
         RefreshLanguageLabel();
         RefreshBindingLabels();
         SetInfo("");
@@ -303,8 +304,18 @@ public class MainMenuController : MonoBehaviour
 
     private void OnLanguageChanged(Language _)
     {
+        RefreshLocalizedStaticLabels();
         RefreshLanguageLabel();
         RefreshBindingLabels();
+    }
+
+    private void RefreshLocalizedStaticLabels()
+    {
+        SetButtonText(startButton, LK("UI_START", "시작하기", "Start"));
+        SetButtonText(settingsButton, LK("UI_SETTING", "설정", "Settings"));
+        SetButtonText(challengeButton, LK("UI_ACHIEVE", "도전과제", "Achievements"));
+        SetButtonText(quitButton, LK("UI_QUIT", "나가기", "Quit"));
+        SetButtonText(backButton, LK("UI_BACK", "뒤로가기", "Back"));
     }
 
     private string L(string ko, string en)
@@ -313,6 +324,18 @@ public class MainMenuController : MonoBehaviour
             return ko;
 
         return LocalizationManager.Instance.GetCurrentLanguage() == Language.Korean ? ko : en;
+    }
+
+    private string LK(string key, string fallbackKo, string fallbackEn)
+    {
+        if (LocalizationManager.Instance == null)
+            return L(fallbackKo, fallbackEn);
+
+        string value = LocalizationManager.Instance.GetLine(key);
+        if (string.IsNullOrEmpty(value) || value == key)
+            return L(fallbackKo, fallbackEn);
+
+        return value;
     }
 
     private bool ShouldToggleMainPanelForSettings()

@@ -24,7 +24,8 @@ public class MapTransitionPortal : MonoBehaviour
     {
         TeleportInSameScene,
         LoadAnotherScene,
-        StairChoice
+        StairChoice,
+        InteractInSameScene
     }
 
     [Header("Mode")]
@@ -35,13 +36,17 @@ public class MapTransitionPortal : MonoBehaviour
     public bool requireInteractKey;
     public GameObject interactPrompt;
     [SerializeField] private TMP_Text interactKeyText;
+    [SerializeField] private TMP_FontAsset promptFontAsset;
+    [SerializeField] private bool autoCreatePromptTextWhenMissing = true;
     [SerializeField] private string interactKeyFormat = "[{0}]";
     [SerializeField] private TMP_Text stairUpKeyText;
     [SerializeField] private string stairUpKeyFormat = "[{0}] UP";
     [SerializeField] private TMP_Text stairDownKeyText;
     [SerializeField] private string stairDownKeyFormat = "[{0}] DOWN";
+    [SerializeField] private bool useUnifiedPromptStyle = true;
     [SerializeField] private float promptFontSize = 1.4f;
     [SerializeField] private float promptWorldScale = 0.08f;
+    [SerializeField] private bool forceEKeyForInteractInSameScene = true;
 
     [Header("Destination (Same Scene)")]
     [Tooltip("Direct target transform for same-scene teleport.")]
@@ -76,6 +81,7 @@ public class MapTransitionPortal : MonoBehaviour
     private KeyCode lastInteractKey = KeyCode.None;
     private KeyCode lastStairUpKey = KeyCode.None;
     private KeyCode lastStairDownKey = KeyCode.None;
+    private static TMP_FontAsset cachedPromptFont;
 
     private static bool hookInstalled;
     private static bool hasPendingSpawn;
@@ -179,10 +185,13 @@ public class MapTransitionPortal : MonoBehaviour
         var col = GetComponent<Collider2D>();
         if (col != null && !col.isTrigger)
             col.isTrigger = true;
+
+        EnsurePromptBinding();
     }
 
     private void Start()
     {
+        EnsurePromptBinding();
         if (interactPrompt != null)
             interactPrompt.SetActive(false);
 
@@ -229,13 +238,13 @@ public class MapTransitionPortal : MonoBehaviour
             return;
         }
 
-        bool needsInteractKey = requireInteractKey || mode == TransitionMode.StairChoice;
+        bool needsInteractKey = requireInteractKey || mode == TransitionMode.StairChoice || mode == TransitionMode.InteractInSameScene;
         if (needsInteractKey)
         {
             if (interactPrompt != null)
                 interactPrompt.SetActive(true);
 
-            KeyCode interactKey = KeyBindingConfig.Get(KeyBindingConfig.InteractKey, KeyCode.E);
+            KeyCode interactKey = GetPortalInteractKey();
             if (Input.GetKeyDown(interactKey))
                 BeginTransition();
         }
@@ -282,6 +291,10 @@ public class MapTransitionPortal : MonoBehaviour
                 TeleportInSameScene();
                 break;
 
+            case TransitionMode.InteractInSameScene:
+                TeleportInSameScene();
+                break;
+
             case TransitionMode.LoadAnotherScene:
                 StartCoroutine(CoLoadAnotherScene());
                 break;
@@ -299,9 +312,15 @@ public class MapTransitionPortal : MonoBehaviour
 
     private void RefreshPromptTexts(bool force = false)
     {
-        KeyCode interactKey = KeyBindingConfig.Get(KeyBindingConfig.InteractKey, KeyCode.E);
+        KeyCode interactKey = GetPortalInteractKey();
         KeyCode stairUpKey = KeyBindingConfig.Get(KeyBindingConfig.StairUpKey, KeyCode.W);
         KeyCode stairDownKey = KeyBindingConfig.Get(KeyBindingConfig.StairDownKey, KeyCode.S);
+        bool isStairMode = mode == TransitionMode.StairChoice;
+
+        if (stairUpKeyText != null)
+            stairUpKeyText.gameObject.SetActive(isStairMode);
+        if (stairDownKeyText != null)
+            stairDownKeyText.gameObject.SetActive(isStairMode);
 
         if (force || interactKey != lastInteractKey)
         {
@@ -313,7 +332,7 @@ public class MapTransitionPortal : MonoBehaviour
             }
         }
 
-        if (force || stairUpKey != lastStairUpKey)
+        if (isStairMode && (force || stairUpKey != lastStairUpKey))
         {
             lastStairUpKey = stairUpKey;
             if (stairUpKeyText != null)
@@ -323,7 +342,7 @@ public class MapTransitionPortal : MonoBehaviour
             }
         }
 
-        if (force || stairDownKey != lastStairDownKey)
+        if (isStairMode && (force || stairDownKey != lastStairDownKey))
         {
             lastStairDownKey = stairDownKey;
             if (stairDownKeyText != null)
@@ -347,22 +366,13 @@ public class MapTransitionPortal : MonoBehaviour
         if (text == null)
             return;
 
+        ApplyPromptFont(text);
         text.enableWordWrapping = false;
         text.overflowMode = TextOverflowModes.Overflow;
-        text.fontSize = promptFontSize;
-
-        float worldScale = Mathf.Max(0.01f, promptWorldScale);
-        Transform parent = text.transform.parent;
-        if (parent == null)
-        {
-            text.transform.localScale = Vector3.one * worldScale;
-            return;
-        }
-
-        Vector3 parentScale = parent.lossyScale;
-        float sx = Mathf.Abs(parentScale.x) > 0.0001f ? worldScale / Mathf.Abs(parentScale.x) : worldScale;
-        float sy = Mathf.Abs(parentScale.y) > 0.0001f ? worldScale / Mathf.Abs(parentScale.y) : worldScale;
-        text.transform.localScale = new Vector3(sx, sy, 1f);
+        float fontSize = useUnifiedPromptStyle ? InteractionPromptStyle.DefaultFontSize : promptFontSize;
+        float worldScale = useUnifiedPromptStyle ? InteractionPromptStyle.DefaultWorldScale : promptWorldScale;
+        text.fontSize = fontSize;
+        InteractionPromptStyle.ApplyWorldTextScale(text, worldScale);
     }
 
     private void HandleStairChoiceInput()
@@ -378,7 +388,7 @@ public class MapTransitionPortal : MonoBehaviour
         bool upPressed = Input.GetKeyDown(upKey);
         bool downPressed = Input.GetKeyDown(downKey);
         bool cancelPressed = Input.GetKeyDown(KeyCode.Escape) ||
-                             Input.GetKeyDown(KeyBindingConfig.Get(KeyBindingConfig.InteractKey, KeyCode.E));
+                             Input.GetKeyDown(GetPortalInteractKey());
 
         if (cancelPressed)
         {
@@ -398,6 +408,103 @@ public class MapTransitionPortal : MonoBehaviour
             awaitingStairChoice = false;
             ExecuteStairDestination(stairDown);
         }
+    }
+
+    private void EnsurePromptBinding()
+    {
+        if (interactPrompt == null)
+            return;
+
+        if (interactKeyText == null)
+            interactKeyText = interactPrompt.GetComponentInChildren<TMP_Text>(true);
+
+        if (interactKeyText == null && autoCreatePromptTextWhenMissing)
+        {
+            var go = new GameObject("__AutoInteractKeyText", typeof(TextMeshPro));
+            go.transform.SetParent(interactPrompt.transform, false);
+            go.transform.localPosition = Vector3.zero;
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = Vector3.one;
+
+            var tmp = go.GetComponent<TextMeshPro>();
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.enableWordWrapping = false;
+            tmp.overflowMode = TextOverflowModes.Overflow;
+            interactKeyText = tmp;
+        }
+
+        ApplyPromptFont(interactKeyText);
+        ApplyPromptFont(stairUpKeyText);
+        ApplyPromptFont(stairDownKeyText);
+    }
+
+    private void ApplyPromptFont(TMP_Text text)
+    {
+        if (text == null)
+            return;
+
+        TMP_FontAsset font = ResolvePromptFont(text);
+        if (font == null)
+            return;
+
+        text.font = font;
+
+        if (text is TextMeshPro worldText && font.material != null)
+            worldText.fontSharedMaterial = font.material;
+    }
+
+    private TMP_FontAsset ResolvePromptFont(TMP_Text current)
+    {
+        if (promptFontAsset != null)
+            return promptFontAsset;
+
+        if (cachedPromptFont != null)
+            return cachedPromptFont;
+
+        TMP_FontAsset[] loaded = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
+        for (int i = 0; i < loaded.Length; i++)
+        {
+            TMP_FontAsset f = loaded[i];
+            if (f == null || string.IsNullOrEmpty(f.name))
+                continue;
+
+            if (f.name.Equals("Galmuri11-Bold SDF", System.StringComparison.OrdinalIgnoreCase) ||
+                f.name.IndexOf("Galmuri11-Bold", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                cachedPromptFont = f;
+                return f;
+            }
+        }
+
+        TMP_Text[] texts = Resources.FindObjectsOfTypeAll<TMP_Text>();
+        for (int i = 0; i < texts.Length; i++)
+        {
+            TMP_Text t = texts[i];
+            if (t == null || t.font == null || string.IsNullOrEmpty(t.font.name))
+                continue;
+
+            string n = t.font.name;
+            if (n.Equals("Galmuri11-Bold SDF", System.StringComparison.OrdinalIgnoreCase) ||
+                n.IndexOf("Galmuri11-Bold", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                cachedPromptFont = t.font;
+                return cachedPromptFont;
+            }
+        }
+
+        if (current != null && current.font != null)
+            return current.font;
+
+        cachedPromptFont = TMP_Settings.defaultFontAsset;
+        return cachedPromptFont;
+    }
+
+    private KeyCode GetPortalInteractKey()
+    {
+        if (mode == TransitionMode.InteractInSameScene && forceEKeyForInteractInSameScene)
+            return KeyCode.E;
+
+        return KeyBindingConfig.Get(KeyBindingConfig.InteractKey, KeyCode.E);
     }
 
     private void ExecuteStairDestination(StairDestination destination)

@@ -393,7 +393,12 @@ public class PhoneHealthSurveyController : MonoBehaviour
         if (worldCam == null) return;
         Vector2 screen = RectTransformUtility.WorldToScreenPoint(worldCam, world);
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, screen, uiCam, out var local))
-            warningBubbleRoot.anchoredPosition = local + new Vector2(0f, 20f);
+        {
+            Vector2 target = local + new Vector2(0f, 20f);
+            target.x = Mathf.Round(target.x);
+            target.y = Mathf.Round(target.y);
+            warningBubbleRoot.anchoredPosition = target;
+        }
     }
 
     private Camera GetWorldCamera()

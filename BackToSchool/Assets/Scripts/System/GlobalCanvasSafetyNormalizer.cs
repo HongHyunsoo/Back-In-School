@@ -9,11 +9,16 @@ using UnityEngine.UI;
 public class GlobalCanvasSafetyNormalizer : MonoBehaviour
 {
     private static GlobalCanvasSafetyNormalizer instance;
+    private float nextScanTime;
 
     [Header("Defaults")]
     public Vector2 referenceResolution = new Vector2(1920f, 1080f);
     [Range(0f, 1f)] public float matchWidthOrHeight = 0.5f;
     public bool forceScaleWithScreenSize = true;
+
+    [Header("Late Spawn Scan")]
+    public bool normalizeLateSpawnedCanvases = false;
+    [Min(0.1f)] public float lateScanInterval = 0.5f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Bootstrap()
@@ -38,6 +43,20 @@ public class GlobalCanvasSafetyNormalizer : MonoBehaviour
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         NormalizeSceneCanvases(scene);
+        NormalizeAllCanvases();
+        nextScanTime = Time.unscaledTime + lateScanInterval;
+    }
+
+    private void Update()
+    {
+        if (!normalizeLateSpawnedCanvases)
+            return;
+
+        if (Time.unscaledTime < nextScanTime)
+            return;
+
+        nextScanTime = Time.unscaledTime + lateScanInterval;
+        NormalizeAllCanvases();
     }
 
     private void NormalizeSceneCanvases(Scene scene)
@@ -47,32 +66,47 @@ public class GlobalCanvasSafetyNormalizer : MonoBehaviour
         {
             var canvases = roots[i].GetComponentsInChildren<Canvas>(true);
             for (int j = 0; j < canvases.Length; j++)
-            {
-                var canvas = canvases[j];
-                if (canvas == null) continue;
+                NormalizeCanvas(canvases[j]);
+        }
+    }
 
-                if (canvas.gameObject.name == "__SceneTransitionFader")
-                    continue;
+    private void NormalizeAllCanvases()
+    {
+        var canvases = FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < canvases.Length; i++)
+            NormalizeCanvas(canvases[i]);
+    }
 
-                if (canvas.renderMode == RenderMode.WorldSpace)
-                    continue;
+    private void NormalizeCanvas(Canvas canvas)
+    {
+        if (canvas == null)
+            return;
 
-                var rt = canvas.transform as RectTransform;
-                if (rt != null && rt.localScale != Vector3.one)
-                    rt.localScale = Vector3.one;
+        if (canvas.gameObject.name == "__SceneTransitionFader")
+            return;
 
-                var scaler = canvas.GetComponent<CanvasScaler>();
-                if (scaler == null) continue;
+        if (canvas.renderMode == RenderMode.WorldSpace)
+            return;
 
-                if (forceScaleWithScreenSize)
-                    scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        var rt = canvas.transform as RectTransform;
+        if (rt != null && rt.localScale != Vector3.one)
+            rt.localScale = Vector3.one;
 
-                if (scaler.uiScaleMode == CanvasScaler.ScaleMode.ScaleWithScreenSize)
-                {
-                    scaler.referenceResolution = referenceResolution;
-                    scaler.matchWidthOrHeight = matchWidthOrHeight;
-                }
-            }
+        // Missing worldCamera in ScreenSpaceCamera can break layout in build.
+        if (canvas.renderMode == RenderMode.ScreenSpaceCamera && canvas.worldCamera == null)
+            canvas.worldCamera = Camera.main;
+
+        var scaler = canvas.GetComponent<CanvasScaler>();
+        if (scaler == null)
+            return;
+
+        if (forceScaleWithScreenSize)
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+
+        if (scaler.uiScaleMode == CanvasScaler.ScaleMode.ScaleWithScreenSize)
+        {
+            scaler.referenceResolution = referenceResolution;
+            scaler.matchWidthOrHeight = matchWidthOrHeight;
         }
     }
 }

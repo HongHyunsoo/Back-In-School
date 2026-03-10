@@ -286,7 +286,11 @@ public class FlowManager : MonoBehaviour
             noSlippersPenaltyAppliedToday = true;
         }
 
-        string altId = ev.id + "_NO_SLIPPERS";
+        // New key convention: *_NS (legacy fallback: *_NO_SLIPPERS)
+        string altId = ev.id + "_NS";
+        if (!HasConversation(altId))
+            altId = ev.id + "_NO_SLIPPERS";
+
         if (HasConversation(altId))
         {
             // 誘몄갑??吏???????湲곗〈 議고쉶 ??щ? ?댁뼱???ъ깮

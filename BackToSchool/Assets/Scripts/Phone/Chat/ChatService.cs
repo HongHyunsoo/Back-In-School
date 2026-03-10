@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -29,10 +29,10 @@ public class ChatSaveData
 }
 
 /// <summary>
-/// ChatService (v2 - ¼¼±×¸ÕÆ® ±â¹İ)
-/// - ChatSegments.csv (Day+State -> {Room_ID, Conversation_ID})¸¦ ±â¹İÀ¸·Î ¼¼¼ÇÀ» '±×¶§±×¶§' È°¼ºÈ­
-/// - Conversations.csv´Â LocalizationManager.GetConversation()À¸·Î ÀĞ°í,
-///   ChatLineMeta.csv´Â LocalizationManager.TryGetChatLineMeta()·Î ÀĞ´Â ±¸Á¶
+/// ChatService (v2 - ì„¸ê·¸ë¨¼íŠ¸ ê¸°ë°˜)
+/// - ChatSegments.csv (Day+State -> {Room_ID, Conversation_ID})ë¥¼ ê¸°ë°˜ìœ¼ë¡œ ì„¸ì…˜ì„ 'ê·¸ë•Œê·¸ë•Œ' í™œì„±í™”
+/// - Conversations.csvëŠ” LocalizationManager.GetConversation()ìœ¼ë¡œ ì½ê³ ,
+///   ChatLineMeta.csvëŠ” LocalizationManager.TryGetChatLineMeta()ë¡œ ì½ëŠ” êµ¬ì¡°
 /// </summary>
 public class ChatService : MonoBehaviour
 {
@@ -44,8 +44,7 @@ public class ChatService : MonoBehaviour
 
     public bool HasActiveSession => !string.IsNullOrEmpty(Data.activeSessionId);
 
-    public event Action OnChanged; // UI °»½Å¿ë
-
+    public event Action OnChanged; // UI ê°±ì‹ ìš©
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -58,8 +57,21 @@ public class ChatService : MonoBehaviour
 
         LoadOrCreateDefault();
 
-        // ChatSegments Á¤ÀÇ ±â¹İÀ¸·Î ¹æÀÌ ´©¶ôµÇÁö ¾Ê°Ô º¸Á¤
+        // ChatSegments ì •ì˜ ê¸°ë°˜ìœ¼ë¡œ ë°©ì´ ëˆ„ë½ë˜ì§€ ì•Šê²Œ ë³´ì •
         EnsureRoomsFromChatSegments();
+        RefreshRoomTitlesFromLocalization(notify: false);
+
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+
+        if (LocalizationManager.Instance != null)
+            LocalizationManager.Instance.OnLanguageChanged -= OnLanguageChanged;
     }
 
     // -------------------------
@@ -104,8 +116,8 @@ public class ChatService : MonoBehaviour
         => Data.sessions.Find(s => s.sessionId == sessionId);
 
     /// <summary>
-    /// roomId¿¡ ´ëÇØ ¾ÆÁ÷ ¿Ï·áµÇÁö ¾ÊÀº(¶Ç´Â ¾ÆÁ÷ ½ÃÀÛ ¾È ÇÑ) ¼¼¼Ç Áß Ã¹ ¹øÂ°¸¦ ¹İÈ¯.
-    /// UI°¡ room -> conversationId¸¦ Inspector¿¡¼­ ¸ÅÇÎÇÏ±â ½ÈÀ¸¸é ÀÌ°É ¾²¸é µÊ.
+    /// roomIdì— ëŒ€í•´ ì•„ì§ ì™„ë£Œë˜ì§€ ì•Šì€(ë˜ëŠ” ì•„ì§ ì‹œì‘ ì•ˆ í•œ) ì„¸ì…˜ ì¤‘ ì²« ë²ˆì§¸ë¥¼ ë°˜í™˜.
+    /// UIê°€ room -> conversationIdë¥¼ Inspectorì—ì„œ ë§¤í•‘í•˜ê¸° ì‹«ìœ¼ë©´ ì´ê±¸ ì“°ë©´ ë¨.
     /// </summary>
     public string GetNextSessionIdForRoom(string roomId)
     {
@@ -119,7 +131,7 @@ public class ChatService : MonoBehaviour
 
     public void StartSession(string sessionId)
     {
-        // ÀÌ¹Ì ´Ù¸¥ ¼¼¼Ç ÁøÇà ÁßÀÌ¸é ¸·±â(³× ±ÔÄ¢)
+        // ì´ë¯¸ ë‹¤ë¥¸ ì„¸ì…˜ ì§„í–‰ ì¤‘ì´ë©´ ë§‰ê¸°(ë„¤ ê·œì¹™)
         if (HasActiveSession) return;
 
         var session = GetSession(sessionId);
@@ -160,14 +172,14 @@ public class ChatService : MonoBehaviour
     // -------------------------
 
     /// <summary>
-    /// GameManagerÀÇ (currentDay, currentState)°¡ ¹Ù²ğ ¶§ È£Ãâ:
-    /// ÇØ´ç ½ÃÁ¡¿¡ µµÂøÇØ¾ß ÇÏ´Â Ã¤ÆÃ ¼¼±×¸ÕÆ®(Conversation_ID)¸¦ °¢ Room¿¡ È°¼ºÈ­ÇÑ´Ù.
+    /// GameManagerì˜ (currentDay, currentState)ê°€ ë°”ë€” ë•Œ í˜¸ì¶œ:
+    /// í•´ë‹¹ ì‹œì ì— ë„ì°©í•´ì•¼ í•˜ëŠ” ì±„íŒ… ì„¸ê·¸ë¨¼íŠ¸(Conversation_ID)ë¥¼ ê° Roomì— í™œì„±í™”í•œë‹¤.
     /// </summary>
     public void ActivateSegmentsFor(int day, GameState state)
     {
         if (LocalizationManager.Instance == null)
         {
-            Debug.LogWarning("[ChatService] LocalizationManager.Instance°¡ ¾ø¾î ChatSegments¸¦ È°¼ºÈ­ÇÒ ¼ö ¾øÀ½");
+            Debug.LogWarning("[ChatService] LocalizationManager.Instanceê°€ ì—†ì–´ ChatSegmentsë¥¼ í™œì„±í™”í•  ìˆ˜ ì—†ìŒ");
             return;
         }
 
@@ -198,7 +210,7 @@ public class ChatService : MonoBehaviour
             }
             else
             {
-                // ÀÌ¹Ì Á¸ÀçÇÏ´Â ¼¼¼ÇÀÎµ¥ roomId°¡ ´Ù¸£¸é(µ¥ÀÌÅÍ º¯°æ) º¸Á¤
+                // ì´ë¯¸ ì¡´ì¬í•˜ëŠ” ì„¸ì…˜ì¸ë° roomIdê°€ ë‹¤ë¥´ë©´(ë°ì´í„° ë³€ê²½) ë³´ì •
                 session.roomId = seg.roomId;
             }
 
@@ -214,20 +226,17 @@ public class ChatService : MonoBehaviour
             Debug.Log($"[Chat] + room={seg.roomId} conv={seg.conversationId} notify={seg.notify}");
 
     }
-
     private void EnsureRoomExists(string roomId)
     {
         if (GetRoom(roomId) != null) return;
 
-        // titleÀº ÀÏ´Ü roomId ±×´ë·Î (³ªÁß¿¡ Localization Å°·Î ¹Ù²ãµµ µÊ)
         Data.rooms.Add(new ChatRoomState
         {
             roomId = roomId,
-            title = roomId,
+            title = ResolveRoomTitle(roomId, roomId),
             unreadCount = 0
         });
     }
-
     private void EnsureRoomsFromChatSegments()
     {
         if (LocalizationManager.Instance == null) return;
@@ -238,6 +247,53 @@ public class ChatService : MonoBehaviour
 
         Save();
         OnChanged?.Invoke();
+    }
+
+    private void OnLanguageChanged(Language _)
+    {
+        RefreshRoomTitlesFromLocalization(notify: true);
+    }
+
+    private void RefreshRoomTitlesFromLocalization(bool notify)
+    {
+        bool changed = false;
+        for (int i = 0; i < Data.rooms.Count; i++)
+        {
+            var room = Data.rooms[i];
+            string resolved = ResolveRoomTitle(room.roomId, room.title);
+            if (room.title == resolved)
+                continue;
+
+            room.title = resolved;
+            changed = true;
+        }
+
+        if (notify && changed)
+            OnChanged?.Invoke();
+    }
+
+    private static string ResolveRoomTitle(string roomId, string fallback)
+    {
+        if (string.IsNullOrEmpty(roomId))
+            return string.IsNullOrEmpty(fallback) ? "Room" : fallback;
+
+        if (LocalizationManager.Instance != null)
+        {
+            if (LocalizationManager.Instance.TryGetLine(roomId, out string localizedById) && !string.IsNullOrEmpty(localizedById))
+                return localizedById;
+
+            if (!roomId.StartsWith("ROOM_", StringComparison.Ordinal) &&
+                LocalizationManager.Instance.TryGetLine("ROOM_" + roomId, out string localizedByPrefixed) &&
+                !string.IsNullOrEmpty(localizedByPrefixed))
+            {
+                return localizedByPrefixed;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(fallback))
+            return fallback;
+
+        return roomId;
     }
 
     // -------------------------
@@ -288,9 +344,9 @@ public class ChatService : MonoBehaviour
     {
         Data = new ChatSaveData();
 
-        // (Áß¿ä) Room/SessionÀº ChatSegments ±â¹İÀ¸·Î »ı¼º/È°¼ºÈ­µÇµµ·Ï º¯°æ
-        // - rooms: EnsureRoomsFromChatSegments()¿¡¼­ ÀÚµ¿ »ı¼º
-        // - sessions: ActivateSegmentsFor(day, state)¿¡¼­ ±×¶§±×¶§ »ı¼º
+        // (ì¤‘ìš”) Room/Sessionì€ ChatSegments ê¸°ë°˜ìœ¼ë¡œ ìƒì„±/í™œì„±í™”ë˜ë„ë¡ ë³€ê²½
+        // - rooms: EnsureRoomsFromChatSegments()ì—ì„œ ìë™ ìƒì„±
+        // - sessions: ActivateSegmentsFor(day, state)ì—ì„œ ê·¸ë•Œê·¸ë•Œ ìƒì„±
         Data.activeSessionId = null;
     }
 
@@ -312,7 +368,7 @@ public class ChatService : MonoBehaviour
         }
         else
         {
-            // È¤½Ã room ¸ÅÇÎÀÌ ¹Ù²î¾úÀ» ¶§ º¸Á¤
+            // í˜¹ì‹œ room ë§¤í•‘ì´ ë°”ë€Œì—ˆì„ ë•Œ ë³´ì •
             if (!string.IsNullOrEmpty(roomId))
                 s.roomId = roomId;
         }
@@ -322,17 +378,17 @@ public class ChatService : MonoBehaviour
 
     public void ResetAllChatForTest()
     {
-        // ÁøÇà Áß ¼¼¼Çµµ ÇØÁ¦
+        // ì§„í–‰ ì¤‘ ì„¸ì…˜ë„ í•´ì œ
         Data.activeSessionId = null;
 
-        // ÁøÇàµµ/¿Ï·á ÀüºÎ ¸®¼Â
+        // ì§„í–‰ë„/ì™„ë£Œ ì „ë¶€ ë¦¬ì…‹
         foreach (var s in Data.sessions)
         {
             s.progressIndex = 0;
             s.completed = false;
         }
 
-        // ¾È ÀĞÀ½µµ ¸®¼Â(¿øÇÏ¸é ÀÌ ÁÙÀº »©µµ µÊ)
+        // ì•ˆ ì½ìŒë„ ë¦¬ì…‹(ì›í•˜ë©´ ì´ ì¤„ì€ ë¹¼ë„ ë¨)
         foreach (var r in Data.rooms)
             r.unreadCount = 0;
 
@@ -342,3 +398,4 @@ public class ChatService : MonoBehaviour
 
 
 }
+

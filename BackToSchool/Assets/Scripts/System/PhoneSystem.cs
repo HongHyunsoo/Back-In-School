@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 
 public class PhoneSystem : MonoBehaviour
 {
@@ -7,6 +8,10 @@ public class PhoneSystem : MonoBehaviour
     [Header("Assign in Inspector")]
     public GameObject phoneUIPrefab;
     private GameObject phoneUIInstance;
+
+    [Header("Phone UI Scale")]
+    public Vector2 phoneUiReferenceResolution = new Vector2(1920f, 1080f);
+    [Range(0f, 1f)] public float phoneUiMatchWidthOrHeight = 0.5f;
 
     private void Awake()
     {
@@ -48,6 +53,7 @@ public class PhoneSystem : MonoBehaviour
 
             phoneUIInstance = Instantiate(phoneUIPrefab);
             DontDestroyOnLoad(phoneUIInstance);
+            NormalizePhoneUICanvas(phoneUIInstance);
         }
 
         EnsureRuntimeComponents();
@@ -77,5 +83,31 @@ public class PhoneSystem : MonoBehaviour
 
         if (phoneUIInstance.GetComponent<PhoneSettingsAppController>() == null)
             phoneUIInstance.AddComponent<PhoneSettingsAppController>();
+    }
+
+    private void NormalizePhoneUICanvas(GameObject root)
+    {
+        if (root == null)
+            return;
+
+        var canvases = root.GetComponentsInChildren<Canvas>(true);
+        for (int i = 0; i < canvases.Length; i++)
+        {
+            var canvas = canvases[i];
+            if (canvas == null || canvas.renderMode == RenderMode.WorldSpace)
+                continue;
+
+            var rt = canvas.transform as RectTransform;
+            if (rt != null)
+                rt.localScale = Vector3.one;
+
+            var scaler = canvas.GetComponent<CanvasScaler>();
+            if (scaler == null)
+                continue;
+
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = phoneUiReferenceResolution;
+            scaler.matchWidthOrHeight = phoneUiMatchWidthOrHeight;
+        }
     }
 }

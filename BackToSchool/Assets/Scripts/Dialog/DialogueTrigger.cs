@@ -26,13 +26,6 @@ public class ContextualDialogue
     [Tooltip("?대떦 ??ъ뿉 ?ъ깮???뚮━ ?댄럺???대쫫 (Resources/Sounds?먯꽌 濡쒕뱶)")]
     public string soundEffectName;
 
-    [Header("?좏깮吏 ?ㅼ젙 (???以묎컙???좏깮吏瑜??ｌ쓣 ???덉쓬)")]
-    [Tooltip("??붿쓽 紐?踰덉㎏ ??ъ뿉 ?좏깮吏瑜??ｌ쓣吏 (0遺???쒖옉, -1?대㈃ 留덉?留????")]
-    public int choiceLineIndex = -1; // -1?대㈃ 留덉?留???ъ뿉 ?좏깮吏
-
-    [Tooltip("?좏깮吏 紐⑸줉 (理쒕? 4媛?")]
-    public List<DialogueChoice> choices = new List<DialogueChoice>();
-
     [HideInInspector]
     public bool hasBeenPlayed = false;
 }
@@ -56,6 +49,12 @@ public class DialogueTrigger : MonoBehaviour
     public TMP_Text interactKeyText;
     public string interactKeyFormat = "[{0}]";
     public float promptFontSize = 4f;
+    [SerializeField] private bool useUnifiedPromptStyle = true;
+    [SerializeField] private TMP_FontAsset promptFontAsset;
+    [SerializeField] private bool autoCreatePromptWhenMissing = true;
+    [SerializeField] private Vector3 autoPromptLocalOffset = new Vector3(0f, 0.9f, 0f);
+    [SerializeField] private float autoPromptScale = 1f;
+    [SerializeField] private int autoPromptSortingOrder = 50;
 
     [Header("Contextual Dialogues")]
     public List<ContextualDialogue> contextualDialogues;
@@ -68,6 +67,12 @@ public class DialogueTrigger : MonoBehaviour
     private bool isPlayerInRange = false;
     private GameManager gameManager;
     private KeyCode lastInteractKey = KeyCode.None;
+    private static TMP_FontAsset cachedPromptFont;
+
+    private void Awake()
+    {
+        EnsureInteractPromptBinding();
+    }
 
     void Start()
     {
@@ -75,6 +80,7 @@ public class DialogueTrigger : MonoBehaviour
         gameManager = FindObjectOfType<GameManager>();
         if (manager == null) UnityEngine.Debug.LogError("DialogueManager를 찾을 수 없습니다!");
         if (gameManager == null) UnityEngine.Debug.LogError("GameManager를 찾을 수 없습니다!");
+        EnsureInteractPromptBinding();
         if (interactPrompt != null) interactPrompt.SetActive(false);
         RefreshInteractPromptText(KeyBindingConfig.Get(KeyBindingConfig.InteractKey, KeyCode.E));
     }
@@ -116,10 +122,132 @@ public class DialogueTrigger : MonoBehaviour
         if (interactKeyText == null)
             return;
 
+        ApplyPromptFont(interactKeyText);
+        ApplyPromptVisualStyle(interactKeyText);
         interactKeyText.enableWordWrapping = false;
         interactKeyText.overflowMode = TextOverflowModes.Overflow;
-        interactKeyText.fontSize = promptFontSize;
         interactKeyText.text = string.Format(interactKeyFormat, key.ToString().ToUpperInvariant());
+    }
+
+    private void EnsureInteractPromptBinding()
+    {
+        if (interactPrompt == null && autoCreatePromptWhenMissing)
+        {
+            var go = new GameObject("__AutoKeyPrompt", typeof(TextMeshPro));
+            go.transform.SetParent(transform, false);
+            go.transform.localPosition = autoPromptLocalOffset;
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = useUnifiedPromptStyle
+                ? Vector3.one
+                : Vector3.one * Mathf.Max(1f, autoPromptScale);
+            interactPrompt = go;
+        }
+
+        if (interactPrompt == null)
+            return;
+
+        if (interactKeyText == null)
+            interactKeyText = interactPrompt.GetComponentInChildren<TMP_Text>(true);
+
+        if (interactKeyText == null && autoCreatePromptWhenMissing)
+        {
+            var tmp = interactPrompt.GetComponent<TextMeshPro>();
+            if (tmp == null)
+                tmp = interactPrompt.AddComponent<TextMeshPro>();
+
+            interactKeyText = tmp;
+        }
+
+        ConfigurePromptText(interactKeyText);
+    }
+
+    private void ConfigurePromptText(TMP_Text tmp)
+    {
+        if (tmp == null)
+            return;
+
+        tmp.enableWordWrapping = false;
+        tmp.overflowMode = TextOverflowModes.Overflow;
+        tmp.alignment = TextAlignmentOptions.Center;
+        ApplyPromptVisualStyle(tmp);
+        ApplyPromptFont(tmp);
+
+        // TextMeshPro (world text) sorting order fallback.
+        if (tmp is TextMeshPro worldText)
+            worldText.sortingOrder = autoPromptSortingOrder;
+    }
+
+    private void ApplyPromptVisualStyle(TMP_Text tmp)
+    {
+        if (tmp == null)
+            return;
+
+        float fontSize = useUnifiedPromptStyle ? InteractionPromptStyle.DefaultFontSize : promptFontSize;
+        float worldScale = useUnifiedPromptStyle ? InteractionPromptStyle.DefaultWorldScale : Mathf.Max(0.01f, autoPromptScale);
+
+        tmp.fontSize = fontSize;
+        InteractionPromptStyle.ApplyWorldTextScale(tmp, worldScale);
+    }
+
+    private void ApplyPromptFont(TMP_Text tmp)
+    {
+        if (tmp == null)
+            return;
+
+        TMP_FontAsset font = ResolvePromptFont(tmp);
+        if (font == null)
+            return;
+
+        tmp.font = font;
+
+        if (tmp is TextMeshPro worldText && font.material != null)
+            worldText.fontSharedMaterial = font.material;
+    }
+
+    private TMP_FontAsset ResolvePromptFont(TMP_Text current)
+    {
+        if (promptFontAsset != null)
+            return promptFontAsset;
+
+        if (cachedPromptFont != null)
+            return cachedPromptFont;
+
+        TMP_FontAsset[] loaded = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
+        for (int i = 0; i < loaded.Length; i++)
+        {
+            TMP_FontAsset f = loaded[i];
+            if (f == null || string.IsNullOrEmpty(f.name))
+                continue;
+
+            if (f.name.Equals("Galmuri11-Bold SDF", System.StringComparison.OrdinalIgnoreCase) ||
+                f.name.IndexOf("Galmuri11-Bold", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                cachedPromptFont = f;
+                return f;
+            }
+        }
+
+        TMP_Text[] texts = Resources.FindObjectsOfTypeAll<TMP_Text>();
+        for (int i = 0; i < texts.Length; i++)
+        {
+            TMP_Text t = texts[i];
+            if (t == null || t.font == null || string.IsNullOrEmpty(t.font.name))
+                continue;
+
+            string n = t.font.name;
+            if (n.Equals("Galmuri11-Bold SDF", System.StringComparison.OrdinalIgnoreCase) ||
+                n.IndexOf("Galmuri11-Bold", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                cachedPromptFont = t.font;
+                return cachedPromptFont;
+            }
+        }
+
+        if (current != null && current.font != null)
+            return current.font;
+
+        cachedPromptFont = TMP_Settings.defaultFontAsset;
+        return cachedPromptFont;
     }
 
     private ContextualDialogue FindCurrentDialogue()
@@ -185,12 +313,6 @@ public class DialogueTrigger : MonoBehaviour
                 ApplyLineCustomization(conversationID_ToPlay, cd.customLineIndex, cd);
             }
 
-            // ?좏깮吏媛 ?ㅼ젙?섏뼱 ?덉쑝硫???붿뿉 ?좏깮吏 異붽?
-            if (cd != null && cd.choices != null && cd.choices.Count > 0)
-            {
-                AddChoicesToConversation(conversationID_ToPlay, cd.choiceLineIndex, cd.choices);
-            }
-
             manager.StartDialogue(conversationID_ToPlay, transform);
         }
         else
@@ -231,34 +353,6 @@ public class DialogueTrigger : MonoBehaviour
         }
 
         UnityEngine.Debug.Log($"Applied customization to {conversationID} line {lineIndex + 1}.");
-    }
-
-    // ??붿뿉 ?좏깮吏 異붽?
-    private void AddChoicesToConversation(string conversationID, int lineIndex, List<DialogueChoice> choices)
-    {
-        List<DialogueLine> lines = LocalizationManager.Instance.GetConversation(conversationID);
-        
-        if (lines == null || lines.Count == 0)
-        {
-            UnityEngine.Debug.LogWarning($"??붾? 李얠쓣 ???놁뒿?덈떎: {conversationID}");
-            return;
-        }
-
-        // lineIndex媛 -1?대㈃ 留덉?留???ъ뿉 ?좏깮吏 異붽?
-        int targetIndex = (lineIndex == -1) ? lines.Count - 1 : lineIndex;
-        
-        if (targetIndex < 0 || targetIndex >= lines.Count)
-        {
-            UnityEngine.Debug.LogWarning($"?좏깮吏瑜??ｌ쓣 ????몃뜳?ㅺ? 踰붿쐞瑜?踰쀬뼱?ъ뒿?덈떎: {targetIndex} / {lines.Count}");
-            return;
-        }
-
-        // ?좏깮吏 異붽?
-        DialogueLine targetLine = lines[targetIndex];
-        targetLine.hasChoices = true;
-        targetLine.choices = new List<DialogueChoice>(choices);
-
-        UnityEngine.Debug.Log($"Added {choices.Count} choices to {conversationID} line {targetIndex + 1}.");
     }
 
     private void OnTriggerEnter2D(Collider2D other) 

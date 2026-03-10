@@ -14,6 +14,9 @@ public class MapDayLayoutGroup : MonoBehaviour
     [SerializeField] private GameObject fallbackRoot;
 
     [Header("Runtime")]
+    [Tooltip("Use FlowManager.day as the primary day source when available.")]
+    [SerializeField] private bool preferFlowManagerDay = true;
+
     [Tooltip("Re-check day every frame in play mode. Useful with debug day jump.")]
     [SerializeField] private bool autoRefresh = true;
 
@@ -58,17 +61,31 @@ public class MapDayLayoutGroup : MonoBehaviour
 
     private int ResolveCurrentDay()
     {
+        int flowDay = -1;
+        if (Application.isPlaying && preferFlowManagerDay && FlowManager.Instance != null)
+            flowDay = Mathf.Clamp(FlowManager.Instance.day, 1, 99);
+
         GameManager gm = _cachedGameManager;
-        if (gm == null)
+        if (gm == null || !gm.gameObject.scene.IsValid())
         {
             gm = FindAnyObjectByType<GameManager>();
             _cachedGameManager = gm;
         }
 
-        if (gm == null)
-            return 1;
+        int gameManagerDay = gm != null ? Mathf.Clamp(gm.currentDay, 1, 99) : -1;
 
-        return Mathf.Clamp(gm.currentDay, 1, 99);
+        if (flowDay > 0)
+        {
+            if (gm != null && gm.currentDay != flowDay)
+                gm.currentDay = flowDay;
+
+            return flowDay;
+        }
+
+        if (gameManagerDay > 0)
+            return gameManagerDay;
+
+        return 1;
     }
 
     private void ApplyDay(int day)
@@ -76,8 +93,6 @@ public class MapDayLayoutGroup : MonoBehaviour
         _lastAppliedDay = day;
 
         bool foundMatch = false;
-        string d = "D" + day.ToString();
-        string dayText = "DAY" + day.ToString();
 
         for (int i = 0; i < transform.childCount; i++)
         {
@@ -85,10 +100,9 @@ public class MapDayLayoutGroup : MonoBehaviour
             if (child == null)
                 continue;
 
-            string nameUpper = child.name.Trim().ToUpperInvariant();
-            bool isDayNode = nameUpper == d || nameUpper == dayText;
+            bool isDayNode = TryParseDayNode(child.name, out int nodeDay);
 
-            if (isDayNode)
+            if (isDayNode && nodeDay == day)
                 foundMatch = true;
         }
 
@@ -104,15 +118,42 @@ public class MapDayLayoutGroup : MonoBehaviour
                 continue;
             }
 
-            string nameUpper = child.name.Trim().ToUpperInvariant();
-            bool isMatch = nameUpper == d || nameUpper == dayText;
-            bool isDayNode = nameUpper.StartsWith("D") || nameUpper.StartsWith("DAY");
+            bool isDayNode = TryParseDayNode(child.name, out int nodeDay);
             if (isDayNode)
-                child.gameObject.SetActive(isMatch);
+                child.gameObject.SetActive(nodeDay == day);
         }
 
         if (hideAllWhenNoMatch && !foundMatch && fallbackRoot == null)
             SetChildrenActive(false);
+    }
+
+    private static bool TryParseDayNode(string name, out int day)
+    {
+        day = -1;
+        if (string.IsNullOrWhiteSpace(name))
+            return false;
+
+        string n = name.Trim().ToUpperInvariant();
+        if (n.StartsWith("DAY"))
+            n = n.Substring(3);
+        else if (n.StartsWith("D"))
+            n = n.Substring(1);
+        else
+            return false;
+
+        if (string.IsNullOrEmpty(n))
+            return false;
+
+        for (int i = 0; i < n.Length; i++)
+        {
+            if (!char.IsDigit(n[i]))
+                return false;
+        }
+
+        if (!int.TryParse(n, out day))
+            return false;
+
+        return day >= 1;
     }
 
     private void SetChildrenActive(bool active)

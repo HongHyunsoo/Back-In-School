@@ -12,9 +12,8 @@ using UnityEngine.SceneManagement;
  * - [v4.0 추가 기능]
  * - 1. 캐릭터 애니메이션 재생
  * - 2. 타이핑 효과
- * - 3. 선택지 시스템 (최대 4개, 화살표 선택)
- * - 4. 소리 이펙트 재생
- * - 5. CharacterIdentifier 캐싱으로 성능 개선
+ * - 3. 소리 이펙트 재생
+ * - 4. CharacterIdentifier 캐싱으로 성능 개선
  * ===================================================================================
  */
 public class DialogueManager : MonoBehaviour
@@ -31,14 +30,9 @@ public class DialogueManager : MonoBehaviour
     private TextMeshProUGUI dialogueText;
     public float typingSpeed = 0.03f;
     public Vector3 worldOffset = new Vector3(0, 0.5f, 0);
+    [SerializeField] private float bubbleScreenYOffset = 54f;
     public PlayerController playerController;
     public KeyCode nextSentenceKey = KeyCode.E;
-
-    [Header("선택지 UI")]
-    public GameObject choicePanel;
-    public GameObject[] choiceButtons = new GameObject[4]; // 최대 4개 선택지 버튼
-    public TextMeshProUGUI[] choiceTexts = new TextMeshProUGUI[4]; // 선택지 텍스트
-    public GameObject choiceArrow; // 선택지 화살표
 
     [Header("오디오")]
     public AudioSource audioSource; // 소리 이펙트 재생용
@@ -51,11 +45,6 @@ public class DialogueManager : MonoBehaviour
     private GameManager gameManager;
     private Transform currentSpeaker;
     private Transform currentNpcSpeaker;
-
-    // 선택지 관련
-    private bool isWaitingForChoice = false;
-    private int selectedChoiceIndex = 0;
-    private List<DialogueChoice> currentChoices = new List<DialogueChoice>();
 
     // 성능 개선: CharacterIdentifier/CharacterActor 캐싱
     private Dictionary<string, CharacterIdentifier> characterCache = new Dictionary<string, CharacterIdentifier>();
@@ -137,13 +126,6 @@ public class DialogueManager : MonoBehaviour
         gameManager = FindObjectOfType<GameManager>();
         if (gameManager == null) UnityEngine.Debug.LogError("GameManager를 찾을 수 없습니다!");
 
-        // 선택지 UI 초기화
-        if (choicePanel != null) choicePanel.SetActive(false);
-        for (int i = 0; i < choiceButtons.Length; i++)
-        {
-            if (choiceButtons[i] != null) choiceButtons[i].SetActive(false);
-        }
-
         // CharacterIdentifier 캐싱
         RefreshCharacterCache();
     }
@@ -157,14 +139,6 @@ public class DialogueManager : MonoBehaviour
         if (blockAdvanceInputThisFrame) return;
 
         if (isBusy) return;
-
-        if (isWaitingForChoice)
-        {
-            HandleChoiceInput();
-            return;
-        }
-       
-
 
         if (Input.GetKeyDown(nextSentenceKey) || Input.GetMouseButtonDown(0))
         {
@@ -215,7 +189,13 @@ public class DialogueManager : MonoBehaviour
 
                 if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, uiCam, out var localPoint))
                 {
-                    bubbleRect.anchoredPosition = localPoint + new Vector2(0f, 70f);
+                    // Snap to pixel to reduce sub-pixel shimmer/jitter.
+                    Vector2 target = localPoint + new Vector2(0f, bubbleScreenYOffset);
+                    target.x = Mathf.Round(target.x);
+                    target.y = Mathf.Round(target.y);
+
+                    if ((bubbleRect.anchoredPosition - target).sqrMagnitude > 0.0001f)
+                        bubbleRect.anchoredPosition = target;
 
                 }
             }
@@ -432,8 +412,7 @@ public class DialogueManager : MonoBehaviour
 
         StopAllCoroutines();
         isTyping = false;
-        isWaitingForChoice = false;
-        
+
         if (dialogueText == null)
         {
             Debug.LogError("[DialogueManager] dialogueText가 null입니다. SpeechBubbleUI 연결을 확인하세요.");
@@ -501,13 +480,6 @@ public class DialogueManager : MonoBehaviour
             StopAllCoroutines();
             dialogueText.text = LocalizationManager.Instance.GetLine(currentLine.lineID);
             isTyping = false;
-
-            // 선택지가 있으면 표시
-            /*if (currentLine.hasChoices && currentLine.choices.Count > 0)
-            {
-                ShowChoices();
-                return;
-            }*/
 
             if (lines.Count == 0) EndDialogue();
             return;
@@ -612,117 +584,7 @@ public class DialogueManager : MonoBehaviour
 
         isTyping = false;
 
-        // 타이핑 완료 후 선택지 표시 (대화 중간에도 가능)
-        /*if (currentLine.hasChoices && currentLine.choices.Count > 0)
-        {
-            yield return new WaitForSeconds(0.1f); // 짧은 딜레이
-            ShowChoices();
-        }*/
-    }
-
-    // 선택지 표시
-    void ShowChoices()
-    {
-        if (currentLine.choices == null || currentLine.choices.Count == 0) return;
-
-        isWaitingForChoice = true;
-        currentChoices = currentLine.choices;
-        selectedChoiceIndex = 0;
-
-        if (choicePanel != null) choicePanel.SetActive(true);
-
-        // 선택지 버튼 활성화 및 텍스트 설정
-        for (int i = 0; i < choiceButtons.Length; i++)
-        {
-            if (i < currentChoices.Count)
-            {
-                choiceButtons[i].SetActive(true);
-                string choiceText = LocalizationManager.Instance.GetLine(currentChoices[i].choiceTextID);
-                choiceTexts[i].text = choiceText;
-            }
-            else
-            {
-                choiceButtons[i].SetActive(false);
-            }
-        }
-
-        UpdateChoiceArrow();
-    }
-
-    // 선택지 입력 처리
-    void HandleChoiceInput()
-    {
-        if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
-        {
-            selectedChoiceIndex = Mathf.Max(0, selectedChoiceIndex - 1);
-            UpdateChoiceArrow();
-        }
-        else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
-        {
-            selectedChoiceIndex = Mathf.Min(currentChoices.Count - 1, selectedChoiceIndex + 1);
-            UpdateChoiceArrow();
-        }
-        else if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(nextSentenceKey) || Input.GetMouseButtonDown(0))
-        {
-            SelectChoice(selectedChoiceIndex);
-        }
-    }
-
-    // 선택지 화살표 업데이트
-    void UpdateChoiceArrow()
-    {
-        if (choiceArrow == null || selectedChoiceIndex >= choiceButtons.Length) return;
-
-        GameObject selectedButton = choiceButtons[selectedChoiceIndex];
-        if (selectedButton != null && selectedButton.activeSelf)
-        {
-            RectTransform buttonRect = selectedButton.GetComponent<RectTransform>();
-            RectTransform arrowRect = choiceArrow.GetComponent<RectTransform>();
-            if (buttonRect != null && arrowRect != null)
-            {
-                arrowRect.position = new Vector3(
-                    buttonRect.position.x - buttonRect.rect.width / 2 - 20f,
-                    buttonRect.position.y,
-                    arrowRect.position.z
-                );
-            }
-        }
-    }
-
-    // 선택지 선택
-    void SelectChoice(int index)
-    {
-        if (index < 0 || index >= currentChoices.Count) return;
-
-        DialogueChoice selectedChoice = currentChoices[index];
-
-        // 선택지 UI 숨기기
-        if (choicePanel != null) choicePanel.SetActive(false);
-        isWaitingForChoice = false;
-
-        // 씬 이동
-        if (!string.IsNullOrEmpty(selectedChoice.sceneToLoad))
-        {
-            SceneManager.LoadScene(selectedChoice.sceneToLoad);
-            EndDialogue();
-            return;
-        }
-
-        // 게임 상태 변경
-        if (selectedChoice.stateToChange != GameState.Morning_Slippers && gameManager != null)
-        {
-            gameManager.ChangeState(selectedChoice.stateToChange);
-        }
-
-        // 다음 대화 시작 또는 종료
-        if (!string.IsNullOrEmpty(selectedChoice.nextConversationID))
-        {
-            StartDialogue(selectedChoice.nextConversationID, currentNpcSpeaker);
-        }
-        else
-        {
-            EndDialogue();
-        }
+        
     }
 
     public void EndDialogue()
@@ -731,12 +593,9 @@ public class DialogueManager : MonoBehaviour
         StopAllCoroutines();
 
         if (speechBubble != null) speechBubble.gameObject.SetActive(false);
-        if (choicePanel != null) choicePanel.SetActive(false);
         IsDialogueActive = false;
-        isWaitingForChoice = false;
         currentSpeaker = null;
         currentNpcSpeaker = null;
-        currentChoices.Clear();
 
         // STORY 씬이면 FlowManager에게 "이번 이벤트 끝남"만 보고
         if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "STORY")

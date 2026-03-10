@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 
 public enum Language
@@ -357,19 +358,26 @@ public class LocalizationManager : MonoBehaviour
             }
 
             string imageId = c.Length > 3 ? c[3].Trim() : "";
-            bool waitTap = false;
-            if (c.Length > 4)
+
+            string waitTapRaw = c.Length > 4 ? c[4].Trim() : "";
+            string delayRaw = c.Length > 5 ? c[5].Trim() : "";
+
+            bool waitTapParsed = TryParseWaitTap(waitTapRaw, out bool waitTap);
+            bool delayParsed = TryParseDelaySeconds(delayRaw, out float delay);
+
+            // Backward compatibility:
+            // If CSV has only 5 columns and column[4] is a number like "2",
+            // treat it as Delay (not WaitTap).
+            if (c.Length == 5 && !waitTapParsed && TryParseDelaySeconds(waitTapRaw, out float delayFromWaitColumn))
             {
-                int w;
-                if (int.TryParse(c[4].Trim(), out w)) waitTap = (w != 0);
+                delay = delayFromWaitColumn;
+                delayParsed = true;
+                waitTap = false;
+                waitTapParsed = true;
             }
 
-            float delay = -1f;
-            if (c.Length > 5)
-            {
-                float d;
-                if (float.TryParse(c[5].Trim(), out d)) delay = d;
-            }
+            if (!waitTapParsed) waitTap = false;
+            if (!delayParsed) delay = -1f;
 
             string key = MakeConvOrderKey(conversationId, order);
             chatLineMetaByKey[key] = new ChatLineMetaDef
@@ -382,6 +390,58 @@ public class LocalizationManager : MonoBehaviour
                 delay = delay
             };
         }
+    }
+
+    private static bool TryParseWaitTap(string raw, out bool value)
+    {
+        value = false;
+        if (string.IsNullOrWhiteSpace(raw)) return false;
+
+        raw = raw.Trim();
+
+        // Strict numeric parse: only 0/1 are valid boolean values.
+        if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int i))
+        {
+            if (i == 0) { value = false; return true; }
+            if (i == 1) { value = true; return true; }
+            return false;
+        }
+
+        if (bool.TryParse(raw, out bool b))
+        {
+            value = b;
+            return true;
+        }
+
+        if (string.Equals(raw, "Y", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(raw, "YES", StringComparison.OrdinalIgnoreCase))
+        {
+            value = true;
+            return true;
+        }
+
+        if (string.Equals(raw, "N", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(raw, "NO", StringComparison.OrdinalIgnoreCase))
+        {
+            value = false;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryParseDelaySeconds(string raw, out float value)
+    {
+        value = -1f;
+        if (string.IsNullOrWhiteSpace(raw)) return false;
+
+        raw = raw.Trim();
+        if (float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out value))
+            return true;
+        if (float.TryParse(raw, NumberStyles.Float, CultureInfo.CurrentCulture, out value))
+            return true;
+
+        return false;
     }
 
     private static string MakeDayStateKey(int day, GameState state) => day + "|" + state.ToString();
@@ -423,9 +483,23 @@ public class LocalizationManager : MonoBehaviour
 
     public string GetLine(string lineID)
     {
-        if (lineTable != null && lineTable.ContainsKey(lineID)) return lineTable[lineID];
+        if (TryGetLine(lineID, out string value))
+            return value;
         Debug.LogWarning("Localization.csv 파일에 '" + lineID + "'가 없습니다!");
         return lineID;
+    }
+
+    public bool TryGetLine(string lineID, out string value)
+    {
+        value = lineID;
+        if (lineTable == null || string.IsNullOrEmpty(lineID))
+            return false;
+
+        if (!lineTable.TryGetValue(lineID, out string found))
+            return false;
+
+        value = found;
+        return true;
     }
 
     public List<DialogueLine> GetConversation(string conversationID)

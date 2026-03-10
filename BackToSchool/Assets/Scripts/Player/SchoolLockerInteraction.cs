@@ -7,7 +7,9 @@ public class SchoolLockerInteraction : MonoBehaviour
     [SerializeField] private GameObject interactPrompt;
     [SerializeField] private TMP_Text interactKeyText;
     [SerializeField] private string interactKeyFormat = "[{0}]";
+    [SerializeField] private bool useUnifiedPromptStyle = true;
     [SerializeField] private float promptFontSize = 4f;
+    [SerializeField] private float promptWorldScale = 0.08f;
     [SerializeField] private bool onlyMorningBeforeAssembly = true;
     [SerializeField] private string changedToSlippersConversationId = "SLIPPERS_CHANGED";
 
@@ -89,7 +91,10 @@ public class SchoolLockerInteraction : MonoBehaviour
 
         interactKeyText.enableWordWrapping = false;
         interactKeyText.overflowMode = TextOverflowModes.Overflow;
-        interactKeyText.fontSize = promptFontSize;
+        float fontSize = useUnifiedPromptStyle ? InteractionPromptStyle.DefaultFontSize : promptFontSize;
+        float worldScale = useUnifiedPromptStyle ? InteractionPromptStyle.DefaultWorldScale : promptWorldScale;
+        interactKeyText.fontSize = fontSize;
+        InteractionPromptStyle.ApplyWorldTextScale(interactKeyText, worldScale);
         interactKeyText.text = string.Format(interactKeyFormat, interactKey.ToString().ToUpperInvariant());
     }
 
@@ -111,5 +116,6 @@ public class SchoolLockerInteraction : MonoBehaviour
 
         dm.StartDialogue(changedToSlippersConversationId, null);
     }
+
 }
 

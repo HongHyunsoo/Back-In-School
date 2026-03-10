@@ -633,6 +633,7 @@ MonoBehaviour:
   requiredDirectionDot: 0.75
   maxGrabDistance: 0.45
   teacherBubblePrefab: {fileID: 0}
+  teacherConversationId: D1_CLASS1_MINIGAME
   teacherLineKeys:
   - MINIGAME_CROQUIS_TEACHER_01
   - MINIGAME_CROQUIS_TEACHER_02
