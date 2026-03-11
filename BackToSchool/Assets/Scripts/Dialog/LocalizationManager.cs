@@ -21,6 +21,7 @@ public class ChatSegmentDef
 {
     public string conversationId;
     public string roomId;
+    public string flowIdContains;
     public int day;
     public GameState state;
     public int priority;

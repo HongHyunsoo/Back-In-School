@@ -193,6 +193,7 @@ public class MainMenuController : MonoBehaviour
         fm.penaltyPoints = 0;
         fm.ResetSchoolRuleRuntimeState();
         PenaltyReasonLog.Clear();
+        ChatService.ResetPersistedDataForNewGame();
         fm.PlayCurrent();
     }
 

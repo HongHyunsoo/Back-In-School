@@ -253,6 +253,13 @@ public class ChatRoomDetailUI : MonoBehaviour
 
     private string ResolveConversationId(string roomId)
     {
+        if (ChatService.Instance != null)
+        {
+            string nextSessionId = ChatService.Instance.GetNextSessionIdForRoom(roomId);
+            if (!string.IsNullOrEmpty(nextSessionId))
+                return nextSessionId;
+        }
+
         if (roomConversationMaps == null) return null;
         for (int i = 0; i < roomConversationMaps.Length; i++)
         {

@@ -42,6 +42,10 @@ public class PlayerController : MonoBehaviour
     private static readonly int HashIsGrounded = Animator.StringToHash("isGrounded");
     private static readonly int HashYVelocity = Animator.StringToHash("yVelocity");
 
+    public bool IsRunningHeld => isRunning;
+    public bool IsActivelyRunning => isRunning && moveInput != 0f && isGrounded && currentStamina > 0f;
+    public float HorizontalInput => moveInput;
+
     private void Start()
     {
         rb = GetComponent<Rigidbody2D>();

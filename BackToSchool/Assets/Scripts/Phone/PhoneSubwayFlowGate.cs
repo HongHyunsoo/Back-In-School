@@ -139,14 +139,15 @@ public class PhoneSubwayFlowGate : MonoBehaviour
 
     private bool CanLeaveSubwayNow()
     {
-        if (ChatService.Instance == null || LocalizationManager.Instance == null)
+        if (ChatService.Instance == null)
             return false;
 
         if (ChatService.Instance.HasActiveSession)
             return false;
 
         int day = GetCurrentDay();
-        var segs = LocalizationManager.Instance.GetChatSegments(day, GameState.Subway);
+        string activeFlowId = PlayerPrefs.GetString("FLOW_ID", "");
+        var segs = ChatSegmentCatalog.Instance.GetSegments(day, GameState.Subway, activeFlowId);
         if (segs == null || segs.Count == 0)
         {
             // 폴백: 세그먼트가 없으면 현재 저장 상태 기준으로 판정
@@ -175,10 +176,10 @@ public class PhoneSubwayFlowGate : MonoBehaviour
         var requiredRooms = new HashSet<string>();
         for (int i = 0; i < segs.Count; i++)
         {
-            if (!string.IsNullOrEmpty(segs[i].conversationId))
-                requiredConversations.Add(segs[i].conversationId);
-            if (!string.IsNullOrEmpty(segs[i].roomId))
-                requiredRooms.Add(segs[i].roomId);
+            if (!string.IsNullOrEmpty(segs[i].ConversationId))
+                requiredConversations.Add(segs[i].ConversationId);
+            if (!string.IsNullOrEmpty(segs[i].RoomId))
+                requiredRooms.Add(segs[i].RoomId);
         }
 
         if (requiredConversations.Count == 0)

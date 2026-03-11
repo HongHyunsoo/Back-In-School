@@ -187,6 +187,8 @@ public class PhonePenaltyRuleListView : MonoBehaviour
                 return L("\uC790\uAC00\uC9C4\uB2E8 \uBBF8\uC2E4\uC2DC", "Health survey not completed");
             case PenaltyReasonLog.ReasonNoSlippers:
                 return L("\uC2E4\uB0B4\uD654 \uBBF8\uCC29\uC6A9", "Indoor slippers not worn");
+            case PenaltyReasonLog.ReasonRunningAtLunch:
+                return L("\uC810\uC2EC \uC790\uC720\uC2DC\uAC04 \uB6F0\uAE30", "Running during lunch free time");
             default:
                 return L("\uAE30\uD0C0 \uBC8C\uC810", "Penalty");
         }

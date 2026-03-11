@@ -177,31 +177,27 @@ public class ChatService : MonoBehaviour
     /// </summary>
     public void ActivateSegmentsFor(int day, GameState state)
     {
-        if (LocalizationManager.Instance == null)
-        {
-            Debug.LogWarning("[ChatService] LocalizationManager.Instance가 없어 ChatSegments를 활성화할 수 없음");
+        string activeFlowId = PlayerPrefs.GetString("FLOW_ID", "");
+        var segs = ChatSegmentCatalog.Instance.GetSegments(day, state, activeFlowId);
+        if (segs == null || segs.Count == 0)
             return;
-        }
-
-        var segs = LocalizationManager.Instance.GetChatSegments(day, state);
-        if (segs == null || segs.Count == 0) return;
 
         foreach (var seg in segs)
         {
-            if (string.IsNullOrEmpty(seg.roomId) || string.IsNullOrEmpty(seg.conversationId))
+            if (string.IsNullOrEmpty(seg.RoomId) || string.IsNullOrEmpty(seg.ConversationId))
                 continue;
 
-            EnsureRoomExists(seg.roomId);
+            EnsureRoomExists(seg.RoomId);
 
             // sessionId == conversationId
-            var session = GetSession(seg.conversationId);
+            var session = GetSession(seg.ConversationId);
             bool isNewSession = false;
             if (session == null)
             {
                 session = new ChatSessionState
                 {
-                    sessionId = seg.conversationId,
-                    roomId = seg.roomId,
+                    sessionId = seg.ConversationId,
+                    roomId = seg.RoomId,
                     progressIndex = 0,
                     completed = false
                 };
@@ -211,19 +207,19 @@ public class ChatService : MonoBehaviour
             else
             {
                 // 이미 존재하는 세션인데 roomId가 다르면(데이터 변경) 보정
-                session.roomId = seg.roomId;
+                session.roomId = seg.RoomId;
             }
 
-            if (isNewSession && seg.notify)
-                AddUnread(seg.roomId, 1);
+            if (isNewSession && seg.Notify)
+                AddUnread(seg.RoomId, 1);
         }
 
         Save();
         OnChanged?.Invoke();
 
-        Debug.Log($"[Chat] ActivateSegmentsFor day={day}, state={state}, segCount={segs.Count}");
+        Debug.Log($"[Chat] ActivateSegmentsFor day={day}, state={state}, flowId={activeFlowId}, segCount={segs.Count}");
         foreach (var seg in segs)
-            Debug.Log($"[Chat] + room={seg.roomId} conv={seg.conversationId} notify={seg.notify}");
+            Debug.Log($"[Chat] + room={seg.RoomId} conv={seg.ConversationId} notify={seg.Notify}");
 
     }
     private void EnsureRoomExists(string roomId)
@@ -239,9 +235,7 @@ public class ChatService : MonoBehaviour
     }
     private void EnsureRoomsFromChatSegments()
     {
-        if (LocalizationManager.Instance == null) return;
-
-        var roomIds = LocalizationManager.Instance.GetAllChatRoomIds();
+        var roomIds = ChatSegmentCatalog.Instance.GetAllRoomIds();
         foreach (var roomId in roomIds)
             EnsureRoomExists(roomId);
 
@@ -394,6 +388,23 @@ public class ChatService : MonoBehaviour
 
         Save();
         OnChanged?.Invoke();
+    }
+
+    public void ResetForNewGame()
+    {
+        Data = new ChatSaveData();
+        EnsureRoomsFromChatSegments();
+        Save();
+        OnChanged?.Invoke();
+    }
+
+    public static void ResetPersistedDataForNewGame()
+    {
+        PlayerPrefs.DeleteKey(PREF_KEY);
+        PlayerPrefs.Save();
+
+        if (Instance != null)
+            Instance.ResetForNewGame();
     }
 
 

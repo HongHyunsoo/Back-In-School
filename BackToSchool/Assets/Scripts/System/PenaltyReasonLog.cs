@@ -20,6 +20,7 @@ public static class PenaltyReasonLog
 {
     public const string ReasonHealthSurveyMissing = "PENALTY_HEALTH_SURVEY_MISSING";
     public const string ReasonNoSlippers = "PENALTY_NO_SLIPPERS";
+    public const string ReasonRunningAtLunch = "PENALTY_RUNNING_AT_LUNCH";
 
     private const string PrefKey = "PENALTY_REASON_LOG_V1";
     private static readonly List<PenaltyReasonEntry> cache = new List<PenaltyReasonEntry>();
@@ -91,4 +92,3 @@ public static class PenaltyReasonLog
         PlayerPrefs.Save();
     }
 }
-

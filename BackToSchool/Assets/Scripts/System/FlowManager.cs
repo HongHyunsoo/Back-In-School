@@ -73,7 +73,7 @@ public class FlowManager : MonoBehaviour
         {
             var list = new List<FlowEvent>();
 
-            list.Add(E(FlowEventType.CHAT, "", "?깃탳 吏?섏쿋"));
+            list.Add(E(FlowEventType.CHAT, $"D{d}_CHAT_TO_SCHOOL", "?깃탳 吏?섏쿋"));
             list.Add(E(FlowEventType.FREEROAM, $"D{d}_BEFORE_ASSEMBLY", "議고쉶 ???먯쑀?대룞"));
             list.Add(E(FlowEventType.STORY, $"DAY{d}_CLASSOPEN", "?꾩묠 議고쉶"));
 
