@@ -94,6 +94,9 @@ public class PhoneAppManager : MonoBehaviour
     {
         if (IsLocked) return;
 
+        if (appId == PhoneAppId.Health && !FlowContext.IsHealthCheckAllowed())
+            return;
+
         if (appId == PhoneAppId.Home)
         {
             ShowHome();

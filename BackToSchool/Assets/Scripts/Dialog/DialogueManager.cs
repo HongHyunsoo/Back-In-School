@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
@@ -18,6 +19,8 @@ using UnityEngine.SceneManagement;
  */
 public class DialogueManager : MonoBehaviour
 {
+    public static event Action<string, string> DialogueLineShown;
+
     [SerializeField] private CutsceneCommandRunner commandRunner;
     private bool isBusy; // 연출 진행중이면 true
 
@@ -42,6 +45,8 @@ public class DialogueManager : MonoBehaviour
     private DialogueLine currentLine;
     public bool IsDialogueActive { get; private set; }
     public bool inputConsumedThisFrame { get; private set; } = false;
+    public string CurrentConversationId { get; private set; } = string.Empty;
+    public string CurrentLineId => currentLine != null ? currentLine.lineID : string.Empty;
     private GameManager gameManager;
     private Transform currentSpeaker;
     private Transform currentNpcSpeaker;
@@ -422,6 +427,8 @@ public class DialogueManager : MonoBehaviour
 
         if (speechBubble != null) speechBubble.gameObject.SetActive(true);
         IsDialogueActive = true;
+        CurrentConversationId = conversationID;
+        currentLine = null;
         currentNpcSpeaker = npcSpeaker;
 
         if (playerController != null) playerController.enabled = false;
@@ -492,6 +499,7 @@ public class DialogueManager : MonoBehaviour
         }
 
         currentLine = lines.Dequeue();
+        DialogueLineShown?.Invoke(CurrentConversationId, currentLine.lineID);
         string currentSpeakerID = currentLine.speakerID;
 
         // STORY line-level set switching: lineID -> setId
@@ -594,7 +602,9 @@ public class DialogueManager : MonoBehaviour
 
         if (speechBubble != null) speechBubble.gameObject.SetActive(false);
         IsDialogueActive = false;
+        CurrentConversationId = string.Empty;
         currentSpeaker = null;
+        currentLine = null;
         currentNpcSpeaker = null;
 
         // STORY 씬이면 FlowManager에게 "이번 이벤트 끝남"만 보고

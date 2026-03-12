@@ -73,7 +73,7 @@ public static class FlowContext
 
     public static bool IsHealthCheckAllowed()
     {
-        return IsChat() || IsMorningBeforeAssemblyFreeRoam();
+        return IsChat() && CurrentIdContains("CHAT_TO_SCHOOL");
     }
 
     public static void Set(string flowId, FlowEventType flowType)
