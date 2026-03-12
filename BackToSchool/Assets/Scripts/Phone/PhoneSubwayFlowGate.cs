@@ -101,7 +101,7 @@ public class PhoneSubwayFlowGate : MonoBehaviour
 
     private void OnPowerPressed()
     {
-        Debug.Log("[PhoneSubwayFlowGate] Power pressed. FLOW_TYPE=" + PlayerPrefs.GetString("FLOW_TYPE", ""));
+        Debug.Log("[PhoneSubwayFlowGate] Power pressed. FLOW_TYPE=" + FlowContext.CurrentType);
         if (!IsSubwayContext() || isProcessingPower) return;
 
         if (!CanLeaveSubwayNow())
@@ -134,7 +134,7 @@ public class PhoneSubwayFlowGate : MonoBehaviour
 
     private bool IsSubwayContext()
     {
-        return PlayerPrefs.GetString("FLOW_TYPE", "") == "CHAT";
+        return FlowContext.IsChat();
     }
 
     private bool CanLeaveSubwayNow()
@@ -146,7 +146,7 @@ public class PhoneSubwayFlowGate : MonoBehaviour
             return false;
 
         int day = GetCurrentDay();
-        string activeFlowId = PlayerPrefs.GetString("FLOW_ID", "");
+        string activeFlowId = FlowContext.CurrentId;
         var segs = ChatSegmentCatalog.Instance.GetSegments(day, GameState.Subway, activeFlowId);
         if (segs == null || segs.Count == 0)
         {

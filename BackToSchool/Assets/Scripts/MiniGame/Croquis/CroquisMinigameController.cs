@@ -135,6 +135,7 @@ public class CroquisMinigameController : MonoBehaviour
     private float bubbleTimer;
     private float bubbleHideTimer;
     private int lastBubbleIndex = -1;
+    private int nextBubbleIndex;
     private readonly System.Collections.Generic.List<DialogueLine> teacherConversationLines = new();
     private RectTransform bubbleRootRect;
     private Vector2 bubbleDefaultAnchoredPos;
@@ -731,7 +732,8 @@ public class CroquisMinigameController : MonoBehaviour
         int count = GetTeacherLineCount();
         if (count <= 0) return;
 
-        int idx = rng.Next(0, count);
+        int idx = Mathf.Clamp(nextBubbleIndex, 0, count - 1);
+        nextBubbleIndex = (idx + 1) % count;
         lastBubbleIndex = idx;
 
         string line = ResolveTeacherLineAt(idx);
@@ -814,6 +816,8 @@ public class CroquisMinigameController : MonoBehaviour
     private void ReloadTeacherConversationLines()
     {
         teacherConversationLines.Clear();
+        nextBubbleIndex = 0;
+        lastBubbleIndex = -1;
 
         if (LocalizationManager.Instance == null || string.IsNullOrEmpty(teacherConversationId))
             return;

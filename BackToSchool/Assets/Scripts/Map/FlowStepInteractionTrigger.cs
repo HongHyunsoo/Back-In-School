@@ -89,15 +89,13 @@ public class FlowStepInteractionTrigger : MonoBehaviour
         if (!restrictByFlowType)
             return true;
 
-        string flowType = PlayerPrefs.GetString("FLOW_TYPE", "");
-        if (!string.Equals(flowType, requiredFlowType, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(FlowContext.CurrentType, requiredFlowType, StringComparison.OrdinalIgnoreCase))
             return false;
 
         if (string.IsNullOrEmpty(requiredFlowIdContains))
             return true;
 
-        string flowId = PlayerPrefs.GetString("FLOW_ID", "");
-        return flowId.IndexOf(requiredFlowIdContains, StringComparison.OrdinalIgnoreCase) >= 0;
+        return FlowContext.CurrentId.IndexOf(requiredFlowIdContains, StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private void OnTriggerEnter2D(Collider2D other)

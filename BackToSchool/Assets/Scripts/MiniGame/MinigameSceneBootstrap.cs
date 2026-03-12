@@ -31,13 +31,11 @@ public class MinigameSceneBootstrap : MonoBehaviour
     {
         EnsureControllers();
 
-        string id = PlayerPrefs.GetString("FLOW_ID", "");
+        string id = FlowContext.CurrentId;
 
-        bool shouldRunTetris = !string.IsNullOrEmpty(id) && id.StartsWith(lunchPrefix);
-        bool shouldRunCroquis =
-            !string.IsNullOrEmpty(id) && id.StartsWith(class1Prefix);
-        bool shouldRunPixelPaint =
-            !string.IsNullOrEmpty(id) && id.StartsWith(class2Prefix);
+        bool shouldRunTetris = FlowContext.CurrentIdStartsWith(lunchPrefix);
+        bool shouldRunCroquis = FlowContext.CurrentIdStartsWith(class1Prefix);
+        bool shouldRunPixelPaint = FlowContext.CurrentIdStartsWith(class2Prefix);
 
         ApplyControllerState(tetris, shouldRunTetris, CanToggleHostGameObject(tetris));
         ApplyControllerState(croquis, shouldRunCroquis, CanToggleHostGameObject(croquis));
@@ -45,9 +43,7 @@ public class MinigameSceneBootstrap : MonoBehaviour
 
         if (!shouldRunTetris && !shouldRunCroquis && !shouldRunPixelPaint)
         {
-            Debug.LogWarning($"[MinigameSceneBootstrap] Unknown FLOW_ID '{id}'.");
-            if (FlowManager.Instance != null)
-                FlowManager.Instance.CompleteCurrentEvent(0);
+            Debug.LogError($"[MinigameSceneBootstrap] Unsupported FLOW_ID '{id}'. Check FlowManager timeline and minigame routing prefixes.");
         }
     }
 

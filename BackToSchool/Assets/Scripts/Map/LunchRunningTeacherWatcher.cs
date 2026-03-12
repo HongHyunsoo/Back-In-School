@@ -168,12 +168,7 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
         if (SceneManager.GetActiveScene().name != "FREEROAM")
             return false;
 
-        string flowType = PlayerPrefs.GetString("FLOW_TYPE", "");
-        if (!string.Equals(flowType, "FREEROAM", System.StringComparison.OrdinalIgnoreCase))
-            return false;
-
-        string flowId = PlayerPrefs.GetString("FLOW_ID", "");
-        if (string.IsNullOrEmpty(flowId) || flowId.IndexOf("LUNCH", System.StringComparison.OrdinalIgnoreCase) < 0)
+        if (!FlowContext.IsLunchFreeRoam())
             return false;
 
         var gm = FindAnyObjectByType<GameManager>();
@@ -185,7 +180,7 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
 
     private void SyncSharedCounterWithCurrentFlow()
     {
-        string flowId = PlayerPrefs.GetString("FLOW_ID", "");
+        string flowId = FlowContext.CurrentId;
         if (string.Equals(activeLunchFlowId, flowId, System.StringComparison.Ordinal))
             return;
 

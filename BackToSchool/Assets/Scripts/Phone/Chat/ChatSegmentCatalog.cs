@@ -88,8 +88,11 @@ public sealed class ChatSegmentCatalog
             if (string.IsNullOrEmpty(conversationId) || string.IsNullOrEmpty(roomId))
                 continue;
 
-            if (!Enum.TryParse(stateRaw, true, out GameState state))
+            if (!TryParseState(stateRaw, out GameState state))
                 continue;
+
+            if (c.Length < 7)
+                flowIdContains = InferLegacyFlowFilter(stateRaw, conversationId);
 
             catalog.roomIds.Add(roomId);
 
@@ -152,6 +155,41 @@ public sealed class ChatSegmentCatalog
     }
 
     private static string MakeKey(int day, GameState state) => day + "|" + state;
+
+    private static bool TryParseState(string raw, out GameState state)
+    {
+        if (Enum.TryParse(raw, true, out state))
+            return true;
+
+        string normalized = (raw ?? string.Empty).Trim().ToUpperInvariant();
+        switch (normalized)
+        {
+            case "GO HOME":
+            case "GOHOME":
+            case "HOME":
+                state = GameState.Subway;
+                return true;
+        }
+
+        state = default;
+        return false;
+    }
+
+    private static string InferLegacyFlowFilter(string stateRaw, string conversationId)
+    {
+        string normalized = (stateRaw ?? string.Empty).Trim().ToUpperInvariant();
+        if (normalized == "GO HOME" || normalized == "GOHOME" || normalized == "HOME")
+            return "CHAT_TO_HOME";
+
+        if (normalized == "SUBWAY")
+            return "CHAT_TO_SCHOOL";
+
+        if (!string.IsNullOrEmpty(conversationId) &&
+            conversationId.EndsWith("_N", StringComparison.OrdinalIgnoreCase))
+            return "CHAT_TO_HOME";
+
+        return string.Empty;
+    }
 
     private static string SafeGet(string[] c, int index)
     {

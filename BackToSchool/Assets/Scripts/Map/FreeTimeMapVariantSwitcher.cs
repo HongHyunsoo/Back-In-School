@@ -32,8 +32,8 @@ public class FreeTimeMapVariantSwitcher : MonoBehaviour
         if (!autoRefresh)
             return;
 
-        string flowType = PlayerPrefs.GetString("FLOW_TYPE", "");
-        string flowId = PlayerPrefs.GetString("FLOW_ID", "");
+        string flowType = FlowContext.CurrentType;
+        string flowId = FlowContext.CurrentId;
         if (flowType == lastFlowType && flowId == lastFlowId)
             return;
 
@@ -43,24 +43,22 @@ public class FreeTimeMapVariantSwitcher : MonoBehaviour
     [ContextMenu("Refresh FreeTime Map")]
     public void RefreshNow()
     {
-        string flowType = PlayerPrefs.GetString("FLOW_TYPE", "");
-        string flowId = PlayerPrefs.GetString("FLOW_ID", "");
+        string flowType = FlowContext.CurrentType;
+        string flowId = FlowContext.CurrentId;
 
         lastFlowType = flowType;
         lastFlowId = flowId;
 
-        if (requireFreeRoamType && flowType != "FREEROAM")
+        if (requireFreeRoamType && !FlowContext.IsFreeRoam())
         {
             if (useFallbackWhenTypeMismatch)
                 SetActiveOnly(fallbackMapRoot);
             return;
         }
 
-        string idUpper = string.IsNullOrEmpty(flowId) ? "" : flowId.ToUpperInvariant();
-
-        bool isLunch = idUpper.Contains("LUNCH");
-        bool isAfterSchool = idUpper.Contains("AFTERSCHOOL");
-        bool isMorning = idUpper.Contains("BEFORE_ASSEMBLY") || (!isLunch && !isAfterSchool);
+        bool isLunch = FlowContext.IsLunchFreeRoam();
+        bool isAfterSchool = FlowContext.IsAfterSchoolFreeRoam();
+        bool isMorning = FlowContext.IsMorningBeforeAssemblyFreeRoam() || (!isLunch && !isAfterSchool);
 
         if (isLunch)
             SetActiveOnly(lunchMapRoot);

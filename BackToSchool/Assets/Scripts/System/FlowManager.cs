@@ -161,8 +161,7 @@ public class FlowManager : MonoBehaviour
     void LoadModeScene(FlowEvent ev)
     {
         string resolvedId = ResolveFlowId(ev);
-        PlayerPrefs.SetString("FLOW_ID", resolvedId);
-        PlayerPrefs.SetString("FLOW_TYPE", ev.type.ToString());
+        FlowContext.Set(resolvedId, ev.type);
 
         // Keep day in sync only. Scene-based state enter is handled by GameManager.OnSceneLoaded.
         var gm = FindAnyObjectByType<GameManager>();

@@ -170,9 +170,9 @@ public class PhoneHealthSurveyController : MonoBehaviour
 
     private bool HasRequiredAnswers()
     {
-        bool q1 = IsExpectedAnswer("Question_1", "\uB124");
+        bool q1 = IsExpectedAnswer("Question_1", "\uC544\uB2C8\uC624");
         bool q2 = IsExpectedAnswer("Question_2", "\uAC80\uC0AC\uD558\uC9C0\uC54A\uC74C");
-        bool q3 = IsExpectedAnswer("Question_3", "\uB124");
+        bool q3 = IsExpectedAnswer("Question_3", "\uC544\uB2C8\uC624");
         return q1 && q2 && q3;
     }
 
@@ -517,16 +517,7 @@ public class PhoneHealthSurveyController : MonoBehaviour
 
     private static bool IsHealthAllowedInCurrentFlow()
     {
-        string flowType = PlayerPrefs.GetString("FLOW_TYPE", "");
-        string flowId = PlayerPrefs.GetString("FLOW_ID", "");
-
-        if (flowType == "CHAT")
-            return true;
-
-        if (flowType == "FREEROAM")
-            return string.IsNullOrEmpty(flowId) || flowId.Contains("BEFORE_ASSEMBLY");
-
-        return false;
+        return FlowContext.IsHealthCheckAllowed();
     }
 }
 

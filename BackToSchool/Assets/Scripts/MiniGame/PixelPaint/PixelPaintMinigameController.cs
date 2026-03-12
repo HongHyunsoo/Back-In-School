@@ -4,6 +4,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 /// <summary>
 /// Paint-by-number minigame with inspector-defined puzzle list + palette UI buttons.
@@ -30,6 +33,9 @@ public class PixelPaintMinigameController : MonoBehaviour
         public Color[] customPalette;
     }
 
+    [Header("Config (Optional)")]
+    public PixelPaintMinigameConfig config;
+
     [Header("Puzzle")]
     [Tooltip("Add 3+ puzzles here. You can fully control each pattern.")]
     public List<PixelPaintPuzzleDefinition> puzzles = new List<PixelPaintPuzzleDefinition>();
@@ -44,6 +50,10 @@ public class PixelPaintMinigameController : MonoBehaviour
     public float numberTextScaleMultiplier = 0.48f;
     [Tooltip("Font for cell numbers.")]
     public TMP_FontAsset numberFontAsset;
+    [Range(0f, 1f)] public float emptyCellAlpha = 0f;
+    public bool hideEmptyCellOutline = true;
+    public Color boardBackgroundColor = new Color(0.08f, 0.08f, 0.08f, 0f);
+    public Vector2 boardBackgroundPadding = new Vector2(0.35f, 0.35f);
 
     [Header("Auto Fit")]
     [Tooltip("Automatically fit board size/position to the current orthographic camera.")]
@@ -74,6 +84,10 @@ public class PixelPaintMinigameController : MonoBehaviour
         new Color(0.30f, 0.70f, 0.95f),
         new Color(0.28f, 0.82f, 0.44f)
     };
+    public Vector2 palettePanelAnchoredPosition = new Vector2(88f, 0f);
+    public Vector2 palettePanelSize = new Vector2(96f, 760f);
+    public Vector2 paletteButtonSize = new Vector2(72f, 72f);
+    public float paletteSpacing = 10f;
 
     [Header("Flow")]
     public int penaltyOnGiveUp = 1;
@@ -107,12 +121,15 @@ public class PixelPaintMinigameController : MonoBehaviour
     private TextMeshProUGUI headerText;
     private readonly List<Button> paletteButtons = new List<Button>();
     private readonly List<Image> paletteButtonImages = new List<Image>();
+    private readonly List<GameObject> runtimeBoardObjects = new List<GameObject>();
     private int lastLeftPaintedX = -1;
     private int lastLeftPaintedY = -1;
     private int lastRightPaintedX = -1;
     private int lastRightPaintedY = -1;
     private bool isPanning;
     private Vector3 lastMouseScreenPos;
+    private float defaultOrthoSize = -1f;
+    private Vector3 defaultCameraPosition;
 
     private class CellView
     {
@@ -129,6 +146,8 @@ public class PixelPaintMinigameController : MonoBehaviour
 
     private void Awake()
     {
+        ApplyConfigIfNeeded();
+
         string flowId = PlayerPrefs.GetString("FLOW_ID", "");
         if (string.IsNullOrEmpty(flowId) || !flowId.StartsWith("CLASS2_"))
         {
@@ -148,6 +167,7 @@ public class PixelPaintMinigameController : MonoBehaviour
         SelectAndLoadPuzzle();
         EnsurePaletteCapacityForPuzzle();
         AutoFitBoardToCamera();
+        CaptureDefaultZoomState();
         // Force runtime value to avoid stale inspector overrides.
         numberTextScaleMultiplier = RuntimeNumberScale;
 
@@ -158,6 +178,66 @@ public class PixelPaintMinigameController : MonoBehaviour
 
         if (LocalizationManager.Instance != null)
             LocalizationManager.Instance.OnLanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnValidate()
+    {
+        if (Application.isPlaying)
+            return;
+
+        if (config == null)
+            return;
+
+        ApplyConfigIfNeeded();
+
+        #if UNITY_EDITOR
+        EditorUtility.SetDirty(this);
+        #endif
+    }
+
+    private void ApplyConfigIfNeeded()
+    {
+        if (config == null)
+            return;
+
+        if (config.puzzles != null && config.puzzles.Count > 0)
+            puzzles = new List<PixelPaintPuzzleDefinition>(config.puzzles);
+
+        selectMode = config.selectMode;
+        fixedPuzzleIndex = config.fixedPuzzleIndex;
+
+        cellSize = config.cellSize;
+        boardOrigin = config.boardOrigin;
+        numberTextScaleMultiplier = config.numberTextScaleMultiplier;
+        if (config.numberFontAsset != null)
+            numberFontAsset = config.numberFontAsset;
+        emptyCellAlpha = config.emptyCellAlpha;
+        hideEmptyCellOutline = config.hideEmptyCellOutline;
+        boardBackgroundColor = config.boardBackgroundColor;
+        boardBackgroundPadding = config.boardBackgroundPadding;
+
+        autoFitToCamera = config.autoFitToCamera;
+        fitRatio = config.fitRatio;
+
+        enableWheelZoom = config.enableWheelZoom;
+        zoomSpeed = config.zoomSpeed;
+        wheelStepDamping = config.wheelStepDamping;
+        minOrthoSize = config.minOrthoSize;
+        maxOrthoSize = config.maxOrthoSize;
+
+        enableMiddleMousePan = config.enableMiddleMousePan;
+        panSpeed = config.panSpeed;
+
+        if (config.palette != null && config.palette.Length > 0)
+            palette = (Color[])config.palette.Clone();
+        palettePanelAnchoredPosition = config.palettePanelAnchoredPosition;
+        palettePanelSize = config.palettePanelSize;
+        paletteButtonSize = config.paletteButtonSize;
+        paletteSpacing = config.paletteSpacing;
+
+        penaltyOnGiveUp = config.penaltyOnGiveUp;
+        playAllPuzzlesInOneRun = config.playAllPuzzlesInOneRun;
+        solvedPreviewSeconds = config.solvedPreviewSeconds;
     }
 
     private void OnDisable()
@@ -521,6 +601,7 @@ public class PixelPaintMinigameController : MonoBehaviour
     {
         views = new CellView[width, height];
         cellSprite = CreateSolidSprite();
+        BuildBoardBackground();
 
         for (int x = 0; x < width; x++)
         {
@@ -529,6 +610,7 @@ public class PixelPaintMinigameController : MonoBehaviour
                 var root = new GameObject($"Cell_{x}_{y}");
                 root.transform.SetParent(transform, false);
                 root.transform.position = CellToWorld(x, y);
+                runtimeBoardObjects.Add(root);
 
                 var fillGo = new GameObject("Fill");
                 fillGo.transform.SetParent(root.transform, false);
@@ -644,22 +726,22 @@ public class PixelPaintMinigameController : MonoBehaviour
         headerText.fontSize = 30f;
         headerText.color = Color.white;
 
-        var palettePanel = new GameObject("PalettePanel", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+        var palettePanel = new GameObject("PalettePanel", typeof(RectTransform), typeof(VerticalLayoutGroup));
         palettePanel.transform.SetParent(root.transform, false);
         var panelRect = palettePanel.GetComponent<RectTransform>();
-        panelRect.anchorMin = new Vector2(0.5f, 0f);
-        panelRect.anchorMax = new Vector2(0.5f, 0f);
-        panelRect.pivot = new Vector2(0.5f, 0f);
-        panelRect.anchoredPosition = new Vector2(0f, 28f);
-        panelRect.sizeDelta = new Vector2(980f, 92f);
+        panelRect.anchorMin = new Vector2(0f, 0.5f);
+        panelRect.anchorMax = new Vector2(0f, 0.5f);
+        panelRect.pivot = new Vector2(0f, 0.5f);
+        panelRect.anchoredPosition = palettePanelAnchoredPosition;
+        panelRect.sizeDelta = palettePanelSize;
 
-        var h = palettePanel.GetComponent<HorizontalLayoutGroup>();
-        h.spacing = 10f;
-        h.childForceExpandWidth = false;
-        h.childForceExpandHeight = false;
-        h.childControlWidth = false;
-        h.childControlHeight = false;
-        h.childAlignment = TextAnchor.MiddleCenter;
+        var v = palettePanel.GetComponent<VerticalLayoutGroup>();
+        v.spacing = paletteSpacing;
+        v.childForceExpandWidth = false;
+        v.childForceExpandHeight = false;
+        v.childControlWidth = false;
+        v.childControlHeight = false;
+        v.childAlignment = TextAnchor.MiddleCenter;
 
         paletteButtons.Clear();
         paletteButtonImages.Clear();
@@ -673,11 +755,11 @@ public class PixelPaintMinigameController : MonoBehaviour
             btnGo.transform.SetParent(palettePanel.transform, false);
 
             var btnRect = btnGo.GetComponent<RectTransform>();
-            btnRect.sizeDelta = new Vector2(78f, 78f);
+            btnRect.sizeDelta = paletteButtonSize;
 
             var layout = btnGo.GetComponent<LayoutElement>();
-            layout.preferredWidth = 78f;
-            layout.preferredHeight = 78f;
+            layout.preferredWidth = paletteButtonSize.x;
+            layout.preferredHeight = paletteButtonSize.y;
 
             var image = btnGo.GetComponent<Image>();
             image.color = palette[i];
@@ -755,7 +837,9 @@ public class PixelPaintMinigameController : MonoBehaviour
 
         float damp = Mathf.Max(1f, wheelStepDamping);
         float next = mainCam.orthographicSize - ((scroll * zoomSpeed) / damp);
-        mainCam.orthographicSize = Mathf.Clamp(next, minOrthoSize, maxOrthoSize);
+        float zoomOutLimit = defaultOrthoSize > 0f ? defaultOrthoSize : maxOrthoSize;
+        mainCam.orthographicSize = Mathf.Clamp(next, minOrthoSize, zoomOutLimit);
+        ClampCameraToDefaultBounds();
     }
 
     private void HandleMiddleMousePan()
@@ -791,6 +875,7 @@ public class PixelPaintMinigameController : MonoBehaviour
             float unitsPerPixel = (mainCam.orthographicSize * 2f) / Mathf.Max(1, mainCam.pixelHeight);
             Vector3 move = new Vector3(-delta.x * unitsPerPixel, -delta.y * unitsPerPixel, 0f) * panSpeed;
             mainCam.transform.position += move;
+            ClampCameraToDefaultBounds();
         }
         else
         {
@@ -966,10 +1051,10 @@ public class PixelPaintMinigameController : MonoBehaviour
 
         if (target[x, y] == 0)
         {
-            v.fill.color = new Color(0.10f, 0.10f, 0.10f, 0.35f);
+            v.fill.color = new Color(0f, 0f, 0f, emptyCellAlpha);
             if (v.label != null) v.label.text = "";
             if (v.label != null) v.label.enabled = false;
-            if (v.edge != null) v.edge.enabled = true;
+            if (v.edge != null) v.edge.enabled = !hideEmptyCellOutline;
             return;
         }
 
@@ -1039,6 +1124,7 @@ public class PixelPaintMinigameController : MonoBehaviour
         SelectAndLoadPuzzle();
         EnsurePaletteCapacityForPuzzle();
         AutoFitBoardToCamera();
+        CaptureDefaultZoomState();
         ClearBoardVisuals();
         BuildBoardVisuals();
 
@@ -1068,7 +1154,47 @@ public class PixelPaintMinigameController : MonoBehaviour
         camPos.x = boardOrigin.x + (boardWorldWidth * 0.5f);
         camPos.y = boardOrigin.y + (boardWorldHeight * 0.5f);
         mainCam.transform.position = camPos;
-        mainCam.orthographicSize = Mathf.Clamp(targetSize, minOrthoSize, maxOrthoSize);
+        float zoomOutLimit = defaultOrthoSize > 0f ? defaultOrthoSize : maxOrthoSize;
+        mainCam.orthographicSize = Mathf.Clamp(targetSize, minOrthoSize, zoomOutLimit);
+    }
+
+    private void CaptureDefaultZoomState()
+    {
+        if (mainCam == null || !mainCam.orthographic)
+            return;
+
+        defaultOrthoSize = Mathf.Clamp(mainCam.orthographicSize, minOrthoSize, maxOrthoSize);
+        defaultCameraPosition = mainCam.transform.position;
+    }
+
+    private void ClampCameraToDefaultBounds()
+    {
+        if (mainCam == null || !mainCam.orthographic || defaultOrthoSize <= 0f)
+            return;
+
+        float defaultHalfHeight = defaultOrthoSize;
+        float defaultHalfWidth = defaultHalfHeight * Mathf.Max(0.01f, mainCam.aspect);
+        float currentHalfHeight = mainCam.orthographicSize;
+        float currentHalfWidth = currentHalfHeight * Mathf.Max(0.01f, mainCam.aspect);
+
+        Vector3 pos = mainCam.transform.position;
+
+        float minX = defaultCameraPosition.x - (defaultHalfWidth - currentHalfWidth);
+        float maxX = defaultCameraPosition.x + (defaultHalfWidth - currentHalfWidth);
+        float minY = defaultCameraPosition.y - (defaultHalfHeight - currentHalfHeight);
+        float maxY = defaultCameraPosition.y + (defaultHalfHeight - currentHalfHeight);
+
+        if (minX > maxX)
+            pos.x = defaultCameraPosition.x;
+        else
+            pos.x = Mathf.Clamp(pos.x, minX, maxX);
+
+        if (minY > maxY)
+            pos.y = defaultCameraPosition.y;
+        else
+            pos.y = Mathf.Clamp(pos.y, minY, maxY);
+
+        mainCam.transform.position = pos;
     }
 
     private void HideBoardOutlinesAndNumbers()
@@ -1117,12 +1243,41 @@ public class PixelPaintMinigameController : MonoBehaviour
         }
     }
 
+    private void BuildBoardBackground()
+    {
+        if (boardBackgroundColor.a <= 0.001f)
+            return;
+
+        float boardWorldWidth = width * cellSize;
+        float boardWorldHeight = height * cellSize;
+
+        var bgGo = new GameObject("BoardBackground");
+        bgGo.transform.SetParent(transform, false);
+        bgGo.transform.position = new Vector3(
+            boardOrigin.x + (boardWorldWidth * 0.5f),
+            boardOrigin.y + (boardWorldHeight * 0.5f),
+            1f);
+
+        var bg = bgGo.AddComponent<SpriteRenderer>();
+        bg.sprite = cellSprite;
+        bg.drawMode = SpriteDrawMode.Sliced;
+        bg.size = new Vector2(
+            boardWorldWidth + (boardBackgroundPadding.x * 2f),
+            boardWorldHeight + (boardBackgroundPadding.y * 2f));
+        bg.color = boardBackgroundColor;
+        bg.sortingOrder = 1;
+        runtimeBoardObjects.Add(bgGo);
+    }
+
     private void ClearBoardVisuals()
     {
         views = null;
-
-        for (int i = transform.childCount - 1; i >= 0; i--)
-            Destroy(transform.GetChild(i).gameObject);
+        for (int i = 0; i < runtimeBoardObjects.Count; i++)
+        {
+            if (runtimeBoardObjects[i] != null)
+                Destroy(runtimeBoardObjects[i]);
+        }
+        runtimeBoardObjects.Clear();
     }
 
     private void OnLanguageChanged(Language _)

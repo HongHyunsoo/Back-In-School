@@ -109,19 +109,14 @@ public class GameManager : MonoBehaviour
 
     private GameState ResolveFreeRoamStateByFlowContext()
     {
-        string flowId = PlayerPrefs.GetString("FLOW_ID", "");
-        if (!string.IsNullOrEmpty(flowId))
-        {
-            string idUpper = flowId.ToUpperInvariant();
-            if (idUpper.Contains("AFTERSCHOOL"))
-                return GameState.AfterSchool;
-            if (idUpper.Contains("BEFORE_ASSEMBLY"))
-                return GameState.Morning_Slippers;
-            if (idUpper.Contains("LUNCH"))
-                return GameState.Lunch_FreeTime;
-            if (idUpper.Contains("DAY5") && idUpper.Contains("FREEROAM"))
-                return GameState.Day5_FreeTime;
-        }
+        if (FlowContext.IsAfterSchoolFreeRoam())
+            return GameState.AfterSchool;
+        if (FlowContext.IsMorningBeforeAssemblyFreeRoam())
+            return GameState.Morning_Slippers;
+        if (FlowContext.IsLunchFreeRoam())
+            return GameState.Lunch_FreeTime;
+        if (FlowContext.IsDay5FreeRoam())
+            return GameState.Day5_FreeTime;
 
         if (currentState == GameState.Morning_Slippers ||
             currentState == GameState.Lunch_FreeTime ||

@@ -15561,7 +15561,61 @@ CompositeCollider2D:
   m_GeometryType: 0
   m_GenerationType: 0
   m_EdgeRadius: 0
-  m_ColliderPaths: []
+  m_ColliderPaths:
+  - m_Collider: {fileID: 416735597}
+    m_ColliderPaths:
+    - - X: 310000000
+        Y: -30000000
+      - X: -199687504
+        Y: -30000000
+      - X: -199687504
+        Y: -25312500
+      - X: -205000000
+        Y: -20000000
+      - X: -209687504
+        Y: -20000000
+      - X: -209687504
+        Y: -15312500
+      - X: -215000000
+        Y: -10000000
+      - X: -219687504
+        Y: -10000000
+      - X: -219687504
+        Y: -5312500
+      - X: -220000004
+        Y: -5000000
+      - X: 310000000
+        Y: -5000000
+      - X: 310000000
+        Y: 30000000
+      - X: -240000000
+        Y: 30000000
+      - X: -240000000
+        Y: -40000000
+      - X: -215000000
+        Y: -40000000
+      - X: -220312496
+        Y: -45312500
+      - X: -220312496
+        Y: -50000000
+      - X: -225000000
+        Y: -50000000
+      - X: -230312496
+        Y: -55312500
+      - X: -230312496
+        Y: -60000000
+      - X: -235000000
+        Y: -60000000
+      - X: -240312496
+        Y: -65312500
+      - X: -240312496
+        Y: -80000000
+      - X: -240000000
+        Y: -80000000
+      - X: -240000000
+        Y: -90000000
+      - X: 310000000
+        Y: -90000000
   m_CompositePaths:
     m_Paths:
     - - {x: 30.999971, y: -9}
@@ -28675,7 +28729,7 @@ Transform:
   m_GameObject: {fileID: 774186927}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 30, y: -2.5, z: 0}
+  m_LocalPosition: {x: 25, y: -2.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -43401,7 +43455,7 @@ BoxCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -0.00370121, y: 0.5581949}
+  m_Offset: {x: -0.00370121, y: 0.074448586}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -43412,7 +43466,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 1.4183626, y: 2.1163898}
+  m_Size: {x: 1.4183626, y: 1.1488972}
   m_EdgeRadius: 0
 --- !u!114 &1115913620
 MonoBehaviour:
@@ -45587,7 +45641,7 @@ BoxCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0.009212494, y: -0.16583729}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -45598,7 +45652,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 0.4361496, y: 0.6683254}
   m_EdgeRadius: 0
 --- !u!1001 &1183752296
 PrefabInstance:
@@ -57025,7 +57079,25 @@ CompositeCollider2D:
   m_GeometryType: 0
   m_GenerationType: 0
   m_EdgeRadius: 0
-  m_ColliderPaths: []
+  m_ColliderPaths:
+  - m_Collider: {fileID: 1374615771}
+    m_ColliderPaths:
+    - - X: 200000000
+        Y: 30000000
+      - X: -140000000
+        Y: 30000000
+      - X: -140000000
+        Y: -5000000
+      - X: 200000000
+        Y: -5000000
+    - - X: 200000000
+        Y: -30000000
+      - X: -140000000
+        Y: -30000000
+      - X: -140000000
+        Y: -90000000
+      - X: 200000000
+        Y: -90000000
   m_CompositePaths:
     m_Paths:
     - - {x: 19.999971, y: -0.5}
@@ -60971,7 +61043,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1412844249
 Transform:
   m_ObjectHideFlags: 0
@@ -60989,9 +61061,9 @@ Transform:
   - {fileID: 619394802}
   - {fileID: 1412234693}
   - {fileID: 291432391}
-  - {fileID: 2115120222}
   - {fileID: 129622450}
   - {fileID: 531620595}
+  - {fileID: 2115120222}
   - {fileID: 1526819829}
   - {fileID: 910335162}
   m_Father: {fileID: 0}
@@ -62660,7 +62732,7 @@ BoxCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0.03501129, y: -0.1418829}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -62671,7 +62743,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 0.5172272, y: 0.7162342}
   m_EdgeRadius: 0
 --- !u!1 &1522301042
 GameObject:
@@ -86305,7 +86377,25 @@ CompositeCollider2D:
   m_GeometryType: 0
   m_GenerationType: 0
   m_EdgeRadius: 0
-  m_ColliderPaths: []
+  m_ColliderPaths:
+  - m_Collider: {fileID: 1773902402}
+    m_ColliderPaths:
+    - - X: 250000000
+        Y: 30000000
+      - X: -90000000
+        Y: 30000000
+      - X: -90000000
+        Y: -5000000
+      - X: 130000000
+        Y: -5000000
+      - X: 130000000
+        Y: -30000000
+      - X: -90000000
+        Y: -30000000
+      - X: -90000000
+        Y: -90000000
+      - X: 250000000
+        Y: -90000000
   m_CompositePaths:
     m_Paths:
     - - {x: 24.999971, y: -9}
@@ -92141,7 +92231,61 @@ CompositeCollider2D:
   m_GeometryType: 0
   m_GenerationType: 0
   m_EdgeRadius: 0
-  m_ColliderPaths: []
+  m_ColliderPaths:
+  - m_Collider: {fileID: 1925912789}
+    m_ColliderPaths:
+    - - X: 310000000
+        Y: -30000000
+      - X: -199687504
+        Y: -30000000
+      - X: -199687504
+        Y: -25312500
+      - X: -205000000
+        Y: -20000000
+      - X: -209687504
+        Y: -20000000
+      - X: -209687504
+        Y: -15312500
+      - X: -215000000
+        Y: -10000000
+      - X: -219687504
+        Y: -10000000
+      - X: -219687504
+        Y: -5312500
+      - X: -220000004
+        Y: -5000000
+      - X: 310000000
+        Y: -5000000
+      - X: 310000000
+        Y: 30000000
+      - X: -240000000
+        Y: 30000000
+      - X: -240000000
+        Y: -40000000
+      - X: -215000000
+        Y: -40000000
+      - X: -220312496
+        Y: -45312500
+      - X: -220312496
+        Y: -50000000
+      - X: -225000000
+        Y: -50000000
+      - X: -230312496
+        Y: -55312500
+      - X: -230312496
+        Y: -60000000
+      - X: -235000000
+        Y: -60000000
+      - X: -240312496
+        Y: -65312500
+      - X: -240312496
+        Y: -80000000
+      - X: -240000000
+        Y: -80000000
+      - X: -240000000
+        Y: -90000000
+      - X: 310000000
+        Y: -90000000
   m_CompositePaths:
     m_Paths:
     - - {x: 30.999971, y: -9}
@@ -98592,7 +98736,7 @@ Transform:
   m_GameObject: {fileID: 1986873441}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: 0.7071068, w: 0.7071068}
-  m_LocalPosition: {x: 34.25, y: -1.77, z: 0}
+  m_LocalPosition: {x: 29.25, y: -1.77, z: 0}
   m_LocalScale: {x: 3.5, y: 3.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -98811,7 +98955,73 @@ CompositeCollider2D:
   m_GeometryType: 0
   m_GenerationType: 0
   m_EdgeRadius: 0
-  m_ColliderPaths: []
+  m_ColliderPaths:
+  - m_Collider: {fileID: 1992964626}
+    m_ColliderPaths:
+    - - X: 310000000
+        Y: -20000000
+      - X: 200000000
+        Y: -20000000
+      - X: 200000000
+        Y: -30000000
+      - X: -199687504
+        Y: -30000000
+      - X: -199687504
+        Y: -25312500
+      - X: -205000000
+        Y: -20000000
+      - X: -209687504
+        Y: -20000000
+      - X: -209687504
+        Y: -15312500
+      - X: -215000000
+        Y: -10000000
+      - X: -219687504
+        Y: -10000000
+      - X: -219687504
+        Y: -5312500
+      - X: -220000004
+        Y: -5000000
+      - X: 180000000
+        Y: -5000000
+      - X: 180000000
+        Y: 0
+      - X: 190000000
+        Y: 0
+      - X: 190000000
+        Y: 5000000
+      - X: 310000000
+        Y: 5000000
+      - X: 310000000
+        Y: 30000000
+      - X: -240000000
+        Y: 30000000
+      - X: -240000000
+        Y: -40000000
+      - X: -215000000
+        Y: -40000000
+      - X: -220312496
+        Y: -45312500
+      - X: -220312496
+        Y: -50000000
+      - X: -225000000
+        Y: -50000000
+      - X: -230312496
+        Y: -55312500
+      - X: -230312496
+        Y: -60000000
+      - X: -235000000
+        Y: -60000000
+      - X: -240312496
+        Y: -65312500
+      - X: -240312496
+        Y: -80000000
+      - X: -240000000
+        Y: -80000000
+      - X: -240000000
+        Y: -90000000
+      - X: 310000000
+        Y: -90000000
   m_CompositePaths:
     m_Paths:
     - - {x: 30.999971, y: -9}

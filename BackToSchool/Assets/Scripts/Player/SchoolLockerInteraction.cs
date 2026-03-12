@@ -60,12 +60,7 @@ public class SchoolLockerInteraction : MonoBehaviour
         if (!onlyMorningBeforeAssembly)
             return true;
 
-        string flowType = PlayerPrefs.GetString("FLOW_TYPE", "");
-        if (flowType != "FREEROAM")
-            return false;
-
-        string flowId = PlayerPrefs.GetString("FLOW_ID", "");
-        return string.IsNullOrEmpty(flowId) || flowId.Contains("BEFORE_ASSEMBLY");
+        return FlowContext.IsMorningBeforeAssemblyFreeRoam();
     }
 
     private void OnTriggerEnter2D(Collider2D other)

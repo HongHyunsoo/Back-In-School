@@ -106,16 +106,7 @@ public class PhoneUiHotfixes : MonoBehaviour
 
     private static bool IsHealthAllowedInCurrentFlow()
     {
-        string flowType = PlayerPrefs.GetString("FLOW_TYPE", "");
-        string flowId = PlayerPrefs.GetString("FLOW_ID", "");
-
-        if (flowType == "CHAT")
-            return true;
-
-        if (flowType == "FREEROAM")
-            return string.IsNullOrEmpty(flowId) || flowId.Contains("BEFORE_ASSEMBLY");
-
-        return false;
+        return FlowContext.IsHealthCheckAllowed();
     }
 
     private string ResolveTargetPanelForButton(Button button)
