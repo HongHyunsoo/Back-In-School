@@ -1,0 +1,262 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.Serialization;
+
+public enum PhoneAppId { Home, Rules, Health, Chat, Gallery, Settings }
+
+[Serializable]
+public class AppSplashEntry
+{
+    public PhoneAppId appId;
+    public GameObject splashPanel;
+    public float duration = 0.45f;
+}
+
+public class PhoneAppManager : MonoBehaviour
+{
+    [Header("Panels")]
+    [SerializeField] private GameObject homePanel;
+    [SerializeField] private GameObject appContainer;
+    [SerializeField] private GameObject overlayLock;
+
+    [Header("App Panels")]
+    [SerializeField] private GameObject rulesPanel;
+    [SerializeField] private GameObject healthPanel;
+    [SerializeField] private GameObject chatPanel;
+    [FormerlySerializedAs("musicPanel")]
+    [SerializeField] private GameObject galleryPanel;
+    [SerializeField] private GameObject settingsPanel;
+
+    [Header("App Splash")]
+    [SerializeField] private List<AppSplashEntry> appSplashEntries = new();
+    [SerializeField] private GameObject appSplashPanel;
+    [SerializeField] private float splashDuration = 0.45f;
+    [SerializeField] private float splashFadeDuration = 0.18f;
+    [SerializeField] private bool useSplash = true;
+
+    [Header("Buttons (Optional wiring)")]
+    [SerializeField] private Button btnRules;
+    [SerializeField] private Button btnHealth;
+    [SerializeField] private Button btnChat;
+    [FormerlySerializedAs("btnMusic")]
+    [SerializeField] private Button btnGallery;
+    [SerializeField] private Button btnSettings;
+    [SerializeField] private Button btnBack;       // app -> home
+    [SerializeField] private Button btnClosePhone; // close phone (school)
+    [SerializeField] private Button btnPower;      // power (context-specific)
+
+    private readonly Dictionary<PhoneAppId, GameObject> appPanels = new();
+    private readonly Dictionary<PhoneAppId, AppSplashEntry> splashByApp = new();
+    private Coroutine openRoutine;
+
+    public PhoneAppId CurrentApp { get; private set; } = PhoneAppId.Home;
+    public bool IsLocked { get; private set; }
+
+    public event Action OnRequestClosePhone;
+    public event Action OnRequestPower;
+
+    private void Awake()
+    {
+        appPanels[PhoneAppId.Rules] = rulesPanel;
+        appPanels[PhoneAppId.Health] = healthPanel;
+        appPanels[PhoneAppId.Chat] = chatPanel;
+        appPanels[PhoneAppId.Gallery] = galleryPanel;
+        appPanels[PhoneAppId.Settings] = settingsPanel;
+        BuildSplashLookup();
+
+        if (btnRules) btnRules.onClick.AddListener(() => OpenApp(PhoneAppId.Rules));
+        if (btnHealth) btnHealth.onClick.AddListener(() => OpenApp(PhoneAppId.Health));
+        if (btnChat) btnChat.onClick.AddListener(() => OpenApp(PhoneAppId.Chat));
+        if (btnGallery) btnGallery.onClick.AddListener(() => OpenApp(PhoneAppId.Gallery));
+        if (btnSettings) btnSettings.onClick.AddListener(() => OpenApp(PhoneAppId.Settings));
+
+        if (btnBack) btnBack.onClick.AddListener(BackToHome);
+
+        if (btnClosePhone) btnClosePhone.onClick.AddListener(() =>
+        {
+            if (IsLocked) return;
+            OnRequestClosePhone?.Invoke();
+        });
+
+        if (btnPower) btnPower.onClick.AddListener(() =>
+        {
+            if (IsLocked) return;
+            OnRequestPower?.Invoke();
+        });
+
+        HideAllSplashPanels();
+
+        ShowHome();
+        SetLocked(false);
+    }
+
+    public void OpenApp(PhoneAppId appId)
+    {
+        if (IsLocked) return;
+
+        if (appId == PhoneAppId.Health && !FlowContext.IsHealthCheckAllowed())
+            return;
+
+        if (appId == PhoneAppId.Home)
+        {
+            ShowHome();
+            return;
+        }
+
+        if (openRoutine != null)
+            StopCoroutine(openRoutine);
+
+        openRoutine = StartCoroutine(CoOpenAppWithSplash(appId));
+    }
+
+    public void BackToHome()
+    {
+        if (IsLocked) return;
+
+        if (openRoutine != null)
+        {
+            StopCoroutine(openRoutine);
+            openRoutine = null;
+        }
+
+        HideAllSplashPanels();
+
+        ShowHome();
+    }
+
+    private void ShowHome()
+    {
+        if (homePanel != null) homePanel.SetActive(true);
+        if (appContainer != null) appContainer.SetActive(true);
+
+        foreach (var kv in appPanels)
+        {
+            if (kv.Value != null)
+                kv.Value.SetActive(false);
+        }
+
+        CurrentApp = PhoneAppId.Home;
+    }
+
+    public void SetLocked(bool locked)
+    {
+        IsLocked = locked;
+        if (overlayLock) overlayLock.SetActive(locked);
+    }
+
+    private IEnumerator CoOpenAppWithSplash(PhoneAppId appId)
+    {
+        if (homePanel != null) homePanel.SetActive(false);
+        if (appContainer != null) appContainer.SetActive(true);
+
+        foreach (var kv in appPanels)
+        {
+            if (kv.Value != null)
+                kv.Value.SetActive(false);
+        }
+
+        GetSplashConfig(appId, out var splashPanel, out var duration);
+        bool showSplash = useSplash && splashPanel != null && duration > 0f;
+        if (showSplash)
+        {
+            HideAllSplashPanels();
+            yield return PlaySplashWithFade(splashPanel, duration);
+        }
+
+        if (appPanels.TryGetValue(appId, out var panel) && panel != null)
+            panel.SetActive(true);
+
+        CurrentApp = appId;
+        openRoutine = null;
+    }
+
+    private void BuildSplashLookup()
+    {
+        splashByApp.Clear();
+        for (int i = 0; i < appSplashEntries.Count; i++)
+        {
+            var entry = appSplashEntries[i];
+            if (entry == null)
+                continue;
+
+            splashByApp[entry.appId] = entry;
+        }
+    }
+
+    private void HideAllSplashPanels()
+    {
+        if (appSplashPanel != null)
+            appSplashPanel.SetActive(false);
+
+        for (int i = 0; i < appSplashEntries.Count; i++)
+        {
+            var entry = appSplashEntries[i];
+            if (entry != null && entry.splashPanel != null)
+                entry.splashPanel.SetActive(false);
+        }
+    }
+
+    private void GetSplashConfig(PhoneAppId appId, out GameObject panel, out float duration)
+    {
+        if (splashByApp.TryGetValue(appId, out var entry) && entry != null && entry.splashPanel != null)
+        {
+            panel = entry.splashPanel;
+            duration = Mathf.Max(0f, entry.duration);
+            return;
+        }
+
+        panel = appSplashPanel;
+        duration = Mathf.Max(0f, splashDuration);
+    }
+
+    private IEnumerator PlaySplashWithFade(GameObject splashPanel, float duration)
+    {
+        if (splashPanel == null)
+            yield break;
+
+        splashPanel.SetActive(true);
+
+        var group = splashPanel.GetComponent<CanvasGroup>();
+        if (group == null)
+            group = splashPanel.AddComponent<CanvasGroup>();
+
+        float fade = Mathf.Max(0f, splashFadeDuration);
+        float hold = Mathf.Max(0f, duration - (fade * 2f));
+
+        if (fade > 0f)
+            yield return FadeCanvasGroup(group, 0f, 1f, fade);
+        else
+            group.alpha = 1f;
+
+        if (hold > 0f)
+            yield return new WaitForSecondsRealtime(hold);
+
+        if (fade > 0f)
+            yield return FadeCanvasGroup(group, 1f, 0f, fade);
+        else
+            group.alpha = 0f;
+
+        splashPanel.SetActive(false);
+    }
+
+    private static IEnumerator FadeCanvasGroup(CanvasGroup group, float from, float to, float duration)
+    {
+        if (group == null)
+            yield break;
+
+        float t = 0f;
+        float d = Mathf.Max(0.01f, duration);
+        while (t < d)
+        {
+            t += Time.unscaledDeltaTime;
+            float k = Mathf.Clamp01(t / d);
+            group.alpha = Mathf.Lerp(from, to, k);
+            yield return null;
+        }
+
+        group.alpha = to;
+    }
+}
