@@ -13,6 +13,8 @@ public class MinigameSceneBootstrap : MonoBehaviour
     public string class1Prefix = "CLASS1_";
     [Tooltip("If FLOW_ID starts with this prefix, we run Pixel Paint.")]
     public string class2Prefix = "CLASS2_";
+    [Tooltip("CLASS1 flow IDs that should run the math quiz instead of Croquis.")]
+    public string[] class1MathFlowIds = new[] { "CLASS1_D2" };
     [Tooltip("Auto-create missing minigame controllers at runtime. Disable for strict scene validation.")]
     public bool autoCreateMissingControllers = false;
 
@@ -24,6 +26,9 @@ public class MinigameSceneBootstrap : MonoBehaviour
     public CroquisMinigameController croquis;
     public CroquisMinigameConfig croquisConfig;
 
+    [Header("Math Quiz")]
+    public MathMinigameController math;
+
     [Header("Pixel Paint")]
     public PixelPaintMinigameController pixelPaint;
 
@@ -34,14 +39,16 @@ public class MinigameSceneBootstrap : MonoBehaviour
         string id = FlowContext.CurrentId;
 
         bool shouldRunTetris = FlowContext.CurrentIdStartsWith(lunchPrefix);
-        bool shouldRunCroquis = FlowContext.CurrentIdStartsWith(class1Prefix);
+        bool shouldRunMath = IsMathClass1Flow(id);
+        bool shouldRunCroquis = FlowContext.CurrentIdStartsWith(class1Prefix) && !shouldRunMath;
         bool shouldRunPixelPaint = FlowContext.CurrentIdStartsWith(class2Prefix);
 
         ApplyControllerState(tetris, shouldRunTetris, CanToggleHostGameObject(tetris));
         ApplyControllerState(croquis, shouldRunCroquis, CanToggleHostGameObject(croquis));
+        ApplyControllerState(math, shouldRunMath, CanToggleHostGameObject(math));
         ApplyControllerState(pixelPaint, shouldRunPixelPaint, CanToggleHostGameObject(pixelPaint));
 
-        if (!shouldRunTetris && !shouldRunCroquis && !shouldRunPixelPaint)
+        if (!shouldRunTetris && !shouldRunCroquis && !shouldRunMath && !shouldRunPixelPaint)
         {
             Debug.LogError($"[MinigameSceneBootstrap] Unsupported FLOW_ID '{id}'. Check FlowManager timeline and minigame routing prefixes.");
         }
@@ -83,6 +90,21 @@ public class MinigameSceneBootstrap : MonoBehaviour
         if (croquis != null && croquis.config == null && croquisConfig != null)
             croquis.config = croquisConfig;
 
+        if (math == null)
+            math = FindAnyObjectByType<MathMinigameController>();
+        if (math == null)
+        {
+            if (autoCreateMissingControllers)
+            {
+                var go = new GameObject("MathMinigame");
+                math = go.AddComponent<MathMinigameController>();
+            }
+            else
+            {
+                Debug.LogError("[MinigameSceneBootstrap] Missing MathMinigameController in scene.");
+            }
+        }
+
         if (pixelPaint == null)
             pixelPaint = FindAnyObjectByType<PixelPaintMinigameController>();
         if (pixelPaint == null)
@@ -108,6 +130,7 @@ public class MinigameSceneBootstrap : MonoBehaviour
         int count = 0;
         if (tetris != null && tetris.gameObject == host) count++;
         if (croquis != null && croquis.gameObject == host) count++;
+        if (math != null && math.gameObject == host) count++;
         if (pixelPaint != null && pixelPaint.gameObject == host) count++;
 
         // Only safe to toggle whole GameObject when this host is not shared.
@@ -122,5 +145,22 @@ public class MinigameSceneBootstrap : MonoBehaviour
             controller.gameObject.SetActive(shouldRun);
 
         controller.enabled = shouldRun;
+    }
+
+    private bool IsMathClass1Flow(string id)
+    {
+        if (string.IsNullOrEmpty(id))
+            return false;
+
+        if (class1MathFlowIds == null || class1MathFlowIds.Length == 0)
+            return string.Equals(id, "CLASS1_D2", System.StringComparison.OrdinalIgnoreCase);
+
+        for (int i = 0; i < class1MathFlowIds.Length; i++)
+        {
+            if (string.Equals(id, class1MathFlowIds[i], System.StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 }

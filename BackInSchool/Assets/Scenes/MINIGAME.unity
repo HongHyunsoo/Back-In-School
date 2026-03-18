@@ -413,6 +413,97 @@ Transform:
   - {fileID: 1651352593}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &256564423
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 256564425}
+  - component: {fileID: 256564424}
+  m_Layer: 0
+  m_Name: MathMinigame
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &256564424
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 256564423}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f2f8fbd1dbb4bc9ac54f5b7d7f77c0a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  config: {fileID: 11400000, guid: 1e4484aa12eb4d539c898f259ef3b707, type: 2}
+  supportedFlowIds:
+  - CLASS1_D2
+  penaltyOnGiveUp: 1
+  correctAnswerDelaySeconds: 0.55
+  questions:
+  - title: aaaaa
+    questionTextKey: 
+    questionText: aaaaa
+    questionSprite: {fileID: 0}
+    correctAnswer: 1
+    alternateAnswers: []
+    hintTextKeys:
+    - 
+    hintTexts:
+    - aa
+    - aa
+    - aa
+  - title: 
+    questionTextKey: 
+    questionText: 
+    questionSprite: {fileID: 0}
+    correctAnswer: 
+    alternateAnswers: []
+    hintTextKeys: []
+    hintTexts: []
+  - title: 
+    questionTextKey: 
+    questionText: 
+    questionSprite: {fileID: 0}
+    correctAnswer: 
+    alternateAnswers: []
+    hintTextKeys: []
+    hintTexts: []
+  drawingTextureSize: {x: 1024, y: 1024}
+  brushRadius: 5
+  drawingBackgroundColor: {r: 0.98, g: 0.98, b: 0.98, a: 1}
+  brushColor: {r: 0.14, g: 0.19, b: 0.28, a: 1}
+  clearCanvasOnQuestionChange: 1
+  uiFontAsset: {fileID: 0}
+  dimColor: {r: 0.08, g: 0.08, b: 0.12, a: 0.82}
+  panelColor: {r: 0.96, g: 0.94, b: 0.9, a: 0.98}
+  accentColor: {r: 0.16, g: 0.24, b: 0.4, a: 1}
+  outlineColor: {r: 0.15, g: 0.12, b: 0.1, a: 0.35}
+  hintPanelColor: {r: 0.91, g: 0.96, b: 1, a: 0.96}
+  feedbackSuccessColor: {r: 0.2, g: 0.58, b: 0.28, a: 1}
+  feedbackErrorColor: {r: 0.78, g: 0.23, b: 0.18, a: 1}
+--- !u!4 &256564425
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 256564423}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1.0514858, y: 0.9430293, z: 0.4214406}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &612400879
 GameObject:
   m_ObjectHideFlags: 0
@@ -660,6 +751,9 @@ MonoBehaviour:
   bubbleShowDuration: 2.8
   stageCompleteDelay: 3
   uiFontAsset: {fileID: 11400000, guid: f0fd8ed4dff808b47a3664e0ee1293e3, type: 2}
+  requiredFlowPrefix: CLASS1_
+  excludedFlowIds:
+  - CLASS1_D2
   penaltyOnGiveUp: 1
 --- !u!1 &791443082
 GameObject:
@@ -1091,7 +1185,7 @@ MonoBehaviour:
     - 0000000000000000
     customPalette:
     - {r: 0.2509804, g: 0.24705882, b: 0.36078432, a: 1}
-    - {r: 0.93759567, g: 0.9349448, b: 0.97735846, a: 1}
+    - {r: 0.89411765, g: 0.8901961, b: 0.9529412, a: 1}
     - {r: 0.72156864, g: 0.7176471, b: 0.83137256, a: 1}
     - {r: 0.43529412, g: 0.42352942, b: 0.56078434, a: 1}
   - title: Poo
@@ -1129,16 +1223,16 @@ MonoBehaviour:
     - 00000000000000000000000000000000
     - 00000000000000000000000000000000
     customPalette:
-    - {r: 0.5622641, g: 0.28562513, b: 0.13473117, a: 1}
-    - {r: 0.7660377, g: 0.487108, b: 0.29340684, a: 1}
-    - {r: 0.5320754, g: 0.16223842, b: 0.027105685, a: 1}
-    - {r: 0.3207547, g: 0.11497807, b: 0.04054823, a: 1}
+    - {r: 0.5019608, g: 0.28627452, b: 0.16862746, a: 1}
+    - {r: 0.5686275, g: 0.36078432, b: 0.21568628, a: 1}
+    - {r: 0.39215687, g: 0.1882353, b: 0.11372549, a: 1}
+    - {r: 0.3019608, g: 0.11764706, b: 0.050980393, a: 1}
     - {r: 0.8, g: 0.78039217, b: 0.7647059, a: 1}
-    - {r: 0.90943396, g: 0.56796724, b: 0.57947725, a: 1}
-    - {r: 0.4339623, g: 0.054859374, b: 0.06623236, a: 1}
-    - {r: 0.8037735, g: 0.21080092, b: 0.23008457, a: 1}
+    - {r: 0.84313726, g: 0.49411765, b: 0.5058824, a: 1}
+    - {r: 0.49803922, g: 0.105882354, b: 0.11764706, a: 1}
+    - {r: 0.7254902, g: 0.24313726, b: 0.25882354, a: 1}
     - {r: 0.1764706, g: 0.15686275, b: 0.14901961, a: 1}
-    - {r: 0.6075471, g: 0.040120948, b: 0.060568728, a: 1}
+    - {r: 0.5803922, g: 0.14509805, b: 0.16078432, a: 1}
   - title: spinach
     rows:
     - 00000000000000000000000000000000
@@ -1196,6 +1290,10 @@ MonoBehaviour:
   boardOrigin: {x: -3.2, y: -2.8}
   numberTextScaleMultiplier: 0.48
   numberFontAsset: {fileID: 0}
+  emptyCellAlpha: 0
+  hideEmptyCellOutline: 1
+  boardBackgroundColor: {r: 0.08, g: 0.08, b: 0.08, a: 0}
+  boardBackgroundPadding: {x: 0.35, y: 0.35}
   autoFitToCamera: 1
   fitRatio: 0.92
   enableWheelZoom: 1
@@ -1210,6 +1308,10 @@ MonoBehaviour:
   - {r: 0.95, g: 0.85, b: 0.25, a: 1}
   - {r: 0.3, g: 0.7, b: 0.95, a: 1}
   - {r: 0.28, g: 0.82, b: 0.44, a: 1}
+  palettePanelAnchoredPosition: {x: 88, y: 0}
+  palettePanelSize: {x: 96, y: 760}
+  paletteButtonSize: {x: 72, y: 72}
+  paletteSpacing: 10
   penaltyOnGiveUp: 1
   playAllPuzzlesInOneRun: 1
   solvedPreviewSeconds: 1
@@ -1245,11 +1347,14 @@ MonoBehaviour:
   lunchPrefix: LUNCH_Tetris
   class1Prefix: CLASS1_
   class2Prefix: CLASS2_
+  class1MathFlowIds:
+  - CLASS1_D2
   autoCreateMissingControllers: 0
   tetris: {fileID: 0}
   tetrisConfig: {fileID: 0}
   croquis: {fileID: 756319441}
   croquisConfig: {fileID: 11400000, guid: f24dfb4ff038d7c4995411c07861d8d4, type: 2}
+  math: {fileID: 256564424}
   pixelPaint: {fileID: 0}
 --- !u!4 &2018414699
 Transform:
@@ -1392,3 +1497,4 @@ SceneRoots:
   - {fileID: 756319440}
   - {fileID: 223206329}
   - {fileID: 1799695112}
+  - {fileID: 256564425}

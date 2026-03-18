@@ -43,6 +43,7 @@ public class FlowDebugUIController : MonoBehaviour
         if (panelRoot != null)
             panelRoot.SetActive(false);
 
+        ConfigurePanelRootPassThrough();
         SetupDropdown();
         ApplySelectedPresetToInputs();
         BindButtons();
@@ -103,6 +104,16 @@ public class FlowDebugUIController : MonoBehaviour
     {
         if (panelRoot == null) return;
         panelRoot.SetActive(!panelRoot.activeSelf);
+        ConfigurePanelRootPassThrough();
+    }
+
+    void ConfigurePanelRootPassThrough()
+    {
+        if (panelRoot == null) return;
+
+        var graphic = panelRoot.GetComponent<Graphic>();
+        if (graphic != null)
+            graphic.raycastTarget = false;
     }
 
     void BindButtons()

@@ -74,6 +74,8 @@ public class CroquisMinigameController : MonoBehaviour
     public TMP_FontAsset uiFontAsset;
 
     [Header("Flow")]
+    public string requiredFlowPrefix = "CLASS1_";
+    public string[] excludedFlowIds = new[] { "CLASS1_D2" };
     public int penaltyOnGiveUp = 1;
 
     private enum PromptType { Click, Drag }
@@ -148,7 +150,7 @@ public class CroquisMinigameController : MonoBehaviour
         EnsureRevealSpriteSets();
 
         string flowId = PlayerPrefs.GetString("FLOW_ID", "");
-        if (string.IsNullOrEmpty(flowId) || !flowId.StartsWith("CLASS1_"))
+        if (!ShouldRunForFlow(flowId))
         {
             enabled = false;
             return;
@@ -1108,6 +1110,30 @@ public class CroquisMinigameController : MonoBehaviour
 
         if (!overrideUIFont && config.uiFontAsset != null)
             uiFontAsset = config.uiFontAsset;
+    }
+
+    private bool ShouldRunForFlow(string flowId)
+    {
+        if (string.IsNullOrEmpty(flowId))
+            return false;
+
+        string prefix = string.IsNullOrEmpty(requiredFlowPrefix) ? "CLASS1_" : requiredFlowPrefix;
+        if (!flowId.StartsWith(prefix))
+            return false;
+
+        if (excludedFlowIds == null)
+            return true;
+
+        for (int i = 0; i < excludedFlowIds.Length; i++)
+        {
+            if (string.IsNullOrEmpty(excludedFlowIds[i]))
+                continue;
+
+            if (string.Equals(flowId, excludedFlowIds[i], System.StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+
+        return true;
     }
 
     private static T[] CloneOrFallback<T>(T[] source, T[] fallback)
