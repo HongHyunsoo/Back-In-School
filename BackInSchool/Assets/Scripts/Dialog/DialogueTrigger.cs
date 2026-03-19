@@ -63,6 +63,12 @@ public class DialogueTrigger : MonoBehaviour
     [Tooltip("Fallback conversation ID used when no contextual dialogue matches.")]
     public string defaultConversationID;
 
+    [Header("Facing")]
+    [Tooltip("When enabled, this trigger owner will face toward the player before dialogue starts.")]
+    [SerializeField] private bool facePlayerOnDialogueStart = false;
+    [Tooltip("Optional transform to flip instead of the DialogueTrigger transform.")]
+    [SerializeField] private Transform facingRoot;
+
     private DialogueManager manager;
     private bool isPlayerInRange = false;
     private GameManager gameManager;
@@ -159,6 +165,7 @@ public class DialogueTrigger : MonoBehaviour
         }
 
         ConfigurePromptText(interactKeyText);
+        SyncPromptFacing();
     }
 
     private void ConfigurePromptText(TMP_Text tmp)
@@ -307,6 +314,9 @@ public class DialogueTrigger : MonoBehaviour
         // 3. '???ID'? '???二쇱씤 NPC(transform)'瑜?DialogueManager???꾨떖
         if (!string.IsNullOrEmpty(conversationID_ToPlay))
         {
+            if (facePlayerOnDialogueStart)
+                FaceTowardPlayer();
+
             // ???而ㅼ뒪?곕쭏?댁쭠 ?곸슜 (?좊땲硫붿씠?? ?댄럺?? ?뚮━)
             if (cd != null && cd.customLineIndex >= 0)
             {
@@ -319,6 +329,59 @@ public class DialogueTrigger : MonoBehaviour
         {
             UnityEngine.Debug.LogWarning("???ID媛 鍮꾩뼱?덉뒿?덈떎!");
         }
+    }
+
+    private void FaceTowardPlayer()
+    {
+        Transform player = ResolvePlayerTransform();
+        Transform subject = facingRoot != null ? facingRoot : transform;
+        if (player == null || subject == null)
+            return;
+
+        float deltaX = player.position.x - subject.position.x;
+        if (Mathf.Abs(deltaX) <= 0.01f)
+            return;
+
+        Vector3 scale = subject.localScale;
+        float absX = Mathf.Abs(scale.x);
+        if (absX <= 0.0001f)
+            absX = 1f;
+
+        scale.x = deltaX >= 0f ? -absX : absX;
+        subject.localScale = scale;
+        SyncPromptFacing();
+    }
+
+    private Transform ResolvePlayerTransform()
+    {
+        if (manager != null && manager.playerController != null)
+            return manager.playerController.transform;
+
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        return player != null ? player.transform : null;
+    }
+
+    private void SyncPromptFacing()
+    {
+        if (interactPrompt == null)
+            return;
+
+        Transform subject = facingRoot != null ? facingRoot : transform;
+        Transform prompt = interactPrompt.transform;
+        if (subject == null || !prompt.IsChildOf(subject))
+            return;
+
+        Vector3 promptScale = prompt.localScale;
+        float absX = Mathf.Abs(promptScale.x);
+        if (absX <= 0.0001f)
+            absX = 1f;
+
+        float subjectSign = Mathf.Sign(subject.localScale.x);
+        if (Mathf.Approximately(subjectSign, 0f))
+            subjectSign = 1f;
+
+        promptScale.x = absX * subjectSign;
+        prompt.localScale = promptScale;
     }
 
     // ??ъ뿉 而ㅼ뒪?곕쭏?댁쭠 ?곸슜 (?좊땲硫붿씠?? ?댄럺?? ?뚮━)
