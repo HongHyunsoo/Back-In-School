@@ -15,6 +15,8 @@ public class MinigameSceneBootstrap : MonoBehaviour
     public string class2Prefix = "CLASS2_";
     [Tooltip("CLASS1 flow IDs that should run the math quiz instead of Croquis.")]
     public string[] class1MathFlowIds = new[] { "CLASS1_D2" };
+    [Tooltip("CLASS2 flow IDs that should run the presentation typing minigame instead of Pixel Paint.")]
+    public string[] class2PresentationFlowIds = new[] { "CLASS2_D2" };
     [Tooltip("Auto-create missing minigame controllers at runtime. Disable for strict scene validation.")]
     public bool autoCreateMissingControllers = false;
 
@@ -32,6 +34,10 @@ public class MinigameSceneBootstrap : MonoBehaviour
     [Header("Pixel Paint")]
     public PixelPaintMinigameController pixelPaint;
 
+    [Header("Presentation Typing")]
+    public PresentationTypingMinigameController presentationTyping;
+    public PresentationTypingMinigameConfig presentationTypingConfig;
+
     private void Awake()
     {
         EnsureControllers();
@@ -41,14 +47,16 @@ public class MinigameSceneBootstrap : MonoBehaviour
         bool shouldRunTetris = FlowContext.CurrentIdStartsWith(lunchPrefix);
         bool shouldRunMath = IsMathClass1Flow(id);
         bool shouldRunCroquis = FlowContext.CurrentIdStartsWith(class1Prefix) && !shouldRunMath;
-        bool shouldRunPixelPaint = FlowContext.CurrentIdStartsWith(class2Prefix);
+        bool shouldRunPresentationTyping = IsPresentationClass2Flow(id);
+        bool shouldRunPixelPaint = FlowContext.CurrentIdStartsWith(class2Prefix) && !shouldRunPresentationTyping;
 
         ApplyControllerState(tetris, shouldRunTetris, CanToggleHostGameObject(tetris));
         ApplyControllerState(croquis, shouldRunCroquis, CanToggleHostGameObject(croquis));
         ApplyControllerState(math, shouldRunMath, CanToggleHostGameObject(math));
         ApplyControllerState(pixelPaint, shouldRunPixelPaint, CanToggleHostGameObject(pixelPaint));
+        ApplyControllerState(presentationTyping, shouldRunPresentationTyping, CanToggleHostGameObject(presentationTyping));
 
-        if (!shouldRunTetris && !shouldRunCroquis && !shouldRunMath && !shouldRunPixelPaint)
+        if (!shouldRunTetris && !shouldRunCroquis && !shouldRunMath && !shouldRunPixelPaint && !shouldRunPresentationTyping)
         {
             Debug.LogError($"[MinigameSceneBootstrap] Unsupported FLOW_ID '{id}'. Check FlowManager timeline and minigame routing prefixes.");
         }
@@ -119,6 +127,16 @@ public class MinigameSceneBootstrap : MonoBehaviour
                 Debug.LogError("[MinigameSceneBootstrap] Missing PixelPaintMinigameController in scene.");
             }
         }
+
+        if (presentationTyping == null)
+            presentationTyping = FindAnyObjectByType<PresentationTypingMinigameController>();
+        if (presentationTyping == null)
+        {
+            var go = new GameObject("PresentationTypingMinigame");
+            presentationTyping = go.AddComponent<PresentationTypingMinigameController>();
+        }
+        if (presentationTyping != null && presentationTyping.config == null && presentationTypingConfig != null)
+            presentationTyping.config = presentationTypingConfig;
     }
 
     private bool CanToggleHostGameObject(MonoBehaviour controller)
@@ -132,6 +150,7 @@ public class MinigameSceneBootstrap : MonoBehaviour
         if (croquis != null && croquis.gameObject == host) count++;
         if (math != null && math.gameObject == host) count++;
         if (pixelPaint != null && pixelPaint.gameObject == host) count++;
+        if (presentationTyping != null && presentationTyping.gameObject == host) count++;
 
         // Only safe to toggle whole GameObject when this host is not shared.
         return count <= 1;
@@ -158,6 +177,23 @@ public class MinigameSceneBootstrap : MonoBehaviour
         for (int i = 0; i < class1MathFlowIds.Length; i++)
         {
             if (string.Equals(id, class1MathFlowIds[i], System.StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool IsPresentationClass2Flow(string id)
+    {
+        if (string.IsNullOrEmpty(id))
+            return false;
+
+        if (class2PresentationFlowIds == null || class2PresentationFlowIds.Length == 0)
+            return string.Equals(id, "CLASS2_D2", System.StringComparison.OrdinalIgnoreCase);
+
+        for (int i = 0; i < class2PresentationFlowIds.Length; i++)
+        {
+            if (string.Equals(id, class2PresentationFlowIds[i], System.StringComparison.OrdinalIgnoreCase))
                 return true;
         }
 
