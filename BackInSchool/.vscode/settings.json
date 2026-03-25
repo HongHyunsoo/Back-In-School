@@ -56,5 +56,5 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "BackToSchool.sln"
+    "dotnet.defaultSolution": "BackInSchool.sln"
 }
