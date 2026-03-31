@@ -13,6 +13,8 @@ public class MinigameSceneBootstrap : MonoBehaviour
     public string class1Prefix = "CLASS1_";
     [Tooltip("If FLOW_ID starts with this prefix, we run Pixel Paint.")]
     public string class2Prefix = "CLASS2_";
+    [Tooltip("If FLOW_ID starts with this prefix, we run the arrival space mash minigame.")]
+    public string arrivalSpacePrefix = "ARRIVAL_SPACE_";
     [Tooltip("CLASS1 flow IDs that should run the math quiz instead of Croquis.")]
     public string[] class1MathFlowIds = new[] { "CLASS1_D2" };
     [Tooltip("CLASS2 flow IDs that should run the presentation typing minigame instead of Pixel Paint.")]
@@ -23,6 +25,9 @@ public class MinigameSceneBootstrap : MonoBehaviour
     [Header("Tetris")]
     public TetrisMinigameController tetris;
     public TetrisMinigameConfig tetrisConfig;
+
+    [Header("Arrival Space Mash")]
+    public ArrivalSpaceMashMinigameController arrivalSpaceMash;
 
     [Header("Croquis Doodle")]
     public CroquisMinigameController croquis;
@@ -40,103 +45,121 @@ public class MinigameSceneBootstrap : MonoBehaviour
 
     private void Awake()
     {
-        EnsureControllers();
-
         string id = FlowContext.CurrentId;
 
         bool shouldRunTetris = FlowContext.CurrentIdStartsWith(lunchPrefix);
+        bool shouldRunArrivalSpaceMash = FlowContext.CurrentIdStartsWith(arrivalSpacePrefix);
         bool shouldRunMath = IsMathClass1Flow(id);
         bool shouldRunCroquis = FlowContext.CurrentIdStartsWith(class1Prefix) && !shouldRunMath;
         bool shouldRunPresentationTyping = IsPresentationClass2Flow(id);
         bool shouldRunPixelPaint = FlowContext.CurrentIdStartsWith(class2Prefix) && !shouldRunPresentationTyping;
 
+        EnsureControllers(
+            shouldRunTetris,
+            shouldRunArrivalSpaceMash,
+            shouldRunCroquis,
+            shouldRunMath,
+            shouldRunPixelPaint,
+            shouldRunPresentationTyping);
+
         ApplyControllerState(tetris, shouldRunTetris, CanToggleHostGameObject(tetris));
+        ApplyControllerState(arrivalSpaceMash, shouldRunArrivalSpaceMash, CanToggleHostGameObject(arrivalSpaceMash));
         ApplyControllerState(croquis, shouldRunCroquis, CanToggleHostGameObject(croquis));
         ApplyControllerState(math, shouldRunMath, CanToggleHostGameObject(math));
         ApplyControllerState(pixelPaint, shouldRunPixelPaint, CanToggleHostGameObject(pixelPaint));
         ApplyControllerState(presentationTyping, shouldRunPresentationTyping, CanToggleHostGameObject(presentationTyping));
 
-        if (!shouldRunTetris && !shouldRunCroquis && !shouldRunMath && !shouldRunPixelPaint && !shouldRunPresentationTyping)
+        if (!shouldRunTetris && !shouldRunArrivalSpaceMash && !shouldRunCroquis && !shouldRunMath && !shouldRunPixelPaint && !shouldRunPresentationTyping)
         {
             Debug.LogError($"[MinigameSceneBootstrap] Unsupported FLOW_ID '{id}'. Check FlowManager timeline and minigame routing prefixes.");
         }
     }
 
-    private void EnsureControllers()
+    private void EnsureControllers(
+        bool shouldRunTetris,
+        bool shouldRunArrivalSpaceMash,
+        bool shouldRunCroquis,
+        bool shouldRunMath,
+        bool shouldRunPixelPaint,
+        bool shouldRunPresentationTyping)
     {
         if (tetris == null)
-            tetris = FindAnyObjectByType<TetrisMinigameController>();
+            tetris = FindController<TetrisMinigameController>();
         if (tetris == null)
         {
-            if (autoCreateMissingControllers)
+            if (autoCreateMissingControllers || shouldRunTetris)
             {
                 var go = new GameObject("TetrisMinigame");
                 tetris = go.AddComponent<TetrisMinigameController>();
-            }
-            else
-            {
-                Debug.LogError("[MinigameSceneBootstrap] Missing TetrisMinigameController in scene.");
             }
         }
         if (tetris != null && tetris.config == null && tetrisConfig != null)
             tetris.config = tetrisConfig;
 
+        if (arrivalSpaceMash == null)
+            arrivalSpaceMash = FindController<ArrivalSpaceMashMinigameController>();
+        if (arrivalSpaceMash == null)
+        {
+            if (autoCreateMissingControllers || shouldRunArrivalSpaceMash)
+            {
+                var go = new GameObject("ArrivalSpaceMashMinigame");
+                arrivalSpaceMash = go.AddComponent<ArrivalSpaceMashMinigameController>();
+            }
+        }
+
         if (croquis == null)
-            croquis = FindAnyObjectByType<CroquisMinigameController>();
+            croquis = FindController<CroquisMinigameController>();
         if (croquis == null)
         {
-            if (autoCreateMissingControllers)
+            if (autoCreateMissingControllers || shouldRunCroquis)
             {
                 var go = new GameObject("CroquisMinigame");
                 croquis = go.AddComponent<CroquisMinigameController>();
-            }
-            else
-            {
-                Debug.LogError("[MinigameSceneBootstrap] Missing CroquisMinigameController in scene.");
             }
         }
         if (croquis != null && croquis.config == null && croquisConfig != null)
             croquis.config = croquisConfig;
 
         if (math == null)
-            math = FindAnyObjectByType<MathMinigameController>();
+            math = FindController<MathMinigameController>();
         if (math == null)
         {
-            if (autoCreateMissingControllers)
+            if (autoCreateMissingControllers || shouldRunMath)
             {
                 var go = new GameObject("MathMinigame");
                 math = go.AddComponent<MathMinigameController>();
             }
-            else
-            {
-                Debug.LogError("[MinigameSceneBootstrap] Missing MathMinigameController in scene.");
-            }
         }
 
         if (pixelPaint == null)
-            pixelPaint = FindAnyObjectByType<PixelPaintMinigameController>();
+            pixelPaint = FindController<PixelPaintMinigameController>();
         if (pixelPaint == null)
         {
-            if (autoCreateMissingControllers)
+            if (autoCreateMissingControllers || shouldRunPixelPaint)
             {
                 var go = new GameObject("PixelPaintMinigame");
                 pixelPaint = go.AddComponent<PixelPaintMinigameController>();
             }
-            else
-            {
-                Debug.LogError("[MinigameSceneBootstrap] Missing PixelPaintMinigameController in scene.");
-            }
         }
 
         if (presentationTyping == null)
-            presentationTyping = FindAnyObjectByType<PresentationTypingMinigameController>();
+            presentationTyping = FindController<PresentationTypingMinigameController>();
         if (presentationTyping == null)
         {
-            var go = new GameObject("PresentationTypingMinigame");
-            presentationTyping = go.AddComponent<PresentationTypingMinigameController>();
+            if (autoCreateMissingControllers || shouldRunPresentationTyping)
+            {
+                var go = new GameObject("PresentationTypingMinigame");
+                presentationTyping = go.AddComponent<PresentationTypingMinigameController>();
+            }
         }
         if (presentationTyping != null && presentationTyping.config == null && presentationTypingConfig != null)
             presentationTyping.config = presentationTypingConfig;
+    }
+
+    private static T FindController<T>() where T : MonoBehaviour
+    {
+        var found = FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        return found != null && found.Length > 0 ? found[0] : null;
     }
 
     private bool CanToggleHostGameObject(MonoBehaviour controller)
@@ -147,6 +170,7 @@ public class MinigameSceneBootstrap : MonoBehaviour
 
         int count = 0;
         if (tetris != null && tetris.gameObject == host) count++;
+        if (arrivalSpaceMash != null && arrivalSpaceMash.gameObject == host) count++;
         if (croquis != null && croquis.gameObject == host) count++;
         if (math != null && math.gameObject == host) count++;
         if (pixelPaint != null && pixelPaint.gameObject == host) count++;

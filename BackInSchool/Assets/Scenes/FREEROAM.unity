@@ -11792,12 +11792,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 320453732}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -9.817726, y: -38.789288, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -90.567726, y: -20.789288, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1078553667}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &323163265
 PrefabInstance:
@@ -31514,7 +31514,7 @@ Tilemap:
     second:
       serializedVersion: 2
       m_TileIndex: 10
-      m_TileSpriteIndex: 10
+      m_TileSpriteIndex: 11
       m_TileMatrixIndex: 0
       m_TileColorIndex: 0
       m_TileObjectToInstantiateIndex: 65535
@@ -57777,10 +57777,10 @@ Tilemap:
     m_Data: {fileID: -1748972594, guid: 41cfa9efae96d0147bd85423c170590d, type: 3}
   - m_RefCount: 41
     m_Data: {fileID: -2022659087, guid: 41cfa9efae96d0147bd85423c170590d, type: 3}
-  - m_RefCount: 1
-    m_Data: {fileID: 573366704, guid: 41cfa9efae96d0147bd85423c170590d, type: 3}
   - m_RefCount: 0
     m_Data: {fileID: 0}
+  - m_RefCount: 1
+    m_Data: {fileID: 573366704, guid: 41cfa9efae96d0147bd85423c170590d, type: 3}
   m_TileMatrixArray:
   - m_RefCount: 3792
     m_Data:
@@ -63103,7 +63103,7 @@ Tilemap:
     second:
       serializedVersion: 2
       m_TileIndex: 26
-      m_TileSpriteIndex: 26
+      m_TileSpriteIndex: 35
       m_TileMatrixIndex: 1
       m_TileColorIndex: 0
       m_TileObjectToInstantiateIndex: 65535
@@ -64693,7 +64693,7 @@ Tilemap:
     second:
       serializedVersion: 2
       m_TileIndex: 23
-      m_TileSpriteIndex: 25
+      m_TileSpriteIndex: 26
       m_TileMatrixIndex: 1
       m_TileColorIndex: 0
       m_TileObjectToInstantiateIndex: 65535
@@ -65706,10 +65706,10 @@ Tilemap:
     m_Data: {fileID: 0}
   - m_RefCount: 2
     m_Data: {fileID: 1271724019, guid: 41cfa9efae96d0147bd85423c170590d, type: 3}
+  - m_RefCount: 0
+    m_Data: {fileID: 0}
   - m_RefCount: 1
     m_Data: {fileID: 301846234, guid: 41cfa9efae96d0147bd85423c170590d, type: 3}
-  - m_RefCount: 1
-    m_Data: {fileID: -1993618918, guid: 41cfa9efae96d0147bd85423c170590d, type: 3}
   - m_RefCount: 3
     m_Data: {fileID: 567644087, guid: 41cfa9efae96d0147bd85423c170590d, type: 3}
   - m_RefCount: 4
@@ -65726,8 +65726,8 @@ Tilemap:
     m_Data: {fileID: -1633491165, guid: 41cfa9efae96d0147bd85423c170590d, type: 3}
   - m_RefCount: 2
     m_Data: {fileID: 2142103135, guid: 41cfa9efae96d0147bd85423c170590d, type: 3}
-  - m_RefCount: 0
-    m_Data: {fileID: 0}
+  - m_RefCount: 1
+    m_Data: {fileID: -1993618918, guid: 41cfa9efae96d0147bd85423c170590d, type: 3}
   - m_RefCount: 10
     m_Data: {fileID: 593091407, guid: 41cfa9efae96d0147bd85423c170590d, type: 3}
   m_TileMatrixArray:
@@ -84647,6 +84647,7 @@ Transform:
   - {fileID: 598308158}
   - {fileID: 1897950438}
   - {fileID: 420867500}
+  - {fileID: 320453734}
   m_Father: {fileID: 1412234693}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1079926055
@@ -93384,7 +93385,7 @@ Transform:
   m_GameObject: {fileID: 1345571854}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 76.164955, y: -0.42000008, z: 0}
+  m_LocalPosition: {x: 75.51496, y: 0.5300007, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -110076,8 +110077,8 @@ MonoBehaviour:
   promptFontSize: 24
   promptWorldScale: 0.08
   forceEKeyForInteractInSameScene: 1
-  sameSceneTarget: {fileID: 0}
-  sameSceneDestinationId: 
+  sameSceneTarget: {fileID: 1865091285}
+  sameSceneDestinationId: MORNING_F3B_LEFT
   targetSceneName: FREEROAM
   targetSceneDestinationId: 
   stairUp:
@@ -113794,7 +113795,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 2
-  m_Sprite: {fileID: -42951818, guid: 107ec252bd2836f419099e5e84b5decf, type: 3}
+  m_Sprite: {fileID: 539441318, guid: 52d8922403eb05a40b5508dc6cb46ed0, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -122276,4 +122277,3 @@ SceneRoots:
   - {fileID: 1667481381}
   - {fileID: 1397483160}
   - {fileID: 192425639}
-  - {fileID: 320453734}
