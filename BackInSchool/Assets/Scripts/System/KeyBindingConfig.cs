@@ -5,6 +5,7 @@ public static class KeyBindingConfig
     public const string LeftKey = "INPUT_LEFT";
     public const string RightKey = "INPUT_RIGHT";
     public const string JumpKey = "INPUT_JUMP";
+    public const string SprintKey = "INPUT_SPRINT";
     public const string DownKey = "INPUT_DOWN";
     public const string UpKey = "INPUT_UP";
     public const string InteractKey = "INPUT_INTERACT";

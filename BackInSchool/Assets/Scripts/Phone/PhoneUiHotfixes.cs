@@ -2,6 +2,9 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 /// <summary>
 /// Phone UI hotfix:
@@ -155,5 +158,14 @@ public class PhoneUiHotfixes : MonoBehaviour
         }
 
         return null;
+    }
+
+    private void OnDestroy()
+    {
+#if UNITY_EDITOR
+        var selected = Selection.activeTransform;
+        if (selected != null && selected.IsChildOf(transform))
+            Selection.activeObject = null;
+#endif
     }
 }

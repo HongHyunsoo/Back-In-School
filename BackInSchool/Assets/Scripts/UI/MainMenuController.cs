@@ -34,6 +34,7 @@ public class MainMenuController : MonoBehaviour
     public Button bindLeftButton;
     public Button bindRightButton;
     public Button bindJumpButton;
+    public Button bindSprintButton;
     public Button bindDownButton;
     public Button bindUpButton;
     public Button bindInteractButton;
@@ -45,6 +46,7 @@ public class MainMenuController : MonoBehaviour
     public TextMeshProUGUI bindLeftLabel;
     public TextMeshProUGUI bindRightLabel;
     public TextMeshProUGUI bindJumpLabel;
+    public TextMeshProUGUI bindSprintLabel;
     public TextMeshProUGUI bindDownLabel;
     public TextMeshProUGUI bindUpLabel;
     public TextMeshProUGUI bindInteractLabel;
@@ -54,6 +56,7 @@ public class MainMenuController : MonoBehaviour
     private bool isStarting;
     private Button resolvedJumpBindButton;
     private Button resolvedPhoneBindButton;
+    private Button resolvedSprintBindButton;
     private Button resolvedInteractBindButton;
     private Button resolvedStairUpBindButton;
     private Button resolvedStairDownBindButton;
@@ -106,6 +109,7 @@ public class MainMenuController : MonoBehaviour
         if (bindLeftButton != null) bindLeftButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.LeftKey));
         if (bindRightButton != null) bindRightButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.RightKey));
         if (resolvedJumpBindButton != null) resolvedJumpBindButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.JumpKey));
+        if (resolvedSprintBindButton != null) resolvedSprintBindButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.SprintKey));
         if (resolvedStairDownBindButton != null) resolvedStairDownBindButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.StairDownKey));
         if (resolvedStairUpBindButton != null) resolvedStairUpBindButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.StairUpKey));
         if (resolvedInteractBindButton != null) resolvedInteractBindButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.InteractKey));
@@ -267,6 +271,7 @@ public class MainMenuController : MonoBehaviour
         UpdateBindingVisual(bindLeftButton, bindLeftLabel, L("왼쪽", "Left"), KeyBindingConfig.LeftKey, KeyCode.A);
         UpdateBindingVisual(bindRightButton, bindRightLabel, L("오른쪽", "Right"), KeyBindingConfig.RightKey, KeyCode.D);
         UpdateBindingVisual(resolvedJumpBindButton, bindJumpLabel, L("점프", "Jump"), KeyBindingConfig.JumpKey, KeyCode.Space);
+        UpdateBindingVisual(resolvedSprintBindButton, bindSprintLabel, L("달리기", "Sprint"), KeyBindingConfig.SprintKey, KeyCode.LeftShift);
         UpdateBindingVisual(resolvedStairDownBindButton, bindDownLabel, L("계단 아래", "Stair Down"), KeyBindingConfig.StairDownKey, KeyCode.S);
         UpdateBindingVisual(resolvedStairUpBindButton, bindUpLabel, L("계단 위", "Stair Up"), KeyBindingConfig.StairUpKey, KeyCode.W);
         UpdateBindingVisual(resolvedInteractBindButton, bindInteractLabel, L("상호작용", "Interact"), KeyBindingConfig.InteractKey, KeyCode.E);
@@ -360,6 +365,7 @@ public class MainMenuController : MonoBehaviour
             settingsPanel = FindObjectByNameOrToken("Settings", "App_Settings", "Option");
 
         resolvedJumpBindButton = bindJumpButton;
+        resolvedSprintBindButton = bindSprintButton;
         resolvedStairDownBindButton = bindDownButton;
         resolvedStairUpBindButton = bindUpButton;
         resolvedInteractBindButton = bindInteractButton;
@@ -367,6 +373,12 @@ public class MainMenuController : MonoBehaviour
 
         if (resolvedJumpBindButton == null)
             resolvedJumpBindButton = FindSettingsButtonByNameOrText("Jump", "점프");
+
+        if (resolvedSprintBindButton == null)
+            resolvedSprintBindButton = FindSettingsButtonByNameOrText("Sprint", "달리기", "Run", "Shift");
+
+        if (bindSprintLabel == null)
+            bindSprintLabel = resolvedSprintBindButton != null ? resolvedSprintBindButton.GetComponentInChildren<TextMeshProUGUI>(true) : null;
 
         if (resolvedInteractBindButton == null)
             resolvedInteractBindButton = FindSettingsButtonByNameOrText("Interact", "상호작용");

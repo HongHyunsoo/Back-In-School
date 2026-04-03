@@ -61,7 +61,12 @@ public class PhoneGalleryAppController : MonoBehaviour
 
     private void HookEvents(bool subscribe)
     {
-        var gallery = PhoneGalleryService.EnsureExists();
+        var gallery = subscribe
+            ? PhoneGalleryService.EnsureExists()
+            : PhoneGalleryService.Instance;
+
+        if (gallery == null)
+            return;
 
         if (subscribe)
         {

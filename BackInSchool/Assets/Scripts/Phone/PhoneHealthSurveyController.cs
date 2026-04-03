@@ -221,7 +221,8 @@ public class PhoneHealthSurveyController : MonoBehaviour
             robotRoot.sizeDelta = new Vector2(120f, 120f);
 
             var img = robotObj.GetComponent<Image>();
-            img.color = new Color(0.2f, 0.55f, 0.95f, 1f);
+            img.color = new Color(0.2f, 0.55f, 0.95f, 0f);
+            img.raycastTarget = false;
         }
         else
         {

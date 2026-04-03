@@ -425,6 +425,7 @@ MonoBehaviour:
   masterVolumeSlider: {fileID: 0}
   bindLeftButton: {fileID: 2116737840}
   bindRightButton: {fileID: 1396331115}
+  bindSprintButton: {fileID: 832593161}
   bindJumpButton: {fileID: 0}
   bindDownButton: {fileID: 0}
   bindUpButton: {fileID: 0}

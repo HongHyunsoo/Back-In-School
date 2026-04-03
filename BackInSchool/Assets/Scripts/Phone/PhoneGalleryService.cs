@@ -14,6 +14,7 @@ public class PhoneGalleryService : MonoBehaviour
     private const string PrefKey = "PHONE_GALLERY_SAVE_V1";
 
     public static PhoneGalleryService Instance { get; private set; }
+    public static bool IsShuttingDown { get; private set; }
 
     private readonly HashSet<string> unlockedEntryIds = new(StringComparer.OrdinalIgnoreCase);
 
@@ -21,6 +22,9 @@ public class PhoneGalleryService : MonoBehaviour
 
     public static PhoneGalleryService EnsureExists()
     {
+        if (IsShuttingDown)
+            return Instance;
+
         if (Instance != null)
             return Instance;
 
@@ -51,6 +55,8 @@ public class PhoneGalleryService : MonoBehaviour
 
     private void Awake()
     {
+        IsShuttingDown = false;
+
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -68,10 +74,18 @@ public class PhoneGalleryService : MonoBehaviour
     private void OnDestroy()
     {
         if (Instance == this)
+            IsShuttingDown = true;
+
+        if (Instance == this)
             Instance = null;
 
         DialogueManager.DialogueLineShown -= HandleDialogueLineShown;
         DialogueManager.DialogueConversationCompleted -= HandleConversationCompleted;
+    }
+
+    private void OnApplicationQuit()
+    {
+        IsShuttingDown = true;
     }
 
     private void Start()

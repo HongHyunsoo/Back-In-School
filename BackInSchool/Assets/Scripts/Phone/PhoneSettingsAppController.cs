@@ -12,6 +12,7 @@ public class PhoneSettingsAppController : MonoBehaviour
     [SerializeField] private Button bindLeftButton;
     [SerializeField] private Button bindRightButton;
     [SerializeField] private Button bindJumpButton;
+    [SerializeField] private Button bindSprintButton;
     [SerializeField] private Button bindStairDownButton;
     [SerializeField] private Button bindStairUpButton;
     [SerializeField] private Button bindInteractButton;
@@ -22,6 +23,7 @@ public class PhoneSettingsAppController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI bindLeftLabel;
     [SerializeField] private TextMeshProUGUI bindRightLabel;
     [SerializeField] private TextMeshProUGUI bindJumpLabel;
+    [SerializeField] private TextMeshProUGUI bindSprintLabel;
     [SerializeField] private TextMeshProUGUI bindStairDownLabel;
     [SerializeField] private TextMeshProUGUI bindStairUpLabel;
     [SerializeField] private TextMeshProUGUI bindInteractLabel;
@@ -83,6 +85,8 @@ public class PhoneSettingsAppController : MonoBehaviour
             bindRightButton = FindButton(root, "Right");
         if (bindJumpButton == null)
             bindJumpButton = FindButton(root, "Jump");
+        if (bindSprintButton == null)
+            bindSprintButton = FindButton(root, "Sprint", "달리기", "Run", "Shift");
         if (bindStairDownButton == null)
             bindStairDownButton = FindButton(root, "StairDown", "Stair Down", "Down");
         if (bindStairUpButton == null)
@@ -100,6 +104,8 @@ public class PhoneSettingsAppController : MonoBehaviour
             bindRightLabel = FindLabelUnder(bindRightButton);
         if (bindJumpLabel == null)
             bindJumpLabel = FindLabelUnder(bindJumpButton);
+        if (bindSprintLabel == null)
+            bindSprintLabel = FindLabelUnder(bindSprintButton);
         if (bindStairDownLabel == null)
             bindStairDownLabel = FindLabelUnder(bindStairDownButton);
         if (bindStairUpLabel == null)
@@ -124,6 +130,8 @@ public class PhoneSettingsAppController : MonoBehaviour
             bindRightButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.RightKey));
         if (bindJumpButton != null)
             bindJumpButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.JumpKey));
+        if (bindSprintButton != null)
+            bindSprintButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.SprintKey));
         if (bindStairDownButton != null)
             bindStairDownButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.StairDownKey));
         if (bindStairUpButton != null)
@@ -178,6 +186,7 @@ public class PhoneSettingsAppController : MonoBehaviour
         UpdateBindingVisual(bindLeftButton, bindLeftLabel, KeyBindingConfig.LeftKey, KeyCode.A);
         UpdateBindingVisual(bindRightButton, bindRightLabel, KeyBindingConfig.RightKey, KeyCode.D);
         UpdateBindingVisual(bindJumpButton, bindJumpLabel, KeyBindingConfig.JumpKey, KeyCode.Space);
+        UpdateBindingVisual(bindSprintButton, bindSprintLabel, KeyBindingConfig.SprintKey, KeyCode.LeftShift);
         UpdateBindingVisual(bindStairDownButton, bindStairDownLabel, KeyBindingConfig.StairDownKey, KeyCode.S);
         UpdateBindingVisual(bindStairUpButton, bindStairUpLabel, KeyBindingConfig.StairUpKey, KeyCode.W);
         UpdateBindingVisual(bindInteractButton, bindInteractLabel, KeyBindingConfig.InteractKey, KeyCode.E);
