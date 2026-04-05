@@ -45,6 +45,7 @@ public class ChatService : MonoBehaviour
     public bool HasActiveSession => !string.IsNullOrEmpty(Data.activeSessionId);
 
     public event Action OnChanged; // UI 갱신용
+    public event Action<string, int> OnUnreadAdded;
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -98,9 +99,14 @@ public class ChatService : MonoBehaviour
     {
         var room = GetRoom(roomId);
         if (room == null) return;
-        room.unreadCount += Mathf.Max(0, amount);
+        int appliedAmount = Mathf.Max(0, amount);
+        if (appliedAmount <= 0)
+            return;
+
+        room.unreadCount += appliedAmount;
         Save();
         OnChanged?.Invoke();
+        OnUnreadAdded?.Invoke(roomId, appliedAmount);
     }
 
     public void MarkRoomRead(string roomId)

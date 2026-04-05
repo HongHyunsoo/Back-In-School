@@ -8,6 +8,8 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class LunchRunningTeacherWatcher : MonoBehaviour
 {
+    private const string RuntimeBubbleCanvasName = "__LunchTeacherBubbleCanvas";
+
     [Header("Detection")]
     [SerializeField] private Collider2D detectionTrigger;
     [SerializeField] private bool autoCreateDetectionChild = true;
@@ -57,6 +59,7 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
     private Coroutine bubbleRoutine;
     private DialogueManager cachedDialogueManager;
     private Camera cachedWorldCamera;
+    private Canvas cachedBubbleCanvas;
     private SpriteRenderer cachedSpriteRenderer;
     private Vector3 patrolOriginLocalPosition;
     private bool patrolOriginInitialized;
@@ -296,6 +299,7 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
         bubbleBodyText.fontSize = 24f;
         bubbleBodyText.color = new Color(0.1f, 0.1f, 0.1f, 1f);
         bubbleBodyText.enableWordWrapping = true;
+        bubbleBodyText.font = TMP_Settings.defaultFontAsset;
 
         bubbleRoot.gameObject.SetActive(false);
     }
@@ -403,6 +407,32 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
 
     private Transform ResolveBubbleParent()
     {
+        if (cachedBubbleCanvas == null)
+        {
+            var existingCanvas = GameObject.Find(RuntimeBubbleCanvasName);
+            if (existingCanvas != null)
+                cachedBubbleCanvas = existingCanvas.GetComponent<Canvas>();
+        }
+
+        if (cachedBubbleCanvas == null)
+        {
+            var canvasGo = new GameObject(RuntimeBubbleCanvasName, typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            cachedBubbleCanvas = canvasGo.GetComponent<Canvas>();
+            cachedBubbleCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            cachedBubbleCanvas.sortingOrder = 120;
+
+            var scaler = canvasGo.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            var raycaster = canvasGo.GetComponent<GraphicRaycaster>();
+            raycaster.enabled = false;
+        }
+
+        if (cachedBubbleCanvas != null)
+            return cachedBubbleCanvas.transform;
+
         var runtimeCanvas = GameObject.Find("__RuntimeDialogueCanvas");
         if (runtimeCanvas != null)
         {

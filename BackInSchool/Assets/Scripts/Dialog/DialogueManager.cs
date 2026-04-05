@@ -5,6 +5,8 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.Playables;
+using UnityEngine.Animations;
 
 /*
  * ===================================================================================
@@ -56,6 +58,10 @@ public class DialogueManager : MonoBehaviour
     private Dictionary<string, CharacterIdentifier> characterCache = new Dictionary<string, CharacterIdentifier>();
     private Dictionary<string, Transform> actorCache = new Dictionary<string, Transform>();
     private bool blockAdvanceInputThisFrame = false;
+    private readonly List<DialogueLinePresentation> pendingLinePresentations = new List<DialogueLinePresentation>();
+    private readonly List<DialogueLinePresentation> activeLinePresentations = new List<DialogueLinePresentation>();
+    private int currentLineIndex = -1;
+    private PlayableGraph presentationGraph;
 
     private void StopPlayerMotionImmediate()
     {
@@ -134,6 +140,11 @@ public class DialogueManager : MonoBehaviour
 
         // CharacterIdentifier 캐싱
         RefreshCharacterCache();
+    }
+
+    private void OnDestroy()
+    {
+        StopPresentationAnimationImmediate();
     }
 
     void Update()
@@ -418,6 +429,8 @@ public class DialogueManager : MonoBehaviour
 
         StopAllCoroutines();
         isTyping = false;
+        isBusy = false;
+        blockAdvanceInputThisFrame = false;
 
         if (dialogueText == null)
         {
@@ -431,6 +444,13 @@ public class DialogueManager : MonoBehaviour
         CurrentConversationId = conversationID;
         currentLine = null;
         currentNpcSpeaker = npcSpeaker;
+        currentLineIndex = -1;
+        activeLinePresentations.Clear();
+        if (pendingLinePresentations.Count > 0)
+        {
+            activeLinePresentations.AddRange(pendingLinePresentations);
+            pendingLinePresentations.Clear();
+        }
 
         if (playerController != null) playerController.enabled = false;
         StopPlayerMotionImmediate();
@@ -440,16 +460,17 @@ public class DialogueManager : MonoBehaviour
 
         RefreshCharacterCache();
 
-        // ★ 핵심: 시작 프레임엔 넘김 입력 막기 + 다음 프레임에 첫 줄 출력
+        // Start the first line immediately, but keep the original interact key
+        // from skipping it in the same frame.
         blockAdvanceInputThisFrame = true;
-        StartCoroutine(BeginDialogueNextFrame());
+        DisplayNextSentence();
+        StartCoroutine(ReleaseAdvanceBlockNextFrame());
     }
 
-    private IEnumerator BeginDialogueNextFrame()
+    private IEnumerator ReleaseAdvanceBlockNextFrame()
     {
-        yield return null; // 한 프레임 대기
+        yield return null;
         blockAdvanceInputThisFrame = false;
-        DisplayNextSentence();
     }
 
 
@@ -500,9 +521,9 @@ public class DialogueManager : MonoBehaviour
         }
 
         currentLine = lines.Dequeue();
+        currentLineIndex++;
         DialogueLineShown?.Invoke(CurrentConversationId, currentLine.lineID);
         string currentSpeakerID = currentLine.speakerID;
-
         // STORY line-level set switching: lineID -> setId
         if (SceneManager.GetActiveScene().name == "STORY")
         {
@@ -529,42 +550,61 @@ public class DialogueManager : MonoBehaviour
             currentSpeaker = currentNpcSpeaker;
         }
 
+        DialogueCharacterPresentation speakerPresentationSource = ResolveSpeakerPresentationComponent(currentSpeaker);
+        DialogueLinePresentation speakerDefaults = speakerPresentationSource != null ? speakerPresentationSource.ToPresentation() : null;
+        DialogueLinePresentation linePresentation = ResolveLinePresentation(currentLine, currentLineIndex);
+        DialogueLinePresentation presentation = MergePresentations(speakerDefaults, linePresentation);
+
         // 이름 표시
         nameText.text = LocalizationManager.Instance.GetName(currentSpeakerID);
 
         // 애니메이션 재생
-        if (!string.IsNullOrEmpty(currentLine.animationTrigger) && currentSpeaker != null)
+        string animationTrigger = presentation != null && !string.IsNullOrEmpty(presentation.animationTrigger)
+            ? presentation.animationTrigger
+            : currentLine.animationTrigger;
+        AnimationClip presentationClip = presentation != null ? presentation.animationClip : null;
+        if (currentSpeaker != null)
         {
-            Animator animator = currentSpeaker.GetComponent<Animator>();
+            Animator animator = ResolveSpeakerAnimator(currentSpeaker, speakerPresentationSource, presentationClip != null);
             if (animator != null)
             {
-                animator.SetTrigger(currentLine.animationTrigger);
+                if (presentationClip != null)
+                    PlayPresentationClip(animator, presentationClip);
+                else if (!string.IsNullOrEmpty(animationTrigger))
+                    animator.SetTrigger(animationTrigger);
             }
         }
 
         // 소리 이펙트 재생
-        if (!string.IsNullOrEmpty(currentLine.soundEffectName))
+        string soundEffectName = presentation != null && !string.IsNullOrEmpty(presentation.soundEffectName)
+            ? presentation.soundEffectName
+            : currentLine.soundEffectName;
+        if (!string.IsNullOrEmpty(soundEffectName))
         {
-            AudioClip clip = Resources.Load<AudioClip>("Sounds/" + currentLine.soundEffectName);
+            AudioClip clip = Resources.Load<AudioClip>("Sounds/" + soundEffectName);
             if (clip != null && audioSource != null)
             {
-                audioSource.PlayOneShot(clip);
+                audioSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(1f));
             }
             else
             {
-                UnityEngine.Debug.LogWarning("소리 이펙트를 찾을 수 없습니다: " + currentLine.soundEffectName);
+                UnityEngine.Debug.LogWarning("소리 이펙트를 찾을 수 없습니다: " + soundEffectName);
             }
         }
 
         // 대사 표시
         string translatedSentence = LocalizationManager.Instance.GetLine(currentLine.lineID);
-        StartCoroutine(RunCommandsThenType(translatedSentence));
+        float beforeTextDelaySeconds = presentation != null ? Mathf.Max(0f, presentation.beforeTextDelaySeconds) : 0f;
+        StartCoroutine(RunCommandsThenType(translatedSentence, beforeTextDelaySeconds));
 
     }
 
-    private IEnumerator RunCommandsThenType(string translatedSentence)
+    private IEnumerator RunCommandsThenType(string translatedSentence, float beforeTextDelaySeconds)
     {
         isBusy = true;
+
+        if (beforeTextDelaySeconds > 0f)
+            yield return new WaitForSeconds(beforeTextDelaySeconds);
 
         // 1) 태그 커맨드 실행 (move/pass/wait/door 등)
         if (commandRunner != null)
@@ -605,6 +645,13 @@ public class DialogueManager : MonoBehaviour
 
         if (speechBubble != null) speechBubble.gameObject.SetActive(false);
         IsDialogueActive = false;
+        isTyping = false;
+        isBusy = false;
+        blockAdvanceInputThisFrame = false;
+        pendingLinePresentations.Clear();
+        activeLinePresentations.Clear();
+        currentLineIndex = -1;
+        StopPresentationAnimationImmediate();
         CurrentConversationId = string.Empty;
         currentSpeaker = null;
         currentLine = null;
@@ -647,5 +694,144 @@ public class DialogueManager : MonoBehaviour
             if (gameManager != null) gameManager.DialogueFinished();
         }
 
+    }
+
+    public void SetUpcomingLinePresentations(List<DialogueLinePresentation> presentations)
+    {
+        pendingLinePresentations.Clear();
+        if (presentations == null)
+            return;
+
+        for (int i = 0; i < presentations.Count; i++)
+        {
+            DialogueLinePresentation src = presentations[i];
+            if (src == null)
+                continue;
+
+            pendingLinePresentations.Add(new DialogueLinePresentation
+            {
+                lineID = src.lineID,
+                lineIndex = src.lineIndex,
+                animationTrigger = src.animationTrigger,
+                animationClip = src.animationClip,
+                soundEffectName = src.soundEffectName,
+                beforeTextDelaySeconds = Mathf.Max(0f, src.beforeTextDelaySeconds)
+            });
+        }
+    }
+
+    private DialogueLinePresentation ResolveLinePresentation(DialogueLine line, int lineIndex)
+    {
+        if (activeLinePresentations.Count == 0)
+            return null;
+
+        for (int i = 0; i < activeLinePresentations.Count; i++)
+        {
+            DialogueLinePresentation p = activeLinePresentations[i];
+            if (p == null)
+                continue;
+
+            if (!string.IsNullOrEmpty(p.lineID) && string.Equals(p.lineID, line.lineID, StringComparison.OrdinalIgnoreCase))
+                return p;
+        }
+
+        for (int i = 0; i < activeLinePresentations.Count; i++)
+        {
+            DialogueLinePresentation p = activeLinePresentations[i];
+            if (p == null)
+                continue;
+
+            if (p.lineIndex >= 0 && p.lineIndex == lineIndex)
+                return p;
+        }
+
+        return null;
+    }
+
+    private DialogueCharacterPresentation ResolveSpeakerPresentationComponent(Transform speaker)
+    {
+        if (speaker == null)
+            return null;
+
+        var presentation = speaker.GetComponent<DialogueCharacterPresentation>();
+        if (presentation == null)
+            presentation = speaker.GetComponentInParent<DialogueCharacterPresentation>();
+        if (presentation == null)
+            presentation = speaker.GetComponentInChildren<DialogueCharacterPresentation>(true);
+
+        return presentation;
+    }
+
+    private Animator ResolveSpeakerAnimator(Transform speaker, DialogueCharacterPresentation presentationSource, bool allowRuntimeAnimatorForClip)
+    {
+        if (presentationSource != null && presentationSource.targetAnimator != null)
+            return presentationSource.targetAnimator;
+
+        if (speaker == null)
+            return null;
+
+        Animator animator = speaker.GetComponent<Animator>();
+        if (animator == null)
+            animator = speaker.GetComponentInChildren<Animator>(true);
+        if (animator == null)
+            animator = speaker.GetComponentInParent<Animator>();
+
+        if (animator == null && allowRuntimeAnimatorForClip)
+        {
+            Transform target = speaker;
+            SpriteRenderer targetSprite = target.GetComponent<SpriteRenderer>();
+            if (targetSprite == null)
+            {
+                targetSprite = target.GetComponentInChildren<SpriteRenderer>(true);
+                if (targetSprite != null)
+                    target = targetSprite.transform;
+            }
+
+            if (targetSprite != null)
+                animator = target.gameObject.GetComponent<Animator>() ?? target.gameObject.AddComponent<Animator>();
+        }
+
+        return animator;
+    }
+
+    private static DialogueLinePresentation MergePresentations(DialogueLinePresentation defaults, DialogueLinePresentation specific)
+    {
+        if (defaults == null)
+            return specific;
+        if (specific == null)
+            return defaults;
+
+        return new DialogueLinePresentation
+        {
+            lineID = !string.IsNullOrEmpty(specific.lineID) ? specific.lineID : defaults.lineID,
+            lineIndex = specific.lineIndex >= 0 ? specific.lineIndex : defaults.lineIndex,
+            animationTrigger = !string.IsNullOrEmpty(specific.animationTrigger) ? specific.animationTrigger : defaults.animationTrigger,
+            animationClip = specific.animationClip != null ? specific.animationClip : defaults.animationClip,
+            soundEffectName = !string.IsNullOrEmpty(specific.soundEffectName) ? specific.soundEffectName : defaults.soundEffectName,
+            beforeTextDelaySeconds = specific.beforeTextDelaySeconds > 0f ? specific.beforeTextDelaySeconds : defaults.beforeTextDelaySeconds
+        };
+    }
+
+    private void PlayPresentationClip(Animator animator, AnimationClip clip)
+    {
+        if (animator == null || clip == null)
+            return;
+
+        StopPresentationAnimationImmediate();
+
+        presentationGraph = PlayableGraph.Create("DialoguePresentationClip");
+        var output = AnimationPlayableOutput.Create(presentationGraph, "DialoguePresentation", animator);
+        var playable = AnimationClipPlayable.Create(presentationGraph, clip);
+        playable.SetApplyFootIK(false);
+        playable.SetApplyPlayableIK(false);
+        output.SetSourcePlayable(playable);
+        presentationGraph.Play();
+
+    }
+
+    private void StopPresentationAnimationImmediate()
+    {
+        if (presentationGraph.IsValid())
+            presentationGraph.Destroy();
     }
 }

@@ -19,6 +19,28 @@ public class DialogueChoice
 }
 
 [System.Serializable]
+public class DialogueLinePresentation
+{
+    [Tooltip("Target line ID from Localization/Conversations. Recommended when available.")]
+    public string lineID;
+
+    [Tooltip("Fallback line order (0-based) when lineID is empty.")]
+    public int lineIndex = -1;
+
+    [Tooltip("Animator trigger to fire when this line is shown.")]
+    public string animationTrigger;
+
+    [Tooltip("Optional direct animation clip to play for this line.")]
+    public AnimationClip animationClip;
+
+    [Tooltip("Optional sound effect override played for this line.")]
+    public string soundEffectName;
+
+    [Tooltip("Delay before the text of this line starts showing. Useful for expression animation timing.")]
+    public float beforeTextDelaySeconds = 0f;
+}
+
+[System.Serializable]
 public class DialogueLine
 {
     [Header("기본 정보")]

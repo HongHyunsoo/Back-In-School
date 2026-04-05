@@ -123,8 +123,8 @@ public class MainMenuController : MonoBehaviour
 
         if (masterVolumeSlider != null)
         {
-            masterVolumeSlider.value = AudioListener.volume;
-            masterVolumeSlider.onValueChanged.AddListener(v => AudioListener.volume = v);
+            masterVolumeSlider.value = AudioSettingsService.MasterVolume;
+            masterVolumeSlider.onValueChanged.AddListener(AudioSettingsService.SetMasterVolume);
         }
 
         RefreshLocalizedStaticLabels();

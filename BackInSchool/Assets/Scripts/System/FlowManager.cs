@@ -17,6 +17,8 @@ public class FlowEvent
 public class FlowManager : MonoBehaviour
 {
     public const string StoryAppendConversationPrefKey = "FLOW_STORY_APPEND_ID";
+    public const string LunchFreeTimeStartMinutePrefKey = "FLOW_LUNCH_FREETIME_START_MINUTE";
+    public const string LunchFreeTimeStartDayPrefKey = "FLOW_LUNCH_FREETIME_START_DAY";
 
     public static FlowManager Instance { get; private set; }
 
@@ -204,6 +206,21 @@ public class FlowManager : MonoBehaviour
         PlayCurrent();
     }
 
+    public void SetLunchFreeTimeStartMinuteForCurrentDay(int minute)
+    {
+        PlayerPrefs.SetInt(LunchFreeTimeStartMinutePrefKey, minute);
+        PlayerPrefs.SetInt(LunchFreeTimeStartDayPrefKey, day);
+    }
+
+    public int GetLunchFreeTimeStartMinuteForCurrentDay(int fallbackMinute)
+    {
+        int savedDay = PlayerPrefs.GetInt(LunchFreeTimeStartDayPrefKey, -1);
+        if (savedDay != day)
+            return fallbackMinute;
+
+        return PlayerPrefs.GetInt(LunchFreeTimeStartMinutePrefKey, fallbackMinute);
+    }
+
     public void AddPenaltyWithReason(int penaltyDelta, string reasonId)
     {
         if (penaltyDelta <= 0)
@@ -237,6 +254,8 @@ public class FlowManager : MonoBehaviour
         noSlippersPenaltyAppliedToday = false;
         PhoneSubwayFlowGate.ClearHealthChecks();
         PlayerPrefs.DeleteKey(StoryAppendConversationPrefKey);
+        PlayerPrefs.DeleteKey(LunchFreeTimeStartMinutePrefKey);
+        PlayerPrefs.DeleteKey(LunchFreeTimeStartDayPrefKey);
     }
 
     public bool TryChangeToSlippers()

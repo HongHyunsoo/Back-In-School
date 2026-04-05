@@ -45,6 +45,8 @@ public class PlayerController : MonoBehaviour
     public bool IsRunningHeld => isRunning;
     public bool IsActivelyRunning => isRunning && moveInput != 0f && isGrounded && currentStamina > 0f;
     public float HorizontalInput => moveInput;
+    public bool IsGrounded => isGrounded;
+    public bool ExternalInputLocked { get; set; }
 
     private void Start()
     {
@@ -84,20 +86,27 @@ public class PlayerController : MonoBehaviour
         KeyCode sprintKey = KeyBindingConfig.Get(KeyBindingConfig.SprintKey, KeyCode.LeftShift);
 
         float horizontal = 0f;
-        if (Input.GetKey(leftKey)) horizontal -= 1f;
-        if (Input.GetKey(rightKey)) horizontal += 1f;
-        moveInput = Mathf.Clamp(horizontal, -1f, 1f);
-
-        isRunning = Input.GetKey(sprintKey);
-
-        if (Input.GetKeyDown(jumpKey) && isGrounded && currentStamina >= staminaCostForJump && Mathf.Abs(rb.velocity.y) < 0.1f)
+        if (!ExternalInputLocked)
         {
-            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-            currentStamina -= staminaCostForJump;
-            isGrounded = false;
-            animGrounded = false;
-            groundedStableTimer = 0f;
+            if (Input.GetKey(leftKey)) horizontal -= 1f;
+            if (Input.GetKey(rightKey)) horizontal += 1f;
+            isRunning = Input.GetKey(sprintKey);
+
+            if (Input.GetKeyDown(jumpKey) && isGrounded && currentStamina >= staminaCostForJump && Mathf.Abs(rb.velocity.y) < 0.1f)
+            {
+                rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+                currentStamina -= staminaCostForJump;
+                isGrounded = false;
+                animGrounded = false;
+                groundedStableTimer = 0f;
+            }
         }
+        else
+        {
+            isRunning = false;
+        }
+
+        moveInput = Mathf.Clamp(horizontal, -1f, 1f);
 
         HandleStamina();
         FlipSprite();

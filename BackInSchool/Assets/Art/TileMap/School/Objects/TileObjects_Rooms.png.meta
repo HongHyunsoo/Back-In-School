@@ -1390,6 +1390,27 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: TileObjects_Rooms_61
+      rect:
+        serializedVersion: 2
+        x: 114
+        y: 407
+        width: 28
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 84f27775d51824943b44c58ab0634d20
+      internalID: -1438920111
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     physicsShape: []
     bones: []
@@ -1459,6 +1480,7 @@ TextureImporter:
       TileObjects_Rooms_59: 832318505
       TileObjects_Rooms_6: 700701859
       TileObjects_Rooms_60: -1993317774
+      TileObjects_Rooms_61: -1438920111
       TileObjects_Rooms_7: 1886951604
       TileObjects_Rooms_8: 755328552
       TileObjects_Rooms_9: -323938860

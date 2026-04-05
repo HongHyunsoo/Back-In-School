@@ -719,6 +719,7 @@ public class TetrisMinigameController : MonoBehaviour
         // Prefer FlowManager timeline
         if (FlowManager.Instance != null)
         {
+            FlowManager.Instance.SetLunchFreeTimeStartMinuteForCurrentDay(success ? 30 : 40);
             int delta = success ? 0 : penaltyOnFail;
             FlowManager.Instance.CompleteCurrentEvent(delta);
             return;

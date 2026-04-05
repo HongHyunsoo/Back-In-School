@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -18,23 +20,24 @@ public class FlowDebugUIController : MonoBehaviour
     public GameObject panelRoot;
 
     [Header("Preset UI")]
-    public Dropdown presetDropdown; // UnityEngine.UI.Dropdown
+    public Dropdown presetDropdown;
     public JumpPreset[] presets;
 
     [Header("Buttons")]
     public Button skipButton;
     public Button jumpButton;
+    public Button lunchAdvance3MinButton;
+    public int lunchAdvanceMinutes = 3;
 
     [Header("Manual Input (Optional)")]
     public InputField dayInput;
     public InputField stepInput;
     public InputField penaltyInput;
 
-    int selectedIndex = 0;
+    private int selectedIndex;
 
-    void Awake()
+    private void Awake()
     {
-        // ✅ 루트로 올린 뒤 DontDestroy
         if (transform.parent != null)
             transform.SetParent(null);
 
@@ -49,21 +52,20 @@ public class FlowDebugUIController : MonoBehaviour
         BindButtons();
     }
 
-
-    void Update()
+    private void Update()
     {
         if (Input.GetKeyDown(toggleKey))
             TogglePanel();
     }
 
-    void SetupDropdown()
+    private void SetupDropdown()
     {
-        if (presetDropdown == null) return;
+        if (presetDropdown == null)
+            return;
 
         presetDropdown.ClearOptions();
 
-        var options = new System.Collections.Generic.List<Dropdown.OptionData>();
-
+        var options = new List<Dropdown.OptionData>();
         if (presets == null || presets.Length == 0)
         {
             options.Add(new Dropdown.OptionData("No presets"));
@@ -78,51 +80,66 @@ public class FlowDebugUIController : MonoBehaviour
         presetDropdown.AddOptions(options);
         presetDropdown.onValueChanged.RemoveAllListeners();
         presetDropdown.onValueChanged.AddListener(OnPresetChanged);
-
         presetDropdown.value = 0;
         selectedIndex = 0;
     }
 
-    void OnPresetChanged(int idx)
+    private void OnPresetChanged(int idx)
     {
         selectedIndex = Mathf.Clamp(idx, 0, presets.Length - 1);
         ApplySelectedPresetToInputs();
     }
 
-    void ApplySelectedPresetToInputs()
+    private void ApplySelectedPresetToInputs()
     {
-        if (presets == null || presets.Length == 0) return;
+        if (presets == null || presets.Length == 0)
+            return;
 
-        var p = presets[selectedIndex];
-
-        if (dayInput != null) dayInput.text = p.day.ToString();
-        if (stepInput != null) stepInput.text = p.step.ToString();
-        if (penaltyInput != null) penaltyInput.text = p.penalty.ToString();
+        var preset = presets[selectedIndex];
+        if (dayInput != null) dayInput.text = preset.day.ToString();
+        if (stepInput != null) stepInput.text = preset.step.ToString();
+        if (penaltyInput != null) penaltyInput.text = preset.penalty.ToString();
     }
 
     public void TogglePanel()
     {
-        if (panelRoot == null) return;
+        if (panelRoot == null)
+            return;
+
         panelRoot.SetActive(!panelRoot.activeSelf);
         ConfigurePanelRootPassThrough();
+        BindButtons();
     }
 
-    void ConfigurePanelRootPassThrough()
+    private void ConfigurePanelRootPassThrough()
     {
-        if (panelRoot == null) return;
+        if (panelRoot == null)
+            return;
 
         var graphic = panelRoot.GetComponent<Graphic>();
         if (graphic != null)
             graphic.raycastTarget = false;
     }
 
-    void BindButtons()
+    private void BindButtons()
     {
         if (skipButton == null)
             skipButton = FindButtonByName("Skip");
 
         if (jumpButton == null)
             jumpButton = FindButtonByName("Jump");
+
+        if (lunchAdvance3MinButton == null)
+            lunchAdvance3MinButton = FindButtonByName("LunchAdvance3Min");
+
+        if (lunchAdvance3MinButton == null)
+            lunchAdvance3MinButton = FindButtonByName("Time Skip");
+
+        if (lunchAdvance3MinButton == null)
+            lunchAdvance3MinButton = FindButtonByText("Time Skip");
+
+        if (lunchAdvance3MinButton == null)
+            lunchAdvance3MinButton = FindButtonByText("점심 -3분");
 
         if (skipButton != null)
         {
@@ -135,64 +152,91 @@ public class FlowDebugUIController : MonoBehaviour
             jumpButton.onClick.RemoveListener(OnClickJump);
             jumpButton.onClick.AddListener(OnClickJump);
         }
+
+        if (lunchAdvance3MinButton != null)
+        {
+            lunchAdvance3MinButton.onClick.RemoveListener(OnClickLunchAdvance3Min);
+            lunchAdvance3MinButton.onClick.AddListener(OnClickLunchAdvance3Min);
+        }
     }
 
-    Button FindButtonByName(string targetName)
+    private Button FindButtonByName(string targetName)
     {
-        if (panelRoot == null) return null;
+        if (panelRoot == null || string.IsNullOrEmpty(targetName))
+            return null;
 
         var buttons = panelRoot.GetComponentsInChildren<Button>(true);
         for (int i = 0; i < buttons.Length; i++)
         {
-            if (buttons[i] != null && buttons[i].name == targetName)
+            if (buttons[i] != null && string.Equals(buttons[i].name, targetName, StringComparison.OrdinalIgnoreCase))
                 return buttons[i];
         }
 
         return null;
     }
 
-    // --- Buttons ---
+    private Button FindButtonByText(string targetText)
+    {
+        if (panelRoot == null || string.IsNullOrEmpty(targetText))
+            return null;
+
+        var buttons = panelRoot.GetComponentsInChildren<Button>(true);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            if (buttons[i] == null)
+                continue;
+
+            var legacyText = buttons[i].GetComponentInChildren<Text>(true);
+            if (legacyText != null && string.Equals(legacyText.text, targetText, StringComparison.OrdinalIgnoreCase))
+                return buttons[i];
+
+            var tmpText = buttons[i].GetComponentInChildren<TMP_Text>(true);
+            if (tmpText != null && string.Equals(tmpText.text, targetText, StringComparison.OrdinalIgnoreCase))
+                return buttons[i];
+        }
+
+        return null;
+    }
 
     public void OnClickSkip()
     {
-        Debug.Log("[FlowDebugUI] Skip button clicked");
-
         var fm = FlowManager.Instance;
-        Debug.Log($"[FlowDebugUI] FlowManager.Instance = {(fm == null ? "NULL" : fm.name)}");
+        if (fm == null)
+            return;
 
-        if (fm == null) return;
-
-        // DebugSkip이 #if로 날아갔을 가능성 대비: CompleteCurrentEvent로 직접 호출
         fm.CompleteCurrentEvent(0);
     }
 
     public void OnClickJump()
     {
-        Debug.Log("[FlowDebugUI] Jump button clicked");
-
         var fm = FlowManager.Instance;
-        Debug.Log($"[FlowDebugUI] FlowManager.Instance = {(fm == null ? "NULL" : fm.name)}");
-
-        if (fm == null) return;
+        if (fm == null)
+            return;
 
         int d = ParseOr(dayInput, fm.day);
         int s = ParseOr(stepInput, fm.stepIndex);
         int p = ParseOr(penaltyInput, fm.penaltyPoints);
 
-        Debug.Log($"[FlowDebugUI] Jump to day={d}, step={s}, penalty={p}");
-
-        // DebugJump이 #if로 날아갔을 가능성 대비: 내부 로직 직접 수행
         fm.day = d;
         fm.stepIndex = s;
         fm.penaltyPoints = p;
         fm.PlayCurrent();
     }
 
-
-    int ParseOr(InputField field, int fallback)
+    public void OnClickLunchAdvance3Min()
     {
-        if (field == null) return fallback;
-        if (int.TryParse(field.text, out int v)) return v;
-        return fallback;
+        var timer = FindAnyObjectByType<LunchFreeTimeTimerController>();
+        if (timer == null)
+            return;
+
+        timer.DebugAdvanceMinutes(Mathf.Max(1, lunchAdvanceMinutes));
+    }
+
+    private int ParseOr(InputField field, int fallback)
+    {
+        if (field == null)
+            return fallback;
+
+        return int.TryParse(field.text, out int value) ? value : fallback;
     }
 }

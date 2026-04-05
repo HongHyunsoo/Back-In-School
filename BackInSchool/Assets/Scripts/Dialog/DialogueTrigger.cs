@@ -26,6 +26,10 @@ public class ContextualDialogue
     [Tooltip("?대떦 ??ъ뿉 ?ъ깮???뚮━ ?댄럺???대쫫 (Resources/Sounds?먯꽌 濡쒕뱶)")]
     public string soundEffectName;
 
+    [Header("Line Presentations")]
+    [Tooltip("Inspector-driven per-line presentation settings. Use lineID or lineIndex to match each dialogue line.")]
+    public List<DialogueLinePresentation> linePresentations = new List<DialogueLinePresentation>();
+
     [HideInInspector]
     public bool hasBeenPlayed = false;
 }
@@ -317,11 +321,8 @@ public class DialogueTrigger : MonoBehaviour
             if (facePlayerOnDialogueStart)
                 FaceTowardPlayer();
 
-            // ???而ㅼ뒪?곕쭏?댁쭠 ?곸슜 (?좊땲硫붿씠?? ?댄럺?? ?뚮━)
-            if (cd != null && cd.customLineIndex >= 0)
-            {
-                ApplyLineCustomization(conversationID_ToPlay, cd.customLineIndex, cd);
-            }
+            if (manager != null)
+                manager.SetUpcomingLinePresentations(BuildLinePresentations(cd));
 
             manager.StartDialogue(conversationID_ToPlay, transform);
         }
@@ -384,38 +385,44 @@ public class DialogueTrigger : MonoBehaviour
         prompt.localScale = promptScale;
     }
 
-    // ??ъ뿉 而ㅼ뒪?곕쭏?댁쭠 ?곸슜 (?좊땲硫붿씠?? ?댄럺?? ?뚮━)
-    private void ApplyLineCustomization(string conversationID, int lineIndex, ContextualDialogue cd)
+    private List<DialogueLinePresentation> BuildLinePresentations(ContextualDialogue cd)
     {
-        List<DialogueLine> lines = LocalizationManager.Instance.GetConversation(conversationID);
-        
-        if (lines == null || lines.Count == 0)
+        var result = new List<DialogueLinePresentation>();
+        if (cd == null)
+            return result;
+
+        if (cd.linePresentations != null)
         {
-            UnityEngine.Debug.LogWarning($"??붾? 李얠쓣 ???놁뒿?덈떎: {conversationID}");
-            return;
+            for (int i = 0; i < cd.linePresentations.Count; i++)
+            {
+                var src = cd.linePresentations[i];
+                if (src == null)
+                    continue;
+
+                result.Add(new DialogueLinePresentation
+                {
+                    lineID = src.lineID,
+                    lineIndex = src.lineIndex,
+                    animationTrigger = src.animationTrigger,
+                    animationClip = src.animationClip,
+                    soundEffectName = src.soundEffectName,
+                    beforeTextDelaySeconds = Mathf.Max(0f, src.beforeTextDelaySeconds)
+                });
+            }
         }
 
-        if (lineIndex < 0 || lineIndex >= lines.Count)
+        if (cd.customLineIndex >= 0 || !string.IsNullOrEmpty(cd.animationTrigger) || !string.IsNullOrEmpty(cd.soundEffectName))
         {
-            UnityEngine.Debug.LogWarning($"????몃뜳?ㅺ? 踰붿쐞瑜?踰쀬뼱?ъ뒿?덈떎: {lineIndex} / {lines.Count}");
-            return;
+            result.Add(new DialogueLinePresentation
+            {
+                lineIndex = cd.customLineIndex,
+                animationTrigger = cd.animationTrigger,
+                soundEffectName = cd.soundEffectName,
+                beforeTextDelaySeconds = 0f
+            });
         }
 
-        DialogueLine targetLine = lines[lineIndex];
-
-        // ?좊땲硫붿씠???몃━嫄??ㅼ젙
-        if (!string.IsNullOrEmpty(cd.animationTrigger))
-        {
-            targetLine.animationTrigger = cd.animationTrigger;
-        }
-
-        // ?뚮━ ?댄럺???ㅼ젙
-        if (!string.IsNullOrEmpty(cd.soundEffectName))
-        {
-            targetLine.soundEffectName = cd.soundEffectName;
-        }
-
-        UnityEngine.Debug.Log($"Applied customization to {conversationID} line {lineIndex + 1}.");
+        return result;
     }
 
     private void OnTriggerEnter2D(Collider2D other) 

@@ -7,6 +7,8 @@ public class PhoneSettingsAppController : MonoBehaviour
     [Header("Optional References")]
     [SerializeField] private GameObject settingsPanel;
     [SerializeField] private Slider masterVolumeSlider;
+    [SerializeField] private Slider bgmVolumeSlider;
+    [SerializeField] private Slider sfxVolumeSlider;
     [SerializeField] private Button languageButton;
 
     [SerializeField] private Button bindLeftButton;
@@ -75,6 +77,10 @@ public class PhoneSettingsAppController : MonoBehaviour
 
         if (masterVolumeSlider == null)
             masterVolumeSlider = FindSlider(root, "Volume", "Sound");
+        if (bgmVolumeSlider == null)
+            bgmVolumeSlider = FindSlider(root, "BGM", "Music");
+        if (sfxVolumeSlider == null)
+            sfxVolumeSlider = FindSlider(root, "SFX", "SE", "Effect");
 
         if (languageButton == null)
             languageButton = FindButton(root, "Language");
@@ -143,8 +149,20 @@ public class PhoneSettingsAppController : MonoBehaviour
 
         if (masterVolumeSlider != null)
         {
-            masterVolumeSlider.SetValueWithoutNotify(AudioListener.volume);
-            masterVolumeSlider.onValueChanged.AddListener(v => AudioListener.volume = v);
+            masterVolumeSlider.SetValueWithoutNotify(AudioSettingsService.MasterVolume);
+            masterVolumeSlider.onValueChanged.AddListener(AudioSettingsService.SetMasterVolume);
+        }
+
+        if (bgmVolumeSlider != null)
+        {
+            bgmVolumeSlider.SetValueWithoutNotify(AudioSettingsService.BgmVolume);
+            bgmVolumeSlider.onValueChanged.AddListener(AudioSettingsService.SetBgmVolume);
+        }
+
+        if (sfxVolumeSlider != null)
+        {
+            sfxVolumeSlider.SetValueWithoutNotify(AudioSettingsService.SfxVolume);
+            sfxVolumeSlider.onValueChanged.AddListener(AudioSettingsService.SetSfxVolume);
         }
 
         isWired = true;
@@ -154,6 +172,12 @@ public class PhoneSettingsAppController : MonoBehaviour
     {
         RefreshLanguageLabel();
         RefreshBindingLabels();
+        if (masterVolumeSlider != null)
+            masterVolumeSlider.SetValueWithoutNotify(AudioSettingsService.MasterVolume);
+        if (bgmVolumeSlider != null)
+            bgmVolumeSlider.SetValueWithoutNotify(AudioSettingsService.BgmVolume);
+        if (sfxVolumeSlider != null)
+            sfxVolumeSlider.SetValueWithoutNotify(AudioSettingsService.SfxVolume);
         SetInfo("");
     }
 
