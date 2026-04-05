@@ -169,6 +169,13 @@ public class PhoneAppManager : MonoBehaviour
         if (appPanels.TryGetValue(appId, out var panel) && panel != null)
             panel.SetActive(true);
 
+        if (appId == PhoneAppId.Settings)
+        {
+            var settingsController = GetComponent<PhoneSettingsAppController>();
+            if (settingsController != null)
+                settingsController.RefreshBindingsNow();
+        }
+
         CurrentApp = appId;
         openRoutine = null;
     }

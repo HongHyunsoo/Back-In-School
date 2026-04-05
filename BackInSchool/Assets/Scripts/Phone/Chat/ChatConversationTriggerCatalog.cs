@@ -13,6 +13,7 @@ public sealed class ChatConversationTriggerCatalog
         public int Day;
         public GameState State;
         public bool Notify;
+        public float DelaySeconds;
     }
 
     private static ChatConversationTriggerCatalog instance;
@@ -75,6 +76,7 @@ public sealed class ChatConversationTriggerCatalog
             string stateRaw = SafeGet(c, 4);
             string flowIdContains = SafeGet(c, 5);
             bool notify = ParseBoolIntOrDefault(SafeGet(c, 6), true);
+            float delaySeconds = ParseFloatOrDefault(SafeGet(c, 7), 0f);
 
             if (string.IsNullOrEmpty(triggerConversationId) ||
                 string.IsNullOrEmpty(conversationId) ||
@@ -123,7 +125,8 @@ public sealed class ChatConversationTriggerCatalog
                 Day = day,
                 State = state,
                 FlowIdContains = flowIdContains,
-                Notify = notify
+                Notify = notify,
+                DelaySeconds = Mathf.Max(0f, delaySeconds)
             });
         }
 
@@ -162,6 +165,11 @@ public sealed class ChatConversationTriggerCatalog
         if (bool.TryParse(raw, out bool parsed))
             return parsed;
         return fallback;
+    }
+
+    private static float ParseFloatOrDefault(string raw, float fallback)
+    {
+        return float.TryParse(raw, out float value) ? value : fallback;
     }
 
     private static string SafeGet(string[] c, int index)

@@ -13,6 +13,13 @@ public class PhoneSystem : MonoBehaviour
     public Vector2 phoneUiReferenceResolution = new Vector2(1920f, 1080f);
     [Range(0f, 1f)] public float phoneUiMatchWidthOrHeight = 0.5f;
 
+    [Header("Phone Audio")]
+    [SerializeField] private AudioClip phoneButtonClickClip;
+    [SerializeField] [Range(0f, 1f)] private float phoneButtonClickVolume = 0.85f;
+
+    public AudioClip PhoneButtonClickClip => phoneButtonClickClip;
+    public float PhoneButtonClickVolume => phoneButtonClickVolume;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -81,6 +88,9 @@ public class PhoneSystem : MonoBehaviour
 
         if (phoneUIInstance.GetComponent<PhoneUiHotfixes>() == null)
             phoneUIInstance.AddComponent<PhoneUiHotfixes>();
+
+        if (phoneUIInstance.GetComponent<PhoneUIButtonAudioController>() == null)
+            phoneUIInstance.AddComponent<PhoneUIButtonAudioController>();
 
         if (phoneUIInstance.GetComponent<PhoneSettingsAppController>() == null)
             phoneUIInstance.AddComponent<PhoneSettingsAppController>();

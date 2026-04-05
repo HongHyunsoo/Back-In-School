@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using TMPro;
 
 [DisallowMultipleComponent]
 public class LunchFreeTimeAudioController : MonoBehaviour
@@ -14,12 +16,15 @@ public class LunchFreeTimeAudioController : MonoBehaviour
 
     [Header("Ambient Zones")]
     [SerializeField] private Collider2D classroomZone;
+    [SerializeField] private Collider2D[] classroomExtraZones;
     [SerializeField] private AudioClip classroomAmbientClip;
     [SerializeField] [Range(0f, 1f)] private float classroomAmbientVolume = 0.45f;
     [SerializeField] private Collider2D hallwayZone;
+    [SerializeField] private Collider2D[] hallwayExtraZones;
     [SerializeField] private AudioClip hallwayAmbientClip;
     [SerializeField] [Range(0f, 1f)] private float hallwayAmbientVolume = 0.5f;
     [SerializeField] private Collider2D playgroundZone;
+    [SerializeField] private Collider2D[] playgroundExtraZones;
     [SerializeField] private AudioClip playgroundAmbientClip;
     [SerializeField] [Range(0f, 1f)] private float playgroundAmbientVolume = 0.62f;
     [SerializeField] [Min(0.1f)] private float ambientFadeSpeed = 3.25f;
@@ -27,6 +32,10 @@ public class LunchFreeTimeAudioController : MonoBehaviour
     [Header("Phone Notification")]
     [SerializeField] private AudioClip phoneNotificationClip;
     [SerializeField] [Range(0f, 1f)] private float phoneNotificationVolume = 1f;
+    [SerializeField] private TMP_FontAsset toastFontAsset;
+    [SerializeField] private string phoneNotificationToastKo = "문자가 왔습니다.";
+    [SerializeField] private string phoneNotificationToastEn = "New message received.";
+    [SerializeField] [Min(0.2f)] private float phoneNotificationToastSeconds = 2.2f;
 
     private enum AmbientZoneKind
     {
@@ -46,6 +55,11 @@ public class LunchFreeTimeAudioController : MonoBehaviour
     private AudioClip currentAmbientClip;
     private float currentAmbientTargetVolume;
     private int lastFootstepIndex = -1;
+    private Canvas toastCanvas;
+    private RectTransform toastRoot;
+    private TextMeshProUGUI toastText;
+    private CanvasGroup toastCanvasGroup;
+    private Coroutine toastRoutine;
 
     private void OnEnable()
     {
@@ -116,7 +130,7 @@ public class LunchFreeTimeAudioController : MonoBehaviour
         source.playOnAwake = false;
         source.loop = loop;
         source.spatialBlend = 0f;
-        source.volume = 0f;
+        source.volume = loop ? 0f : 1f;
         return source;
     }
 
@@ -252,16 +266,34 @@ public class LunchFreeTimeAudioController : MonoBehaviour
     {
         Vector2 point = worldPosition;
 
-        if (classroomZone != null && classroomZone.OverlapPoint(point))
+        if (ContainsPoint(classroomZone, classroomExtraZones, point))
             return AmbientZoneKind.Classroom;
 
-        if (hallwayZone != null && hallwayZone.OverlapPoint(point))
+        if (ContainsPoint(hallwayZone, hallwayExtraZones, point))
             return AmbientZoneKind.Hallway;
 
-        if (playgroundZone != null && playgroundZone.OverlapPoint(point))
+        if (ContainsPoint(playgroundZone, playgroundExtraZones, point))
             return AmbientZoneKind.Playground;
 
         return AmbientZoneKind.None;
+    }
+
+    private static bool ContainsPoint(Collider2D primaryZone, Collider2D[] extraZones, Vector2 point)
+    {
+        if (primaryZone != null && primaryZone.OverlapPoint(point))
+            return true;
+
+        if (extraZones == null || extraZones.Length == 0)
+            return false;
+
+        for (int i = 0; i < extraZones.Length; i++)
+        {
+            Collider2D zone = extraZones[i];
+            if (zone != null && zone.OverlapPoint(point))
+                return true;
+        }
+
+        return false;
     }
 
     private AudioClip GetAmbientClip(AmbientZoneKind zone)
@@ -317,12 +349,143 @@ public class LunchFreeTimeAudioController : MonoBehaviour
 
     private void HandleUnreadAdded(string roomId, int amount)
     {
-        if (amount <= 0 || notificationSource == null || phoneNotificationClip == null)
+        if (amount <= 0)
             return;
 
         if (!IsLunchAudioActive())
             return;
 
-        notificationSource.PlayOneShot(phoneNotificationClip, AudioSettingsService.ScaleSfx(phoneNotificationVolume));
+        if (notificationSource != null && phoneNotificationClip != null)
+            notificationSource.PlayOneShot(phoneNotificationClip, AudioSettingsService.ScaleSfx(phoneNotificationVolume));
+
+        ShowNotificationToast();
+    }
+
+    private void ShowNotificationToast()
+    {
+        EnsureToastUi();
+        if (toastRoot == null || toastText == null || toastCanvasGroup == null)
+            return;
+
+        toastText.text = ResolveToastText();
+        toastRoot.gameObject.SetActive(true);
+
+        if (toastRoutine != null)
+            StopCoroutine(toastRoutine);
+        toastRoutine = StartCoroutine(CoShowToast());
+    }
+
+    private string ResolveToastText()
+    {
+        if (LocalizationManager.Instance == null)
+            return phoneNotificationToastKo;
+
+        return LocalizationManager.Instance.GetCurrentLanguage() == Language.Korean
+            ? phoneNotificationToastKo
+            : phoneNotificationToastEn;
+    }
+
+    private void EnsureToastUi()
+    {
+        if (toastRoot != null && toastText != null && toastCanvasGroup != null)
+            return;
+
+        if (toastCanvas == null)
+        {
+            Transform existing = transform.Find("__LunchToastCanvas");
+            if (existing != null)
+                toastCanvas = existing.GetComponent<Canvas>();
+        }
+
+        if (toastCanvas == null)
+        {
+            var canvasGo = new GameObject("__LunchToastCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            canvasGo.transform.SetParent(transform, false);
+            toastCanvas = canvasGo.GetComponent<Canvas>();
+            toastCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            toastCanvas.sortingOrder = 80;
+
+            var scaler = canvasGo.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = 0.5f;
+
+            var raycaster = canvasGo.GetComponent<GraphicRaycaster>();
+            raycaster.enabled = false;
+        }
+
+        if (toastRoot != null)
+            return;
+
+        toastRoot = new GameObject("PhoneNotificationToast", typeof(RectTransform), typeof(Image), typeof(CanvasGroup)).GetComponent<RectTransform>();
+        toastRoot.SetParent(toastCanvas.transform, false);
+        toastRoot.anchorMin = new Vector2(0.5f, 1f);
+        toastRoot.anchorMax = new Vector2(0.5f, 1f);
+        toastRoot.pivot = new Vector2(0.5f, 1f);
+        toastRoot.anchoredPosition = new Vector2(0f, -44f);
+        toastRoot.sizeDelta = new Vector2(420f, 72f);
+
+        var bg = toastRoot.GetComponent<Image>();
+        bg.color = new Color(0.08f, 0.1f, 0.16f, 0.92f);
+        bg.raycastTarget = false;
+
+        toastCanvasGroup = toastRoot.GetComponent<CanvasGroup>();
+        toastCanvasGroup.alpha = 0f;
+
+        var labelGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+        labelGo.transform.SetParent(toastRoot, false);
+        var labelRect = labelGo.GetComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = new Vector2(18f, 10f);
+        labelRect.offsetMax = new Vector2(-18f, -10f);
+
+        toastText = labelGo.GetComponent<TextMeshProUGUI>();
+        toastText.font = ResolveToastFont();
+        toastText.fontSize = 28f;
+        toastText.alignment = TextAlignmentOptions.Midline;
+        toastText.color = Color.white;
+        toastText.enableWordWrapping = false;
+
+        toastRoot.gameObject.SetActive(false);
+    }
+
+    private TMP_FontAsset ResolveToastFont()
+    {
+        if (toastFontAsset != null)
+            return toastFontAsset;
+
+        return TMP_Settings.defaultFontAsset;
+    }
+
+    private System.Collections.IEnumerator CoShowToast()
+    {
+        float fadeIn = 0.14f;
+        float hold = Mathf.Max(0.2f, phoneNotificationToastSeconds);
+        float fadeOut = 0.22f;
+
+        toastCanvasGroup.alpha = 0f;
+        float t = 0f;
+        while (t < fadeIn)
+        {
+            t += Time.unscaledDeltaTime;
+            toastCanvasGroup.alpha = Mathf.Clamp01(t / fadeIn);
+            yield return null;
+        }
+
+        toastCanvasGroup.alpha = 1f;
+        yield return new WaitForSecondsRealtime(hold);
+
+        t = 0f;
+        while (t < fadeOut)
+        {
+            t += Time.unscaledDeltaTime;
+            toastCanvasGroup.alpha = 1f - Mathf.Clamp01(t / fadeOut);
+            yield return null;
+        }
+
+        toastCanvasGroup.alpha = 0f;
+        toastRoot.gameObject.SetActive(false);
+        toastRoutine = null;
     }
 }

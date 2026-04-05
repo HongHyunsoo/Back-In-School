@@ -1,2 +1,2 @@
-Trigger_Conversation_ID,Conversation_ID,Room_ID,Day,State,Flow_ID_Contains,Notify
-DAY1_LUNCH_ADULT,DAY1_CHAT_L,ROOM_CLASS_GROUP,1,Lunch_FreeTime,D1_LUNCH_FREEROAM,1
+Trigger_Conversation_ID,Conversation_ID,Room_ID,Day,State,Flow_ID_Contains,Notify,DelaySeconds
+DAY1_LUNCH_ADULT,DAY1_CHAT_L,ROOM_CLASS_GROUP,1,Lunch_FreeTime,D1_LUNCH_FREEROAM,1,10

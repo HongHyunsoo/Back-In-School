@@ -41,6 +41,7 @@ public class LunchFreeTimeTimerController : MonoBehaviour
     [SerializeField] private Color warningFillColor = new Color(0.94f, 0.52f, 0.19f, 1f);
     [SerializeField] private Color pausedFillColor = new Color(0.58f, 0.61f, 0.7f, 1f);
     [SerializeField] private Color barBackgroundColor = new Color(0.84f, 0.84f, 0.84f, 1f);
+    [SerializeField] private TMP_FontAsset uiFontAsset;
 
     [Header("Text")]
     [SerializeField] private string titleKo = "\uC810\uC2EC\uC2DC\uAC04";
@@ -332,13 +333,13 @@ public class LunchFreeTimeTimerController : MonoBehaviour
         bg.raycastTarget = false;
         panelRoot.gameObject.AddComponent<Outline>().effectColor = new Color(0.18f, 0.23f, 0.39f, 0.55f);
 
-        titleText = CreateLabel("Title", panelRoot, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(14f, -10f), new Vector2(-14f, -34f), 23f, FontStyles.Bold, TextAlignmentOptions.Left);
+        titleText = CreateLabel("Title", panelRoot, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(14f, -10f), new Vector2(-14f, -34f), 23f, FontStyles.Bold, TextAlignmentOptions.Left, ResolveUiFont());
         titleText.color = titleColor;
 
-        timeText = CreateLabel("Time", panelRoot, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(14f, 10f), new Vector2(-14f, 42f), 32f, FontStyles.Bold, TextAlignmentOptions.Left);
+        timeText = CreateLabel("Time", panelRoot, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(14f, 10f), new Vector2(-14f, 42f), 32f, FontStyles.Bold, TextAlignmentOptions.Left, ResolveUiFont());
         timeText.color = timeColor;
 
-        statusText = CreateLabel("Status", panelRoot, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(14f, 8f), new Vector2(-14f, 26f), 17f, FontStyles.Normal, TextAlignmentOptions.Left);
+        statusText = CreateLabel("Status", panelRoot, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(14f, 8f), new Vector2(-14f, 26f), 17f, FontStyles.Normal, TextAlignmentOptions.Left, ResolveUiFont());
         statusText.color = titleColor;
 
         var barBg = CreateRect("BarBg", panelRoot, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), new Vector2(14f, 12f), new Vector2(-14f, 28f), Vector2.zero);
@@ -442,6 +443,14 @@ public class LunchFreeTimeTimerController : MonoBehaviour
         return ko;
     }
 
+    private TMP_FontAsset ResolveUiFont()
+    {
+        if (uiFontAsset != null)
+            return uiFontAsset;
+
+        return TMP_Settings.defaultFontAsset;
+    }
+
     private static RectTransform CreateRect(string name, RectTransform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 offsetMin, Vector2 offsetMax, Vector2 sizeDelta)
     {
         var go = new GameObject(name, typeof(RectTransform));
@@ -465,10 +474,11 @@ public class LunchFreeTimeTimerController : MonoBehaviour
         return rect;
     }
 
-    private static TextMeshProUGUI CreateLabel(string name, RectTransform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax, float fontSize, FontStyles style, TextAlignmentOptions alignment)
+    private static TextMeshProUGUI CreateLabel(string name, RectTransform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax, float fontSize, FontStyles style, TextAlignmentOptions alignment, TMP_FontAsset fontAsset)
     {
         var rect = CreateRect(name, parent, anchorMin, anchorMax, new Vector2(0.5f, 0.5f), offsetMin, offsetMax, Vector2.zero);
         var text = rect.gameObject.AddComponent<TextMeshProUGUI>();
+        text.font = fontAsset != null ? fontAsset : TMP_Settings.defaultFontAsset;
         text.fontSize = fontSize;
         text.fontStyle = style;
         text.alignment = alignment;

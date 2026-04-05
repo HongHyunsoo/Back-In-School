@@ -31,6 +31,8 @@ public class MainMenuController : MonoBehaviour
 
     [Header("Settings Controls")]
     public Slider masterVolumeSlider;
+    public Slider bgmVolumeSlider;
+    public Slider sfxVolumeSlider;
     public Button bindLeftButton;
     public Button bindRightButton;
     public Button bindJumpButton;
@@ -121,10 +123,24 @@ public class MainMenuController : MonoBehaviour
         if (mainPanel != null) mainPanel.SetActive(true);
         if (settingsPanel != null) settingsPanel.SetActive(false);
 
+        ResolveVolumeSliders();
+
         if (masterVolumeSlider != null)
         {
             masterVolumeSlider.value = AudioSettingsService.MasterVolume;
             masterVolumeSlider.onValueChanged.AddListener(AudioSettingsService.SetMasterVolume);
+        }
+
+        if (bgmVolumeSlider != null)
+        {
+            bgmVolumeSlider.value = AudioSettingsService.BgmVolume;
+            bgmVolumeSlider.onValueChanged.AddListener(AudioSettingsService.SetBgmVolume);
+        }
+
+        if (sfxVolumeSlider != null)
+        {
+            sfxVolumeSlider.value = AudioSettingsService.SfxVolume;
+            sfxVolumeSlider.onValueChanged.AddListener(AudioSettingsService.SetSfxVolume);
         }
 
         RefreshLocalizedStaticLabels();
@@ -393,6 +409,24 @@ public class MainMenuController : MonoBehaviour
             resolvedStairDownBindButton = FindSettingsButtonByNameOrText("StairDown", "Stair Down", "Down", "계단 아래", "아래층");
     }
 
+    private void ResolveVolumeSliders()
+    {
+        if (settingsPanel == null)
+            settingsPanel = FindObjectByNameOrToken("Settings", "App_Settings", "Option");
+
+        if (settingsPanel == null)
+            return;
+
+        if (masterVolumeSlider == null)
+            masterVolumeSlider = FindSettingsSliderByName("Volume", "MasterVolumeSlider", "Sound");
+
+        if (bgmVolumeSlider == null)
+            bgmVolumeSlider = FindSettingsSliderByName("BGMSlider", "BGM", "Music");
+
+        if (sfxVolumeSlider == null)
+            sfxVolumeSlider = FindSettingsSliderByName("SFXSlider", "SFX", "SE", "Effect");
+    }
+
     private Button FindSettingsButtonByNameOrText(params string[] tokens)
     {
         if (settingsPanel == null || tokens == null || tokens.Length == 0)
@@ -407,6 +441,21 @@ public class MainMenuController : MonoBehaviour
             var text = buttons[i].GetComponentInChildren<TextMeshProUGUI>(true);
             if (text != null && HasAnyToken(text.text, tokens))
                 return buttons[i];
+        }
+
+        return null;
+    }
+
+    private Slider FindSettingsSliderByName(params string[] tokens)
+    {
+        if (settingsPanel == null || tokens == null || tokens.Length == 0)
+            return null;
+
+        var sliders = settingsPanel.GetComponentsInChildren<Slider>(true);
+        for (int i = 0; i < sliders.Length; i++)
+        {
+            if (HasAnyToken(sliders[i].name, tokens))
+                return sliders[i];
         }
 
         return null;

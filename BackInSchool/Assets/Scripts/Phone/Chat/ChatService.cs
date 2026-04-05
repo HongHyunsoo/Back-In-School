@@ -458,41 +458,53 @@ public class ChatService : MonoBehaviour
         if (entries == null || entries.Count == 0)
             return;
 
-        bool changed = false;
         for (int i = 0; i < entries.Count; i++)
         {
             var entry = entries[i];
-            if (string.IsNullOrEmpty(entry.RoomId) || string.IsNullOrEmpty(entry.ConversationId))
+            if (entry == null)
                 continue;
 
-            EnsureRoomExists(entry.RoomId);
-
-            var session = GetSession(entry.ConversationId);
-            bool isNewSession = false;
-            if (session == null)
-            {
-                session = new ChatSessionState
-                {
-                    sessionId = entry.ConversationId,
-                    roomId = entry.RoomId,
-                    progressIndex = 0,
-                    completed = false
-                };
-                Data.sessions.Add(session);
-                isNewSession = true;
-                changed = true;
-            }
+            if (entry.DelaySeconds > 0.01f)
+                StartCoroutine(CoActivateConversationTriggeredEntry(entry));
             else
-            {
-                session.roomId = entry.RoomId;
-            }
+                ActivateConversationTriggeredEntry(entry);
+        }
+    }
 
-            if (isNewSession && entry.Notify)
-                AddUnread(entry.RoomId, 1);
+    private System.Collections.IEnumerator CoActivateConversationTriggeredEntry(ChatConversationTriggerCatalog.Entry entry)
+    {
+        yield return new WaitForSeconds(Mathf.Max(0f, entry.DelaySeconds));
+        ActivateConversationTriggeredEntry(entry);
+    }
+
+    private void ActivateConversationTriggeredEntry(ChatConversationTriggerCatalog.Entry entry)
+    {
+        if (entry == null || string.IsNullOrEmpty(entry.RoomId) || string.IsNullOrEmpty(entry.ConversationId))
+            return;
+
+        EnsureRoomExists(entry.RoomId);
+
+        var session = GetSession(entry.ConversationId);
+        bool isNewSession = false;
+        if (session == null)
+        {
+            session = new ChatSessionState
+            {
+                sessionId = entry.ConversationId,
+                roomId = entry.RoomId,
+                progressIndex = 0,
+                completed = false
+            };
+            Data.sessions.Add(session);
+            isNewSession = true;
+        }
+        else
+        {
+            session.roomId = entry.RoomId;
         }
 
-        if (!changed)
-            return;
+        if (isNewSession && entry.Notify)
+            AddUnread(entry.RoomId, 1);
 
         Save();
         OnChanged?.Invoke();

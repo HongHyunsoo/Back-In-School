@@ -44,6 +44,11 @@ public class PhoneSettingsAppController : MonoBehaviour
             LocalizationManager.Instance.OnLanguageChanged += OnLanguageChanged;
     }
 
+    private void OnEnable()
+    {
+        RefreshBindingsNow();
+    }
+
     private void OnDestroy()
     {
         if (LocalizationManager.Instance != null)
@@ -78,9 +83,17 @@ public class PhoneSettingsAppController : MonoBehaviour
         if (masterVolumeSlider == null)
             masterVolumeSlider = FindSlider(root, "Volume", "Sound");
         if (bgmVolumeSlider == null)
+            bgmVolumeSlider = FindSlider(root, "BGMSlider");
+        if (bgmVolumeSlider == null)
             bgmVolumeSlider = FindSlider(root, "BGM", "Music");
         if (sfxVolumeSlider == null)
+            sfxVolumeSlider = FindSlider(root, "SFXSlider");
+        if (sfxVolumeSlider == null)
             sfxVolumeSlider = FindSlider(root, "SFX", "SE", "Effect");
+        if (bgmVolumeSlider == null)
+            bgmVolumeSlider = FindSlider(transform, "BGMSlider", "BGM", "Music");
+        if (sfxVolumeSlider == null)
+            sfxVolumeSlider = FindSlider(transform, "SFXSlider", "SFX", "SE", "Effect");
 
         if (languageButton == null)
             languageButton = FindButton(root, "Language");
@@ -125,7 +138,10 @@ public class PhoneSettingsAppController : MonoBehaviour
     private void Wire()
     {
         if (isWired)
+        {
+            WireVolumeSliders(true);
             return;
+        }
 
         if (languageButton != null)
             languageButton.onClick.AddListener(ToggleLanguage);
@@ -147,25 +163,59 @@ public class PhoneSettingsAppController : MonoBehaviour
         if (bindPhoneButton != null)
             bindPhoneButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.PhoneKey));
 
+        WireVolumeSliders(false);
+
+        isWired = true;
+    }
+
+    private void WireVolumeSliders(bool forceRebind)
+    {
         if (masterVolumeSlider != null)
         {
+            masterVolumeSlider.interactable = true;
             masterVolumeSlider.SetValueWithoutNotify(AudioSettingsService.MasterVolume);
+            if (forceRebind)
+                masterVolumeSlider.onValueChanged.RemoveListener(AudioSettingsService.SetMasterVolume);
             masterVolumeSlider.onValueChanged.AddListener(AudioSettingsService.SetMasterVolume);
         }
 
         if (bgmVolumeSlider != null)
         {
+            bgmVolumeSlider.interactable = true;
             bgmVolumeSlider.SetValueWithoutNotify(AudioSettingsService.BgmVolume);
+            if (forceRebind)
+                bgmVolumeSlider.onValueChanged.RemoveListener(AudioSettingsService.SetBgmVolume);
             bgmVolumeSlider.onValueChanged.AddListener(AudioSettingsService.SetBgmVolume);
         }
 
         if (sfxVolumeSlider != null)
         {
+            sfxVolumeSlider.interactable = true;
             sfxVolumeSlider.SetValueWithoutNotify(AudioSettingsService.SfxVolume);
+            if (forceRebind)
+                sfxVolumeSlider.onValueChanged.RemoveListener(AudioSettingsService.SetSfxVolume);
             sfxVolumeSlider.onValueChanged.AddListener(AudioSettingsService.SetSfxVolume);
         }
+    }
 
-        isWired = true;
+    public void RefreshBindingsNow()
+    {
+        ResolveReferences();
+        Wire();
+        BringVolumeSlidersToFront();
+        RefreshAll();
+    }
+
+    private void BringVolumeSlidersToFront()
+    {
+        if (bgmVolumeSlider != null)
+            bgmVolumeSlider.transform.SetAsLastSibling();
+
+        if (sfxVolumeSlider != null)
+            sfxVolumeSlider.transform.SetAsLastSibling();
+
+        if (masterVolumeSlider != null)
+            masterVolumeSlider.transform.SetAsLastSibling();
     }
 
     private void RefreshAll()

@@ -2310,6 +2310,8 @@ MonoBehaviour:
   phoneUIPrefab: {fileID: 9088698474802242487, guid: 14f918c3f4439464794d4b9ad7beeccf, type: 3}
   phoneUiReferenceResolution: {x: 1920, y: 1080}
   phoneUiMatchWidthOrHeight: 0.5
+  phoneButtonClickClip: {fileID: 0}
+  phoneButtonClickVolume: 0.85
 --- !u!114 &1437671237
 MonoBehaviour:
   m_ObjectHideFlags: 0
