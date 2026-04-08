@@ -568,6 +568,9 @@ public class DialogueManager : MonoBehaviour
             Animator animator = ResolveSpeakerAnimator(currentSpeaker, speakerPresentationSource, presentationClip != null);
             if (animator != null)
             {
+                if (speakerPresentationSource != null && (presentationClip != null || !string.IsNullOrEmpty(animationTrigger)))
+                    speakerPresentationSource.SuspendDefaultPresentation();
+
                 if (presentationClip != null)
                     PlayPresentationClip(animator, presentationClip);
                 else if (!string.IsNullOrEmpty(animationTrigger))
@@ -833,5 +836,9 @@ public class DialogueManager : MonoBehaviour
     {
         if (presentationGraph.IsValid())
             presentationGraph.Destroy();
+
+        DialogueCharacterPresentation[] defaults = FindObjectsByType<DialogueCharacterPresentation>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        for (int i = 0; i < defaults.Length; i++)
+            defaults[i].ResumeDefaultPresentation();
     }
 }

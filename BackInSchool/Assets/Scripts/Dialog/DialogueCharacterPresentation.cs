@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 
 [DisallowMultipleComponent]
 public class DialogueCharacterPresentation : MonoBehaviour
@@ -19,9 +21,27 @@ public class DialogueCharacterPresentation : MonoBehaviour
     [Tooltip("Optional default sound effect override for this character's lines.")]
     public string defaultSoundEffectName;
 
+    private PlayableGraph defaultPresentationGraph;
+    private bool defaultPresentationSuppressed;
+
     private void Awake()
     {
         AutoResolveTargetAnimator();
+    }
+
+    private void OnEnable()
+    {
+        ResumeDefaultPresentation();
+    }
+
+    private void OnDisable()
+    {
+        StopDefaultPresentationImmediate();
+    }
+
+    private void OnDestroy()
+    {
+        StopDefaultPresentationImmediate();
     }
 
 #if UNITY_EDITOR
@@ -41,6 +61,54 @@ public class DialogueCharacterPresentation : MonoBehaviour
             targetAnimator = GetComponentInChildren<Animator>(true);
         if (targetAnimator == null)
             targetAnimator = GetComponentInParent<Animator>();
+    }
+
+    public void SuspendDefaultPresentation()
+    {
+        defaultPresentationSuppressed = true;
+        StopDefaultPresentationImmediate();
+    }
+
+    public void ResumeDefaultPresentation()
+    {
+        defaultPresentationSuppressed = false;
+        AutoResolveTargetAnimator();
+
+        if (!isActiveAndEnabled || targetAnimator == null)
+            return;
+
+        if (defaultAnimationClip != null)
+        {
+            if (defaultPresentationGraph.IsValid())
+                return;
+
+            defaultPresentationGraph = PlayableGraph.Create($"{name}_DefaultDialoguePresentation");
+            var output = AnimationPlayableOutput.Create(defaultPresentationGraph, "DefaultDialoguePresentation", targetAnimator);
+            var playable = AnimationClipPlayable.Create(defaultPresentationGraph, defaultAnimationClip);
+            playable.SetApplyFootIK(false);
+            playable.SetApplyPlayableIK(false);
+            output.SetSourcePlayable(playable);
+            defaultPresentationGraph.Play();
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(defaultAnimationTrigger))
+            targetAnimator.SetTrigger(defaultAnimationTrigger);
+    }
+
+    public void RefreshDefaultPresentation()
+    {
+        if (defaultPresentationSuppressed)
+            return;
+
+        StopDefaultPresentationImmediate();
+        ResumeDefaultPresentation();
+    }
+
+    private void StopDefaultPresentationImmediate()
+    {
+        if (defaultPresentationGraph.IsValid())
+            defaultPresentationGraph.Destroy();
     }
 
     public DialogueLinePresentation ToPresentation()

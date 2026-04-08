@@ -522,7 +522,7 @@ public class MapTransitionPortal : MonoBehaviour
                 return;
             }
 
-            TeleportToTarget(target);
+            StartSameSceneTransition(target);
             return;
         }
 
@@ -538,7 +538,7 @@ public class MapTransitionPortal : MonoBehaviour
             return;
         }
 
-        TeleportToTarget(target);
+        StartSameSceneTransition(target);
     }
 
     private Transform ResolveSameSceneTarget()
@@ -569,7 +569,38 @@ public class MapTransitionPortal : MonoBehaviour
         return null;
     }
 
-    private void TeleportToTarget(Transform target)
+    private void StartSameSceneTransition(Transform target)
+    {
+        if (target == null)
+            return;
+
+        if (isTransitioning)
+            return;
+
+        if (useFade)
+        {
+            StartCoroutine(CoTeleportSameScene(target));
+            return;
+        }
+
+        TeleportToTargetImmediate(target);
+    }
+
+    private IEnumerator CoTeleportSameScene(Transform target)
+    {
+        isTransitioning = true;
+
+        var fader = SceneTransitionFader.EnsureInstance();
+        yield return fader.FadeOut(fadeOutDuration);
+
+        TeleportToTargetImmediate(target);
+        yield return null;
+
+        yield return fader.FadeIn(fadeInDuration);
+        isTransitioning = false;
+    }
+
+    private void TeleportToTargetImmediate(Transform target)
     {
         Transform player = cachedPlayer != null ? cachedPlayer : FindPlayerTransform();
         if (player == null)

@@ -1,34 +1,39 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 [DisallowMultipleComponent]
 public class SubwayAmbientAudioController : MonoBehaviour
 {
-    [SerializeField] private AudioClip ambientClip;
+    [SerializeField] [HideInInspector] private AudioClip ambientClip;
+    [SerializeField] private AudioClip[] ambientClips;
     [SerializeField] [Range(0f, 1f)] private float ambientVolume = 0.6f;
     [SerializeField] private bool requireChatScene = true;
     [SerializeField] private bool requireSubwayState = true;
 
-    private AudioSource audioSource;
+    private readonly List<AudioSource> audioSources = new();
+    private readonly List<AudioClip> configuredClips = new();
     private GameManager gameManager;
 
     private void OnEnable()
     {
-        EnsureAudioSource();
+        RebuildClipCache();
+        EnsureAudioSources();
         RefreshReferences();
         RefreshPlayback();
     }
 
     private void Update()
     {
+        RebuildClipCache();
+        EnsureAudioSources();
         RefreshReferences();
         RefreshPlayback();
     }
 
     private void OnDisable()
     {
-        if (audioSource != null && audioSource.isPlaying)
-            audioSource.Stop();
+        StopAllSources(clearClips: false);
     }
 
     private void RefreshReferences()
@@ -37,45 +42,91 @@ public class SubwayAmbientAudioController : MonoBehaviour
             gameManager = FindAnyObjectByType<GameManager>();
     }
 
-    private void EnsureAudioSource()
+    private void RebuildClipCache()
     {
-        if (audioSource != null)
-            return;
+        configuredClips.Clear();
 
-        audioSource = GetComponent<AudioSource>();
-        if (audioSource == null)
-            audioSource = gameObject.AddComponent<AudioSource>();
+        if (ambientClips != null)
+        {
+            for (int i = 0; i < ambientClips.Length; i++)
+            {
+                if (ambientClips[i] != null)
+                    configuredClips.Add(ambientClips[i]);
+            }
+        }
 
-        audioSource.playOnAwake = false;
-        audioSource.loop = true;
-        audioSource.spatialBlend = 0f;
-        audioSource.volume = 0f;
+        if (configuredClips.Count == 0 && ambientClip != null)
+            configuredClips.Add(ambientClip);
+    }
+
+    private void EnsureAudioSources()
+    {
+        while (audioSources.Count < configuredClips.Count)
+        {
+            AudioSource source = gameObject.AddComponent<AudioSource>();
+            source.playOnAwake = false;
+            source.loop = true;
+            source.spatialBlend = 0f;
+            source.volume = 0f;
+            audioSources.Add(source);
+        }
+
+        for (int i = configuredClips.Count; i < audioSources.Count; i++)
+        {
+            AudioSource source = audioSources[i];
+            if (source == null)
+                continue;
+
+            if (source.isPlaying)
+                source.Stop();
+
+            source.clip = null;
+        }
     }
 
     private void RefreshPlayback()
     {
-        if (audioSource == null)
-            return;
-
         bool shouldPlay = ShouldPlayAmbient();
-        if (!shouldPlay || ambientClip == null)
+        if (!shouldPlay || configuredClips.Count == 0)
         {
-            if (audioSource.isPlaying)
-                audioSource.Stop();
-
-            audioSource.clip = null;
+            StopAllSources(clearClips: true);
             return;
         }
 
-        if (audioSource.clip != ambientClip)
+        float scaledVolume = AudioSettingsService.ScaleBgm(ambientVolume);
+        for (int i = 0; i < configuredClips.Count; i++)
         {
-            audioSource.clip = ambientClip;
-            audioSource.loop = true;
-        }
+            AudioSource source = audioSources[i];
+            AudioClip clip = configuredClips[i];
+            if (source == null || clip == null)
+                continue;
 
-        audioSource.volume = AudioSettingsService.ScaleBgm(ambientVolume);
-        if (!audioSource.isPlaying)
-            audioSource.Play();
+            if (source.clip != clip)
+            {
+                source.clip = clip;
+                source.loop = true;
+            }
+
+            source.volume = scaledVolume;
+            if (!source.isPlaying)
+                source.Play();
+        }
+    }
+
+    private void StopAllSources(bool clearClips)
+    {
+        for (int i = 0; i < audioSources.Count; i++)
+        {
+            AudioSource source = audioSources[i];
+            if (source == null)
+                continue;
+
+            if (source.isPlaying)
+                source.Stop();
+
+            if (clearClips)
+                source.clip = null;
+        }
     }
 
     private bool ShouldPlayAmbient()

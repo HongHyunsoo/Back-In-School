@@ -26,6 +26,13 @@ public class PlayerController : MonoBehaviour
     public float groundScreenY = 0.4f;
     public float airScreenY = 0.5f;
     public float cameraYBlendSpeed = 5f;
+    [Range(0f, 1f)] public float cameraScreenX = 0.5f;
+    [Range(0f, 1f)] public float cameraDeadZoneWidth = 0f;
+    [Range(0f, 1f)] public float cameraDeadZoneHeight = 0f;
+    [Range(0f, 1f)] public float cameraSoftZoneWidth = 0.24f;
+    [Range(0f, 1f)] public float cameraSoftZoneHeight = 0.55f;
+    public float cameraXDamping = 0.35f;
+    public float cameraYDamping = 0.85f;
 
     private Rigidbody2D rb;
     private Animator anim;
@@ -62,6 +69,8 @@ public class PlayerController : MonoBehaviour
 
         if (virtualCamera != null)
             framingTransposer = virtualCamera.GetCinemachineComponent<CinemachineFramingTransposer>();
+
+        ApplyCameraFramingSettings();
     }
 
     private void Update()
@@ -189,11 +198,30 @@ public class PlayerController : MonoBehaviour
         if (framingTransposer == null)
             return;
 
+        ApplyCameraFramingSettings();
+
         float targetScreenY = isGrounded ? groundScreenY : airScreenY;
         framingTransposer.m_ScreenY = Mathf.Lerp(
             framingTransposer.m_ScreenY,
             targetScreenY,
             Time.deltaTime * cameraYBlendSpeed
         );
+    }
+
+    private void ApplyCameraFramingSettings()
+    {
+        if (virtualCamera != null && framingTransposer == null)
+            framingTransposer = virtualCamera.GetCinemachineComponent<CinemachineFramingTransposer>();
+
+        if (framingTransposer == null)
+            return;
+
+        framingTransposer.m_ScreenX = cameraScreenX;
+        framingTransposer.m_DeadZoneWidth = cameraDeadZoneWidth;
+        framingTransposer.m_DeadZoneHeight = cameraDeadZoneHeight;
+        framingTransposer.m_SoftZoneWidth = cameraSoftZoneWidth;
+        framingTransposer.m_SoftZoneHeight = cameraSoftZoneHeight;
+        framingTransposer.m_XDamping = cameraXDamping;
+        framingTransposer.m_YDamping = cameraYDamping;
     }
 }

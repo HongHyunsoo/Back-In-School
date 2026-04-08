@@ -1562,9 +1562,12 @@ MonoBehaviour:
   backButton: {fileID: 0}
   languageButton: {fileID: 0}
   masterVolumeSlider: {fileID: 0}
+  bgmVolumeSlider: {fileID: 0}
+  sfxVolumeSlider: {fileID: 0}
   bindLeftButton: {fileID: 0}
   bindRightButton: {fileID: 0}
   bindJumpButton: {fileID: 0}
+  bindSprintButton: {fileID: 0}
   bindDownButton: {fileID: 0}
   bindUpButton: {fileID: 0}
   bindInteractButton: {fileID: 0}
@@ -1574,6 +1577,7 @@ MonoBehaviour:
   bindLeftLabel: {fileID: 0}
   bindRightLabel: {fileID: 0}
   bindJumpLabel: {fileID: 0}
+  bindSprintLabel: {fileID: 0}
   bindDownLabel: {fileID: 0}
   bindUpLabel: {fileID: 0}
   bindInteractLabel: {fileID: 0}
@@ -1743,6 +1747,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ambientClip: {fileID: 0}
+  ambientClips:
+  - {fileID: 8300000, guid: 2d4019e3f73b7624a94c0913751c2a8d, type: 3}
+  - {fileID: 8300000, guid: 191e98947fbb4e146aee9397570d920a, type: 3}
   ambientVolume: 0.6
   requireChatScene: 1
   requireSubwayState: 1
