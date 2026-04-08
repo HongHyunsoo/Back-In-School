@@ -1,4 +1,4 @@
-using System.Collections;
+ï»¿using System.Collections;
 using UnityEngine;
 
 public class CutsceneCommandRunner : MonoBehaviour
@@ -6,8 +6,8 @@ public class CutsceneCommandRunner : MonoBehaviour
     [Header("Optional: pass objects prefab folder")]
     public string passPrefabFolder = "Prefabs";
 
-    public CharacterRegistry characterRegistry; // ¾Æ·¡ 4)¿¡¼­ ¸¸µé°Å
-    public AudioSource sfxSource; // ÀÖÀ¸¸é ¿¬°á
+    public CharacterRegistry characterRegistry; // ì•„ë˜ 4)ì—ì„œ ë§Œë“¤ê±°
+    public AudioSource sfxSource; // ìˆìœ¼ë©´ ì—°ê²°
 
     public IEnumerator Execute(string rawText)
     {
@@ -65,7 +65,7 @@ public class CutsceneCommandRunner : MonoBehaviour
                         // [sfx:door]
                         if (sfxSource != null)
                         {
-                            var clip = Resources.Load<AudioClip>($"SFX/{tag.args[0]}");
+                            var clip = RuntimeAudioClipCatalog.Load(tag.args[0]);
                             if (clip != null) sfxSource.PlayOneShot(clip);
                         }
                         break;
@@ -94,3 +94,4 @@ public class CutsceneCommandRunner : MonoBehaviour
 
     float ParseF(string[] a, int idx) => float.Parse(a[idx], System.Globalization.CultureInfo.InvariantCulture);
 }
+

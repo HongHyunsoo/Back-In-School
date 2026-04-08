@@ -403,6 +403,9 @@ public class DialogueTrigger : MonoBehaviour
                 {
                     lineID = src.lineID,
                     lineIndex = src.lineIndex,
+                    afterLineID = src.afterLineID,
+                    afterLineIndex = src.afterLineIndex,
+                    targetCharacterId = src.targetCharacterId,
                     animationTrigger = src.animationTrigger,
                     animationClip = src.animationClip,
                     soundEffectName = src.soundEffectName,
@@ -416,6 +419,9 @@ public class DialogueTrigger : MonoBehaviour
             result.Add(new DialogueLinePresentation
             {
                 lineIndex = cd.customLineIndex,
+                afterLineID = string.Empty,
+                afterLineIndex = -1,
+                targetCharacterId = string.Empty,
                 animationTrigger = cd.animationTrigger,
                 soundEffectName = cd.soundEffectName,
                 beforeTextDelaySeconds = 0f

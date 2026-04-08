@@ -27,6 +27,15 @@ public class DialogueLinePresentation
     [Tooltip("Fallback line order (0-based) when lineID is empty.")]
     public int lineIndex = -1;
 
+    [Tooltip("Optional line ID that triggers this presentation after that line completes.")]
+    public string afterLineID;
+
+    [Tooltip("Fallback completed line order (0-based) for after-line presentations.")]
+    public int afterLineIndex = -1;
+
+    [Tooltip("Optional character ID that should receive this presentation. Leave empty to use the speaking character.")]
+    public string targetCharacterId;
+
     [Tooltip("Animator trigger to fire when this line is shown.")]
     public string animationTrigger;
 

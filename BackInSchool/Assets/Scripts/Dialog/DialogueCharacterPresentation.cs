@@ -117,6 +117,9 @@ public class DialogueCharacterPresentation : MonoBehaviour
         {
             lineID = string.Empty,
             lineIndex = -1,
+            afterLineID = string.Empty,
+            afterLineIndex = -1,
+            targetCharacterId = string.Empty,
             animationTrigger = defaultAnimationTrigger,
             animationClip = defaultAnimationClip,
             soundEffectName = defaultSoundEffectName,

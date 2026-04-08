@@ -148,7 +148,7 @@ public class LocalizationManager : MonoBehaviour
     {
         List<string> result = new List<string>();
         bool inQuotes = false;
-        string currentField = "";
+        System.Text.StringBuilder currentField = new System.Text.StringBuilder();
 
         for (int i = 0; i < line.Length; i++)
         {
@@ -156,20 +156,29 @@ public class LocalizationManager : MonoBehaviour
 
             if (c == '\"')
             {
-                inQuotes = !inQuotes;
-            }
-            else if (c == ',' && !inQuotes)
-            {
-                result.Add(currentField);
-                currentField = "";
-            }
-            else
-            {
-                currentField += c;
-            }
-        }
-        result.Add(currentField);
+                bool isEscapedQuote = inQuotes && i + 1 < line.Length && line[i + 1] == '\"';
+                if (isEscapedQuote)
+                {
+                    currentField.Append('\"');
+                    i++;
+                    continue;
+                }
 
+                inQuotes = !inQuotes;
+                continue;
+            }
+
+            if (c == ',' && !inQuotes)
+            {
+                result.Add(currentField.ToString());
+                currentField.Length = 0;
+                continue;
+            }
+
+            currentField.Append(c);
+        }
+
+        result.Add(currentField.ToString());
         return result.ToArray();
     }
 
