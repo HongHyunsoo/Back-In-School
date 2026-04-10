@@ -24,14 +24,20 @@ public class DialogueLinePresentation
     [Tooltip("Target line ID from Localization/Conversations. Recommended when available.")]
     public string lineID;
 
-    [Tooltip("Fallback line order (0-based) when lineID is empty.")]
-    public int lineIndex = -1;
+    [Tooltip("Inclusive start line order (0-based) for applying this presentation to a line range.")]
+    public int lineIndexStart = -1;
+
+    [Tooltip("Inclusive end line order (0-based) for applying this presentation to a line range.")]
+    public int lineIndexEnd = -1;
 
     [Tooltip("Optional line ID that triggers this presentation after that line completes.")]
     public string afterLineID;
 
-    [Tooltip("Fallback completed line order (0-based) for after-line presentations.")]
-    public int afterLineIndex = -1;
+    [Tooltip("Inclusive start completed line order (0-based) for after-line trigger ranges.")]
+    public int afterLineIndexStart = -1;
+
+    [Tooltip("Inclusive end completed line order (0-based) for after-line trigger ranges.")]
+    public int afterLineIndexEnd = -1;
 
     [Tooltip("Optional character ID that should receive this presentation. Leave empty to use the speaking character.")]
     public string targetCharacterId;

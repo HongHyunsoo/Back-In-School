@@ -116,9 +116,11 @@ public class DialogueCharacterPresentation : MonoBehaviour
         return new DialogueLinePresentation
         {
             lineID = string.Empty,
-            lineIndex = -1,
+            lineIndexStart = -1,
+            lineIndexEnd = -1,
             afterLineID = string.Empty,
-            afterLineIndex = -1,
+            afterLineIndexStart = -1,
+            afterLineIndexEnd = -1,
             targetCharacterId = string.Empty,
             animationTrigger = defaultAnimationTrigger,
             animationClip = defaultAnimationClip,

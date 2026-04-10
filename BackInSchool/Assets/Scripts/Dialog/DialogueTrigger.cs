@@ -9,6 +9,8 @@ public class ContextualDialogue
     public int day;
     public GameState specificState;
     public DialogueBehavior behavior = DialogueBehavior.Repeatable;
+    [Tooltip("Optional completed conversation required before this dialogue can be selected.")]
+    public string requiredCompletedConversationID;
 
     [Tooltip("?⑥씪 ???ID (Repeatable, PlayOnce ?ъ슜 ??")]
     public string conversationID; // ?? "ROBOT_CONVO_DAY1"
@@ -27,7 +29,7 @@ public class ContextualDialogue
     public string soundEffectName;
 
     [Header("Line Presentations")]
-    [Tooltip("Inspector-driven per-line presentation settings. Use lineID or lineIndex to match each dialogue line.")]
+    [Tooltip("Inspector-driven per-line presentation settings. Use lineID or lineIndexStart~lineIndexEnd to match dialogue lines.")]
     public List<DialogueLinePresentation> linePresentations = new List<DialogueLinePresentation>();
 
     [HideInInspector]
@@ -267,7 +269,16 @@ public class DialogueTrigger : MonoBehaviour
         GameState now = gameManager.currentState;
         foreach (ContextualDialogue cd in contextualDialogues)
         {
-            if (cd.day == today && cd.specificState == now) return cd;
+            if (cd.day != today || cd.specificState != now)
+                continue;
+
+            if (!string.IsNullOrWhiteSpace(cd.requiredCompletedConversationID) &&
+                !DialogueProgressState.HasCompletedConversation(cd.requiredCompletedConversationID))
+            {
+                continue;
+            }
+
+            return cd;
         }
         return null; // ?대떦 ?곹솴???놁쓬
     }
@@ -402,9 +413,11 @@ public class DialogueTrigger : MonoBehaviour
                 result.Add(new DialogueLinePresentation
                 {
                     lineID = src.lineID,
-                    lineIndex = src.lineIndex,
+                    lineIndexStart = src.lineIndexStart,
+                    lineIndexEnd = src.lineIndexEnd,
                     afterLineID = src.afterLineID,
-                    afterLineIndex = src.afterLineIndex,
+                    afterLineIndexStart = src.afterLineIndexStart,
+                    afterLineIndexEnd = src.afterLineIndexEnd,
                     targetCharacterId = src.targetCharacterId,
                     animationTrigger = src.animationTrigger,
                     animationClip = src.animationClip,
@@ -418,9 +431,11 @@ public class DialogueTrigger : MonoBehaviour
         {
             result.Add(new DialogueLinePresentation
             {
-                lineIndex = cd.customLineIndex,
+                lineIndexStart = cd.customLineIndex,
+                lineIndexEnd = cd.customLineIndex,
                 afterLineID = string.Empty,
-                afterLineIndex = -1,
+                afterLineIndexStart = -1,
+                afterLineIndexEnd = -1,
                 targetCharacterId = string.Empty,
                 animationTrigger = cd.animationTrigger,
                 soundEffectName = cd.soundEffectName,

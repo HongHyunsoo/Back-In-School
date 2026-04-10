@@ -6,6 +6,16 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public class PhoneGalleryAppController : MonoBehaviour
 {
+    [SerializeField] private RectTransform galleryContentRoot;
+    [SerializeField] private Button photoTemplate;
+    [SerializeField] private TextMeshProUGUI galleryTitleLabel;
+    [SerializeField] private TextMeshProUGUI galleryCountLabel;
+    [SerializeField] private TextMeshProUGUI galleryEmptyLabel;
+    [SerializeField] private GameObject detailPanel;
+    [SerializeField] private Image detailPreviewImage;
+    [SerializeField] private TextMeshProUGUI detailTitleLabel;
+    [SerializeField] private TextMeshProUGUI detailDescriptionLabel;
+
     private sealed class CardWidgets
     {
         public PhoneGalleryEntry entry;
@@ -18,10 +28,10 @@ public class PhoneGalleryAppController : MonoBehaviour
 
     private readonly List<CardWidgets> cards = new();
     private readonly Dictionary<string, Sprite> spriteCache = new();
+    private readonly List<Button> photoSlots = new();
 
     private GameObject galleryPanel;
     private Button galleryButton;
-    private RectTransform runtimeRoot;
     private RectTransform contentRoot;
     private TextMeshProUGUI titleText;
     private TextMeshProUGUI countText;
@@ -41,7 +51,6 @@ public class PhoneGalleryAppController : MonoBehaviour
     private void Start()
     {
         ResolveTargets();
-        BuildUiIfNeeded();
         HookEvents(true);
         RefreshLabels();
         RefreshEntries();
@@ -116,93 +125,27 @@ public class PhoneGalleryAppController : MonoBehaviour
         if (galleryButton != null)
             galleryButton.name = "Btn_AppGallery";
 
+        if (galleryContentRoot == null)
+            galleryContentRoot = FindContentRoot();
+        if (photoTemplate == null)
+            photoTemplate = FindPhotoTemplate();
+
+        contentRoot = galleryContentRoot;
+        titleText = galleryTitleLabel;
+        countText = galleryCountLabel;
+        emptyStateText = galleryEmptyLabel;
+        detailOverlay = detailPanel;
+        detailImage = detailPreviewImage;
+        detailTitleText = detailTitleLabel;
+        detailDescriptionText = detailDescriptionLabel;
+
+        if (photoTemplate != null)
+            photoTemplate.gameObject.SetActive(false);
+
+        CollectPhotoSlots();
+
         sharedFont = ResolveSharedFont();
         EnsureGalleryButtonLabel();
-    }
-
-    private void BuildUiIfNeeded()
-    {
-        if (galleryPanel == null)
-            return;
-
-        if (runtimeRoot == null)
-        {
-            Transform existing = galleryPanel.transform.Find("__GalleryRuntimeRoot");
-            runtimeRoot = existing as RectTransform;
-        }
-
-        if (runtimeRoot != null)
-            return;
-
-        runtimeRoot = CreateRect("__GalleryRuntimeRoot", galleryPanel.transform as RectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-
-        titleText = CreateLabel("Title", runtimeRoot, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(24f, -24f), new Vector2(-24f, -76f), 34, FontStyles.Bold, TextAlignmentOptions.Left);
-        countText = CreateLabel("Count", runtimeRoot, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(24f, -76f), new Vector2(-24f, -118f), 20, FontStyles.Normal, TextAlignmentOptions.Left);
-
-        var scrollRoot = CreateRect("ScrollRoot", runtimeRoot, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(24f, 24f), new Vector2(-24f, -132f));
-        var viewport = CreateRect("Viewport", scrollRoot, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-        var viewportImage = viewport.gameObject.AddComponent<Image>();
-        viewportImage.color = new Color(0.96f, 0.95f, 0.92f, 0.08f);
-        viewport.gameObject.AddComponent<Mask>().showMaskGraphic = false;
-
-        contentRoot = CreateRect("Content", viewport, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, 0f), new Vector2(0f, 0f));
-        contentRoot.pivot = new Vector2(0.5f, 1f);
-        var grid = contentRoot.gameObject.AddComponent<GridLayoutGroup>();
-        grid.cellSize = new Vector2(230f, 220f);
-        grid.spacing = new Vector2(16f, 16f);
-        grid.padding = new RectOffset(0, 0, 0, 16);
-        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        grid.constraintCount = 2;
-
-        var fitter = contentRoot.gameObject.AddComponent<ContentSizeFitter>();
-        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
-        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        var scroll = scrollRoot.gameObject.AddComponent<ScrollRect>();
-        scroll.viewport = viewport;
-        scroll.content = contentRoot;
-        scroll.horizontal = false;
-        scroll.vertical = true;
-        scroll.movementType = ScrollRect.MovementType.Clamped;
-
-        emptyStateText = CreateLabel("EmptyState", runtimeRoot, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(48f, 180f), new Vector2(-48f, -180f), 24, FontStyles.Italic, TextAlignmentOptions.Center);
-        emptyStateText.alpha = 0.75f;
-
-        BuildDetailOverlay();
-    }
-
-    private void BuildDetailOverlay()
-    {
-        if (runtimeRoot == null || detailOverlay != null)
-            return;
-
-        var overlayRect = CreateRect("DetailOverlay", runtimeRoot, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-        detailOverlay = overlayRect.gameObject;
-        var overlayBg = detailOverlay.AddComponent<Image>();
-        overlayBg.color = new Color(0.06f, 0.08f, 0.12f, 0.92f);
-
-        var closeButtonRect = CreateRect("CloseButton", overlayRect, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-84f, -84f), new Vector2(-24f, -24f));
-        var closeImage = closeButtonRect.gameObject.AddComponent<Image>();
-        closeImage.color = new Color(0.95f, 0.35f, 0.35f, 1f);
-        var closeButton = closeButtonRect.gameObject.AddComponent<Button>();
-        closeButton.onClick.AddListener(() => detailOverlay.SetActive(false));
-        var closeLabel = CreateLabel("CloseLabel", closeButtonRect, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, 26, FontStyles.Bold, TextAlignmentOptions.Center);
-        closeLabel.text = "X";
-
-        var frame = CreateRect("DetailFrame", overlayRect, new Vector2(0.08f, 0.08f), new Vector2(0.92f, 0.9f), Vector2.zero, Vector2.zero);
-        var frameImage = frame.gameObject.AddComponent<Image>();
-        frameImage.color = new Color(0.97f, 0.95f, 0.9f, 1f);
-
-        var imageRect = CreateRect("DetailImage", frame, new Vector2(0f, 0.43f), new Vector2(1f, 1f), new Vector2(22f, -22f), new Vector2(-22f, -22f));
-        detailImage = imageRect.gameObject.AddComponent<Image>();
-        detailImage.color = new Color(0.76f, 0.73f, 0.68f, 1f);
-        detailImage.preserveAspect = true;
-
-        detailTitleText = CreateLabel("DetailTitle", frame, new Vector2(0f, 0.22f), new Vector2(1f, 0.38f), new Vector2(24f, 0f), new Vector2(-24f, 0f), 30, FontStyles.Bold, TextAlignmentOptions.Left);
-        detailDescriptionText = CreateLabel("DetailDescription", frame, new Vector2(0f, 0f), new Vector2(1f, 0.22f), new Vector2(24f, 18f), new Vector2(-24f, -18f), 22, FontStyles.Normal, TextAlignmentOptions.TopLeft);
-        detailDescriptionText.enableWordWrapping = true;
-
-        detailOverlay.SetActive(false);
     }
 
     private void RefreshLabels()
@@ -250,32 +193,40 @@ public class PhoneGalleryAppController : MonoBehaviour
             emptyStateText.gameObject.SetActive(entries.Count == 0);
 
         for (int i = 0; i < entries.Count; i++)
-            cards.Add(CreateCard(entries[i]));
+        {
+            var card = CreateCard(entries[i], i);
+            if (card != null)
+                cards.Add(card);
+        }
+
+        for (int i = entries.Count; i < photoSlots.Count; i++)
+            photoSlots[i].gameObject.SetActive(false);
     }
 
-    private CardWidgets CreateCard(PhoneGalleryEntry entry)
+    private CardWidgets CreateCard(PhoneGalleryEntry entry, int index)
     {
-        var cardRect = CreateRect("Card_" + entry.entryId, contentRoot, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
-        cardRect.sizeDelta = new Vector2(230f, 220f);
+        if (contentRoot == null)
+            return null;
 
-        var bg = cardRect.gameObject.AddComponent<Image>();
-        bg.color = new Color(0.94f, 0.92f, 0.88f, 1f);
+        Button button = GetOrCreatePhotoSlot(index);
+        if (button == null)
+            return null;
 
-        var button = cardRect.gameObject.AddComponent<Button>();
+        button.gameObject.name = "Photo_" + entry.entryId;
+        button.gameObject.SetActive(true);
 
-        var thumbRect = CreateRect("Thumb", cardRect, new Vector2(0f, 0.36f), new Vector2(1f, 1f), new Vector2(12f, -12f), new Vector2(-12f, -12f));
-        var thumbImage = thumbRect.gameObject.AddComponent<Image>();
-        thumbImage.color = new Color(0.78f, 0.75f, 0.72f, 1f);
-        thumbImage.preserveAspect = true;
+        var cardRect = button.transform as RectTransform;
+        if (cardRect != null)
+            cardRect.localScale = Vector3.one;
 
-        var title = CreateLabel("CardTitle", cardRect, new Vector2(0f, 0.16f), new Vector2(1f, 0.32f), new Vector2(14f, 0f), new Vector2(-14f, 0f), 20, FontStyles.Bold, TextAlignmentOptions.Left);
-        var status = CreateLabel("CardStatus", cardRect, new Vector2(0f, 0f), new Vector2(1f, 0.14f), new Vector2(14f, 10f), new Vector2(-14f, -8f), 18, FontStyles.Normal, TextAlignmentOptions.Left);
-        status.alpha = 0.7f;
+        var thumbImage = button.GetComponent<Image>();
+        var title = FindText(button.transform, "PhotoName");
+        var status = FindSecondaryText(button.transform, title);
 
         var widgets = new CardWidgets
         {
             entry = entry,
-            root = cardRect.gameObject,
+            root = button.gameObject,
             button = button,
             thumbnail = thumbImage,
             title = title,
@@ -291,10 +242,14 @@ public class PhoneGalleryAppController : MonoBehaviour
         bool unlocked = PhoneGalleryService.EnsureExists().IsUnlocked(widgets.entry.entryId);
         Language language = GetLanguage();
 
-        widgets.title.text = widgets.entry.GetTitle(language);
-        widgets.status.text = unlocked
-            ? (language == Language.English ? "Tap to view" : TapToViewKo)
-            : (language == Language.English ? "Locked" : LockedKo);
+        if (widgets.title != null)
+            widgets.title.text = widgets.entry.GetTitle(language);
+        if (widgets.status != null)
+        {
+            widgets.status.text = unlocked
+                ? (language == Language.English ? "Tap to view" : TapToViewKo)
+                : (language == Language.English ? "Locked" : LockedKo);
+        }
 
         widgets.button.onClick.RemoveAllListeners();
         widgets.button.interactable = unlocked;
@@ -313,12 +268,17 @@ public class PhoneGalleryAppController : MonoBehaviour
             return;
 
         Language language = GetLanguage();
-        detailTitleText.text = entry.GetTitle(language);
-        detailDescriptionText.text = entry.GetDescription(language);
+        if (detailTitleText != null)
+            detailTitleText.text = entry.GetTitle(language);
+        if (detailDescriptionText != null)
+            detailDescriptionText.text = entry.GetDescription(language);
 
         Sprite sprite = LoadSprite(entry.imageResourcePath);
-        detailImage.sprite = sprite;
-        detailImage.color = sprite != null ? Color.white : new Color(0.78f, 0.75f, 0.72f, 1f);
+        if (detailImage != null)
+        {
+            detailImage.sprite = sprite;
+            detailImage.color = sprite != null ? Color.white : new Color(0.78f, 0.75f, 0.72f, 1f);
+        }
 
         detailOverlay.SetActive(true);
     }
@@ -357,6 +317,110 @@ public class PhoneGalleryAppController : MonoBehaviour
         {
             if (all[i].name == targetName)
                 return all[i].gameObject;
+        }
+
+        return null;
+    }
+
+    private void CollectPhotoSlots()
+    {
+        photoSlots.Clear();
+
+        if (contentRoot == null)
+            return;
+
+        var buttons = contentRoot.GetComponentsInChildren<Button>(true);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            if (buttons[i] == photoTemplate)
+                continue;
+
+            if (buttons[i].transform.parent != contentRoot)
+                continue;
+
+            if (!buttons[i].name.StartsWith("Photo", System.StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            photoSlots.Add(buttons[i]);
+        }
+
+        photoSlots.Sort((a, b) => a.transform.GetSiblingIndex().CompareTo(b.transform.GetSiblingIndex()));
+    }
+
+    private Button GetOrCreatePhotoSlot(int index)
+    {
+        if (index < photoSlots.Count)
+            return photoSlots[index];
+
+        if (photoTemplate == null || contentRoot == null)
+            return null;
+
+        Button button = Instantiate(photoTemplate, contentRoot);
+        button.gameObject.name = $"Photo_{index + 1}";
+        button.gameObject.SetActive(true);
+        photoSlots.Add(button);
+        return button;
+    }
+
+    private RectTransform FindContentRoot()
+    {
+        if (galleryPanel == null)
+            return null;
+
+        var photo = FindPhotoTemplate();
+        if (photo != null && photo.transform.parent is RectTransform parent)
+            return parent;
+
+        var rects = galleryPanel.GetComponentsInChildren<RectTransform>(true);
+        for (int i = 0; i < rects.Length; i++)
+        {
+            if (rects[i].name == "Content")
+                return rects[i];
+        }
+
+        return null;
+    }
+
+    private Button FindPhotoTemplate()
+    {
+        if (galleryPanel == null)
+            return null;
+
+        var buttons = galleryPanel.GetComponentsInChildren<Button>(true);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            if (buttons[i].name == "Photo")
+                return buttons[i];
+        }
+
+        return null;
+    }
+
+    private static TextMeshProUGUI FindText(Transform root, string childName)
+    {
+        if (root == null)
+            return null;
+
+        var texts = root.GetComponentsInChildren<TextMeshProUGUI>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            if (texts[i].name == childName)
+                return texts[i];
+        }
+
+        return texts.Length > 0 ? texts[0] : null;
+    }
+
+    private static TextMeshProUGUI FindSecondaryText(Transform root, TextMeshProUGUI primary)
+    {
+        if (root == null)
+            return null;
+
+        var texts = root.GetComponentsInChildren<TextMeshProUGUI>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            if (texts[i] != primary)
+                return texts[i];
         }
 
         return null;

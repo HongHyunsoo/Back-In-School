@@ -2024,7 +2024,7 @@ Transform:
   m_GameObject: {fileID: 67147955}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -10.7179985, y: 16.531, z: 0}
+  m_LocalPosition: {x: -41.5, y: 14.08, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2065,7 +2065,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetAnimator: {fileID: 67147957}
-  defaultAnimationClip: {fileID: 7400000, guid: 031e86f7f195e944db3f9fcbdfcccdf5, type: 2}
+  defaultAnimationClip: {fileID: 7400000, guid: 092602ee1f844904a96017a254afd8a1, type: 2}
   defaultAnimationTrigger: 
   defaultBeforeTextDelaySeconds: 0
   defaultSoundEffectName: 
@@ -2139,14 +2139,37 @@ MonoBehaviour:
   autoPromptSortingOrder: 50
   contextualDialogues:
   - day: 1
-    specificState: 8
+    specificState: 1
     behavior: 1
-    conversationID: DAY1_LUNCH_ADULT
+    requiredCompletedConversationID: 
+    conversationID: DAY1_MOR_ADULT
     randomConversationIDs: []
     customLineIndex: 0
     animationTrigger: 
     soundEffectName: 
-    linePresentations: []
+    linePresentations:
+    - lineID: DAY1_MOR_ADULT_02
+      lineIndexStart: 2
+      lineIndexEnd: 20
+      afterLineID: 
+      afterLineIndexStart: -1
+      afterLineIndexEnd: -1
+      targetCharacterId: NAME_ADULT
+      animationTrigger: 
+      animationClip: {fileID: 7400000, guid: ef757cd4159b7e54bae5b633656b9a06, type: 2}
+      soundEffectName: 
+      beforeTextDelaySeconds: 0
+    - lineID: DAY1_MOR_ADULT_12
+      lineIndexStart: 12
+      lineIndexEnd: 12
+      afterLineID: 
+      afterLineIndexStart: -1
+      afterLineIndexEnd: -1
+      targetCharacterId: NAME_PLAYER
+      animationTrigger: 
+      animationClip: {fileID: 7400000, guid: c6d59171dc056bf44bb02a5582624ef5, type: 2}
+      soundEffectName: 
+      beforeTextDelaySeconds: 0
     hasBeenPlayed: 0
   defaultConversationID: 
   facePlayerOnDialogueStart: 0
@@ -2207,7 +2230,7 @@ SpriteRenderer:
   m_SortingOrder: 2
   m_Sprite: {fileID: -650763211, guid: b037030466c209d47a6b40ce8bdfb61a, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_FlipX: 0
+  m_FlipX: 1
   m_FlipY: 0
   m_DrawMode: 0
   m_Size: {x: 1, y: 1}
@@ -13207,6 +13230,241 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 373457024}
   m_CullTransparentMesh: 1
+--- !u!1 &374713980
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 374713981}
+  - component: {fileID: 374713987}
+  - component: {fileID: 374713986}
+  - component: {fileID: 374713985}
+  - component: {fileID: 374713984}
+  - component: {fileID: 374713983}
+  - component: {fileID: 374713982}
+  m_Layer: 0
+  m_Name: GONYONG
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &374713981
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374713980}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 20.850002, y: 16.53, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2010376544}
+  m_Father: {fileID: 1526819829}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &374713982
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374713980}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 28432bbbd6490f1498b410bee3970965, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &374713983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374713980}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39fa3d972f2387048835d69ecfd10819, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetAnimator: {fileID: 374713982}
+  defaultAnimationClip: {fileID: 7400000, guid: dd07fb61dd69fbe4a8bee7fd565a7a3e, type: 2}
+  defaultAnimationTrigger: 
+  defaultBeforeTextDelaySeconds: 0
+  defaultSoundEffectName: 
+--- !u!61 &374713984
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374713980}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0.009212494, y: -0.16583729}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 1, y: 1}
+    newSize: {x: 1, y: 1}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  serializedVersion: 2
+  m_Size: {x: 0.4361496, y: 0.6683254}
+  m_EdgeRadius: 0
+--- !u!114 &374713985
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374713980}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7d6b2bd05a06b54fa8ffc81bdd78166, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  interactKey: 101
+  interactPrompt: {fileID: 0}
+  interactKeyText: {fileID: 0}
+  interactKeyFormat: '[{0}]'
+  promptFontSize: 4
+  useUnifiedPromptStyle: 1
+  promptFontAsset: {fileID: 0}
+  autoCreatePromptWhenMissing: 1
+  autoPromptLocalOffset: {x: 0, y: 0.9, z: 0}
+  autoPromptScale: 0.1
+  autoPromptSortingOrder: 50
+  contextualDialogues:
+  - day: 1
+    specificState: 1
+    behavior: 1
+    requiredCompletedConversationID: DAY1_MOR_ADULT
+    conversationID: DAY1_MOR_GONYONG_EVENT
+    randomConversationIDs: []
+    customLineIndex: 0
+    animationTrigger: 
+    soundEffectName: 
+    linePresentations: []
+    hasBeenPlayed: 0
+  - day: 1
+    specificState: 1
+    behavior: 1
+    requiredCompletedConversationID: 
+    conversationID: DAY1_MOR_GONYONG
+    randomConversationIDs: []
+    customLineIndex: 0
+    animationTrigger: 
+    soundEffectName: 
+    linePresentations: []
+    hasBeenPlayed: 0
+  defaultConversationID: 
+  facePlayerOnDialogueStart: 1
+  facingRoot: {fileID: 0}
+--- !u!114 &374713986
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374713980}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56533babfe85cb24fbf02db033a4ed3b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  characterID: NAME_GONYONG
+--- !u!212 &374713987
+SpriteRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374713980}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 2
+  m_Sprite: {fileID: 2131970111, guid: 21194841d6dd2b347b49425c05d96758, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 1, y: 1}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_MaskInteraction: 0
+  m_SpriteSortPoint: 0
 --- !u!1 &381778757
 GameObject:
   m_ObjectHideFlags: 0
@@ -14101,6 +14359,7 @@ MonoBehaviour:
   - day: 1
     specificState: 8
     behavior: 1
+    requiredCompletedConversationID: 
     conversationID: DAY1_LUNCH_MING
     randomConversationIDs: []
     customLineIndex: -1
@@ -14108,27 +14367,33 @@ MonoBehaviour:
     soundEffectName: 
     linePresentations:
     - lineID: 
-      lineIndex: -1
+      lineIndexStart: -1
+      lineIndexEnd: -1
       afterLineID: DAY1_LUNCH_MING_20
-      afterLineIndex: -1
+      afterLineIndexStart: -1
+      afterLineIndexEnd: -1
       targetCharacterId: NAME_PLAYER
       animationTrigger: 
       animationClip: {fileID: 7400000, guid: bea85460d30f9f645a55c01ae28e5341, type: 2}
       soundEffectName: 
       beforeTextDelaySeconds: 2.5
     - lineID: DAY1_LUNCH_MING_21
-      lineIndex: -1
+      lineIndexStart: -1
+      lineIndexEnd: -1
       afterLineID: 
-      afterLineIndex: -1
+      afterLineIndexStart: -1
+      afterLineIndexEnd: -1
       targetCharacterId: NAME_PLAYER
       animationTrigger: 
       animationClip: {fileID: 7400000, guid: 324a151647580494e8d8f01efa33648d, type: 2}
       soundEffectName: 
       beforeTextDelaySeconds: 2.5
     - lineID: DAY1_LUNCH_MING_22
-      lineIndex: -1
+      lineIndexStart: -1
+      lineIndexEnd: -1
       afterLineID: 
-      afterLineIndex: -1
+      afterLineIndexStart: -1
+      afterLineIndexEnd: -1
       targetCharacterId: NAME_PLAYER
       animationTrigger: 
       animationClip: {fileID: 7400000, guid: 3cf8e905cff433046a8816775171d4ac, type: 2}
@@ -17780,6 +18045,7 @@ MonoBehaviour:
   - day: 1
     specificState: 1
     behavior: 0
+    requiredCompletedConversationID: 
     conversationID: DAY1_MOR_SOWRD
     randomConversationIDs: []
     customLineIndex: -1
@@ -60672,6 +60938,7 @@ MonoBehaviour:
   - day: 1
     specificState: 1
     behavior: 0
+    requiredCompletedConversationID: 
     conversationID: DAY1_MOR_MINUM
     randomConversationIDs: []
     customLineIndex: 0
@@ -75358,6 +75625,7 @@ MonoBehaviour:
   - day: 1
     specificState: 8
     behavior: 0
+    requiredCompletedConversationID: 
     conversationID: DAY1_LUNCH_SOWRD
     randomConversationIDs: []
     customLineIndex: -1
@@ -83769,6 +84037,7 @@ MonoBehaviour:
   - day: 1
     specificState: 1
     behavior: 0
+    requiredCompletedConversationID: 
     conversationID: DAY1_MOR_DABONG
     randomConversationIDs: []
     customLineIndex: 0
@@ -88437,6 +88706,7 @@ MonoBehaviour:
   - day: 1
     specificState: 1
     behavior: 0
+    requiredCompletedConversationID: 
     conversationID: DAY1_MOR_DABONG
     randomConversationIDs: []
     customLineIndex: 0
@@ -89931,6 +90201,7 @@ MonoBehaviour:
   - day: 1
     specificState: 1
     behavior: 0
+    requiredCompletedConversationID: 
     conversationID: DAY1_MOR_SOWRD
     randomConversationIDs: []
     customLineIndex: -1
@@ -94163,6 +94434,7 @@ MonoBehaviour:
   - day: 1
     specificState: 1
     behavior: 0
+    requiredCompletedConversationID: 
     conversationID: DAY1_MOR_HWAN
     randomConversationIDs: []
     customLineIndex: 0
@@ -96893,6 +97165,7 @@ MonoBehaviour:
   - day: 1
     specificState: 8
     behavior: 0
+    requiredCompletedConversationID: 
     conversationID: DAY1_LUNCH_SOWRD
     randomConversationIDs: []
     customLineIndex: -1
@@ -104535,6 +104808,7 @@ MonoBehaviour:
   - day: 1
     specificState: 1
     behavior: 0
+    requiredCompletedConversationID: 
     conversationID: DAY1_MOR_DABONG
     randomConversationIDs: []
     customLineIndex: 0
@@ -108364,6 +108638,7 @@ MonoBehaviour:
   - day: 1
     specificState: 1
     behavior: 0
+    requiredCompletedConversationID: 
     conversationID: DAY1_MOR_MINUM
     randomConversationIDs: []
     customLineIndex: 0
@@ -108714,6 +108989,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 67147956}
+  - {fileID: 374713981}
   - {fileID: 1510525206}
   - {fileID: 1181193277}
   - {fileID: 2062607965}
@@ -114969,6 +115245,7 @@ MonoBehaviour:
   - day: 1
     specificState: 1
     behavior: 0
+    requiredCompletedConversationID: 
     conversationID: DAY1_MOR_SOWRD
     randomConversationIDs: []
     customLineIndex: -1
@@ -125579,6 +125856,7 @@ MonoBehaviour:
   - day: 1
     specificState: 8
     behavior: 1
+    requiredCompletedConversationID: 
     conversationID: DAY1_LUNCH_ADULT
     randomConversationIDs: []
     customLineIndex: 0
@@ -128084,6 +128362,112 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   destinationId: ArtRoomDoor_02
+--- !u!1001 &2010376543
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 374713981}
+    m_Modifications:
+    - target: {fileID: 3188427768456636524, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_Name
+      value: KeyPrefab
+      objectReference: {fileID: 0}
+    - target: {fileID: 3188427768456636524, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+--- !u!224 &2010376544 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
+  m_PrefabInstance: {fileID: 2010376543}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2011238087
 GameObject:
   m_ObjectHideFlags: 0
@@ -168506,6 +168890,7 @@ MonoBehaviour:
   - day: 1
     specificState: 1
     behavior: 0
+    requiredCompletedConversationID: 
     conversationID: DAY1_MOR_DABONG
     randomConversationIDs: []
     customLineIndex: 0

@@ -63,6 +63,9 @@ public class DialogueManager : MonoBehaviour
     private readonly List<DialogueLinePresentation> activeLinePresentations = new List<DialogueLinePresentation>();
     private int currentLineIndex = -1;
     private PlayableGraph presentationGraph;
+    private Animator activePresentationAnimator;
+    private AnimationClip activePresentationClip;
+    private string activePresentationTrigger = string.Empty;
 
     private void StopPlayerMotionImmediate()
     {
@@ -714,7 +717,10 @@ public class DialogueManager : MonoBehaviour
             }
 
             if (!string.IsNullOrEmpty(completedConversationId))
+            {
+                DialogueProgressState.MarkConversationCompleted(completedConversationId);
                 DialogueConversationCompleted?.Invoke(completedConversationId);
+            }
 
             if (FlowManager.Instance != null)
                 FlowManager.Instance.CompleteCurrentEvent(0);
@@ -724,7 +730,10 @@ public class DialogueManager : MonoBehaviour
         else
         {
             if (!string.IsNullOrEmpty(completedConversationId))
+            {
+                DialogueProgressState.MarkConversationCompleted(completedConversationId);
                 DialogueConversationCompleted?.Invoke(completedConversationId);
+            }
 
             // 나머지(자유이동/NPC대화 등)는 기존대로
             if (playerController != null) playerController.enabled = true;
@@ -748,9 +757,11 @@ public class DialogueManager : MonoBehaviour
             pendingLinePresentations.Add(new DialogueLinePresentation
             {
                 lineID = src.lineID,
-                lineIndex = src.lineIndex,
+                lineIndexStart = src.lineIndexStart,
+                lineIndexEnd = src.lineIndexEnd,
                 afterLineID = src.afterLineID,
-                afterLineIndex = src.afterLineIndex,
+                afterLineIndexStart = src.afterLineIndexStart,
+                afterLineIndexEnd = src.afterLineIndexEnd,
                 targetCharacterId = src.targetCharacterId,
                 animationTrigger = src.animationTrigger,
                 animationClip = src.animationClip,
@@ -765,13 +776,15 @@ public class DialogueManager : MonoBehaviour
         if (activeLinePresentations.Count == 0)
             return null;
 
+        int lineNumber = lineIndex + 1;
+
         for (int i = 0; i < activeLinePresentations.Count; i++)
         {
             DialogueLinePresentation p = activeLinePresentations[i];
             if (p == null)
                 continue;
 
-            if (!string.IsNullOrEmpty(p.lineID) && string.Equals(p.lineID, line.lineID, StringComparison.OrdinalIgnoreCase))
+            if (MatchesLineId(p, line.lineID))
                 return p;
         }
 
@@ -784,7 +797,7 @@ public class DialogueManager : MonoBehaviour
             if (!string.IsNullOrEmpty(p.lineID))
                 continue;
 
-            if (p.lineIndex >= 0 && p.lineIndex == lineIndex)
+            if (MatchesLineIndexRange(p, lineNumber))
                 return p;
         }
 
@@ -847,9 +860,11 @@ public class DialogueManager : MonoBehaviour
         return new DialogueLinePresentation
         {
             lineID = !string.IsNullOrEmpty(specific.lineID) ? specific.lineID : defaults.lineID,
-            lineIndex = specific.lineIndex >= 0 ? specific.lineIndex : defaults.lineIndex,
+            lineIndexStart = specific.lineIndexStart >= 0 ? specific.lineIndexStart : defaults.lineIndexStart,
+            lineIndexEnd = specific.lineIndexEnd >= 0 ? specific.lineIndexEnd : defaults.lineIndexEnd,
             afterLineID = !string.IsNullOrEmpty(specific.afterLineID) ? specific.afterLineID : defaults.afterLineID,
-            afterLineIndex = specific.afterLineIndex >= 0 ? specific.afterLineIndex : defaults.afterLineIndex,
+            afterLineIndexStart = specific.afterLineIndexStart >= 0 ? specific.afterLineIndexStart : defaults.afterLineIndexStart,
+            afterLineIndexEnd = specific.afterLineIndexEnd >= 0 ? specific.afterLineIndexEnd : defaults.afterLineIndexEnd,
             targetCharacterId = !string.IsNullOrEmpty(specific.targetCharacterId) ? specific.targetCharacterId : defaults.targetCharacterId,
             animationTrigger = !string.IsNullOrEmpty(specific.animationTrigger) ? specific.animationTrigger : defaults.animationTrigger,
             animationClip = specific.animationClip != null ? specific.animationClip : defaults.animationClip,
@@ -873,17 +888,16 @@ public class DialogueManager : MonoBehaviour
         if (line == null || activeLinePresentations.Count == 0)
             return false;
 
+        int lineNumber = lineIndex + 1;
+
         for (int i = 0; i < activeLinePresentations.Count; i++)
         {
             DialogueLinePresentation candidate = activeLinePresentations[i];
             if (candidate == null)
                 continue;
 
-            bool matchesById = !string.IsNullOrEmpty(candidate.afterLineID) &&
-                               string.Equals(candidate.afterLineID, line.lineID, StringComparison.OrdinalIgnoreCase);
-            bool matchesByIndex = string.IsNullOrEmpty(candidate.afterLineID) &&
-                                  candidate.afterLineIndex >= 0 &&
-                                  candidate.afterLineIndex == lineIndex;
+            bool matchesById = MatchesAfterLineId(candidate, line.lineID);
+            bool matchesByIndex = MatchesAfterLineIndexRange(candidate, lineNumber);
 
             if (!matchesById && !matchesByIndex)
                 continue;
@@ -944,9 +958,24 @@ public class DialogueManager : MonoBehaviour
             targetSource.SuspendDefaultPresentation();
 
         if (presentationClip != null)
+        {
+            if (activePresentationAnimator == animator && activePresentationClip == presentationClip)
+                return;
+
             PlayPresentationClip(animator, presentationClip);
+            activePresentationTrigger = string.Empty;
+        }
         else if (!string.IsNullOrEmpty(animationTrigger))
+        {
+            if (activePresentationAnimator == animator &&
+                string.Equals(activePresentationTrigger, animationTrigger, StringComparison.Ordinal))
+                return;
+
             animator.SetTrigger(animationTrigger);
+            activePresentationAnimator = animator;
+            activePresentationClip = null;
+            activePresentationTrigger = animationTrigger;
+        }
     }
 
     private void PlayPresentationSound(DialogueLinePresentation presentation)
@@ -974,6 +1003,9 @@ public class DialogueManager : MonoBehaviour
         playable.SetApplyPlayableIK(false);
         output.SetSourcePlayable(playable);
         presentationGraph.Play();
+        activePresentationAnimator = animator;
+        activePresentationClip = clip;
+        activePresentationTrigger = string.Empty;
 
     }
 
@@ -982,9 +1014,59 @@ public class DialogueManager : MonoBehaviour
         if (presentationGraph.IsValid())
             presentationGraph.Destroy();
 
+        activePresentationAnimator = null;
+        activePresentationClip = null;
+        activePresentationTrigger = string.Empty;
+
         DialogueCharacterPresentation[] defaults = FindObjectsByType<DialogueCharacterPresentation>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         for (int i = 0; i < defaults.Length; i++)
             defaults[i].ResumeDefaultPresentation();
+    }
+
+    private static bool MatchesLineId(DialogueLinePresentation presentation, string lineId)
+    {
+        if (presentation == null || string.IsNullOrEmpty(lineId))
+            return false;
+
+        if (!string.IsNullOrEmpty(presentation.lineID) &&
+            string.Equals(presentation.lineID, lineId, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    }
+
+    private static bool MatchesAfterLineId(DialogueLinePresentation presentation, string lineId)
+    {
+        if (presentation == null || string.IsNullOrEmpty(lineId))
+            return false;
+
+        if (!string.IsNullOrEmpty(presentation.afterLineID) &&
+            string.Equals(presentation.afterLineID, lineId, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    }
+
+    private static bool MatchesLineIndexRange(DialogueLinePresentation presentation, int lineIndex)
+    {
+        if (presentation == null || lineIndex < 0)
+            return false;
+
+        if (presentation.lineIndexStart < 0 || presentation.lineIndexEnd < 0)
+            return false;
+
+        return lineIndex >= presentation.lineIndexStart && lineIndex <= presentation.lineIndexEnd;
+    }
+
+    private static bool MatchesAfterLineIndexRange(DialogueLinePresentation presentation, int lineIndex)
+    {
+        if (presentation == null || lineIndex < 0)
+            return false;
+
+        if (presentation.afterLineIndexStart < 0 || presentation.afterLineIndexEnd < 0)
+            return false;
+
+        return lineIndex >= presentation.afterLineIndexStart && lineIndex <= presentation.afterLineIndexEnd;
     }
 }
 
