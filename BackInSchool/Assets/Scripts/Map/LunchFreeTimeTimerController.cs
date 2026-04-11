@@ -213,6 +213,16 @@ public class LunchFreeTimeTimerController : MonoBehaviour
         return true;
     }
 
+    public int GetCurrentClockMinuteComponent()
+    {
+        EnsureTimerInitialized();
+        int roundedMinutes = Mathf.RoundToInt(ResolveCurrentClockMinutes());
+        int minute = roundedMinutes % 60;
+        if (minute < 0)
+            minute += 60;
+        return minute;
+    }
+
     private IEnumerator CoTimeoutSequence()
     {
         RefreshReferences();

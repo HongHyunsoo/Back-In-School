@@ -15,6 +15,8 @@ public class GlobalCanvasSafetyNormalizer : MonoBehaviour
     public Vector2 referenceResolution = new Vector2(1920f, 1080f);
     [Range(0f, 1f)] public float matchWidthOrHeight = 0.5f;
     public bool forceScaleWithScreenSize = true;
+    public bool convertOverlayToScreenSpaceCamera = false;
+    public float screenSpaceCameraPlaneDistance = 100f;
 
     [Header("Late Spawn Scan")]
     public bool normalizeLateSpawnedCanvases = false;
@@ -88,13 +90,29 @@ public class GlobalCanvasSafetyNormalizer : MonoBehaviour
         if (canvas.renderMode == RenderMode.WorldSpace)
             return;
 
+        Camera mainCam = Camera.main;
+        if (convertOverlayToScreenSpaceCamera &&
+            canvas.renderMode == RenderMode.ScreenSpaceOverlay &&
+            mainCam != null)
+        {
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.worldCamera = mainCam;
+            canvas.planeDistance = screenSpaceCameraPlaneDistance;
+        }
+
         var rt = canvas.transform as RectTransform;
         if (rt != null && rt.localScale != Vector3.one)
             rt.localScale = Vector3.one;
 
         // Missing worldCamera in ScreenSpaceCamera can break layout in build.
-        if (canvas.renderMode == RenderMode.ScreenSpaceCamera && canvas.worldCamera == null)
-            canvas.worldCamera = Camera.main;
+        if (canvas.renderMode == RenderMode.ScreenSpaceCamera)
+        {
+            if (canvas.worldCamera == null)
+                canvas.worldCamera = mainCam;
+
+            if (canvas.planeDistance <= 0f)
+                canvas.planeDistance = screenSpaceCameraPlaneDistance;
+        }
 
         var scaler = canvas.GetComponent<CanvasScaler>();
         if (scaler == null)

@@ -85,6 +85,21 @@ public class FreeRoamFlowSpawnController : MonoBehaviour
             return;
         }
 
+        if (TemporaryStorySceneFlow.TryConsumeReturnSpawnOverride(SceneManager.GetActiveScene().name, out Vector3 overridePosition, out Quaternion overrideRotation))
+        {
+            player.position = overridePosition;
+            player.rotation = overrideRotation;
+
+            var overrideRb = player.GetComponent<Rigidbody2D>();
+            if (overrideRb != null)
+            {
+                overrideRb.velocity = Vector2.zero;
+                overrideRb.angularVelocity = 0f;
+            }
+
+            return;
+        }
+
         SpawnEntry match = FindMatchingEntry(FlowContext.CurrentId);
         if (match == null || match.spawnPoint == null)
             return;

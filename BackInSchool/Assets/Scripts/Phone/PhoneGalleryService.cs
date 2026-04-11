@@ -44,6 +44,11 @@ public class PhoneGalleryService : MonoBehaviour
         return EnsureExists().Unlock(entryId);
     }
 
+    public static void RefreshUnlocksFromSavedState()
+    {
+        EnsureExists().RefreshPersistentUnlocksInternal();
+    }
+
     public static void ResetPersistedDataForNewGame()
     {
         PlayerPrefs.DeleteKey(PrefKey);
@@ -67,6 +72,7 @@ public class PhoneGalleryService : MonoBehaviour
         DontDestroyOnLoad(gameObject);
         Load();
         UnlockAllImmediateEntries();
+        EvaluatePersistentUnlocks();
         DialogueManager.DialogueLineShown += HandleDialogueLineShown;
         DialogueManager.DialogueConversationCompleted += HandleConversationCompleted;
     }
@@ -151,8 +157,17 @@ public class PhoneGalleryService : MonoBehaviour
     {
         unlockedEntryIds.Clear();
         UnlockAllImmediateEntries();
+        EvaluatePersistentUnlocks();
         Save();
         OnChanged?.Invoke();
+    }
+
+    public void RefreshPersistentUnlocksInternal()
+    {
+        int beforeCount = unlockedEntryIds.Count;
+        EvaluatePersistentUnlocks();
+        if (unlockedEntryIds.Count != beforeCount)
+            OnChanged?.Invoke();
     }
 
     private void HandleDialogueLineShown(string _, string lineId)
@@ -215,6 +230,36 @@ public class PhoneGalleryService : MonoBehaviour
 
         Save();
         OnChanged?.Invoke();
+    }
+
+    private void EvaluatePersistentUnlocks()
+    {
+        bool changed = false;
+        var entries = PhoneGalleryCatalog.Instance.Entries;
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            if (entry == null || string.IsNullOrWhiteSpace(entry.unlockValue))
+                continue;
+
+            switch (entry.unlockType)
+            {
+                case GalleryUnlockType.Conversation:
+                    if (DialogueProgressState.HasCompletedConversation(entry.unlockValue))
+                        changed |= unlockedEntryIds.Add(entry.entryId);
+                    break;
+                case GalleryUnlockType.Flow:
+                    if (!string.IsNullOrEmpty(FlowContext.CurrentId) &&
+                        FlowContext.CurrentId.IndexOf(entry.unlockValue, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        changed |= unlockedEntryIds.Add(entry.entryId);
+                    }
+                    break;
+            }
+        }
+
+        if (changed)
+            Save();
     }
 
     private void Save()

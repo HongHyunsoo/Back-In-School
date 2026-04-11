@@ -217,6 +217,8 @@ public class FlowDebugUIController : MonoBehaviour
         int s = ParseOr(stepInput, fm.stepIndex);
         int p = ParseOr(penaltyInput, fm.penaltyPoints);
 
+        DialogueProgressState.ClearAllCompletedConversations();
+
         fm.day = d;
         fm.stepIndex = s;
         fm.penaltyPoints = p;

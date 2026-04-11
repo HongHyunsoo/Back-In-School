@@ -1,3 +1,4 @@
-Entry_ID,Title_KO,Title_EN,Description_KO,Description_EN,Image_Resource,Unlock_Type,Unlock_Value,Sort_Order
-DAY1_LATE_ENTRANCE,지각 직후,Right After Being Late,늦게 교실에 들어오던 순간의 기록.,A snapshot unlocked when the late entrance scene is reached.,Avatars/GONYONG,Line,DAY1_CLASSOPEN_05,10
-DAY1_GO_HOME_CHAT,하교 단톡,After School Chat,하교 채팅을 열어보면 해금되는 사진.,Unlocked after the first ride-home chat flow.,Avatars/imag00e,Flow,D1_CHAT_TO_HOME,20
+﻿Entry_ID,Title_KO,Title_EN,Description_KO,Description_EN,Image_Resource,Unlock_Type,Unlock_Value,Sort_Order
+DAY1_LATE_ENTRANCE,지각 직후,Right After Being Late,지각 등교 직후의 순간을 담은 사진입니다.,A snapshot unlocked right after the late entrance scene.,Avatars/GONYONG,Line,DAY1_CLASSOPEN_05,10
+DAY1_MOR_ADULT_PHOTO,엉인이 레전드 짤,Adult's Legendary Pic,아침에 ADULT와의 대화를 마친 뒤 저장된 사진입니다.,A photo saved after finishing the morning Adult conversation.,Gallery/Pictures#Pictures_2,Conversation,DAY1_MOR_ADULT,15
+DAY1_GO_HOME_CHAT,하교 채팅,After School Chat,첫 하교 채팅 이후 열리는 사진입니다.,Unlocked after the first ride-home chat flow.,Avatars/imag00e,Flow,D1_CHAT_TO_HOME,20

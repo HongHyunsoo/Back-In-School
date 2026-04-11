@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 [System.Serializable]
 public class ContextualDialogue
@@ -31,6 +32,13 @@ public class ContextualDialogue
     [Header("Line Presentations")]
     [Tooltip("Inspector-driven per-line presentation settings. Use lineID or lineIndexStart~lineIndexEnd to match dialogue lines.")]
     public List<DialogueLinePresentation> linePresentations = new List<DialogueLinePresentation>();
+
+    [Header("Story Scene Override")]
+    public bool playInStoryScene = false;
+    public string storyConversationID;
+    public string returnSceneName = "FREEROAM";
+    public bool preserveReturnPosition = true;
+    public bool preserveLunchClock = true;
 
     [HideInInspector]
     public bool hasBeenPlayed = false;
@@ -106,9 +114,12 @@ public class DialogueTrigger : MonoBehaviour
         if (isPlayerInRange)
         {
             ContextualDialogue currentDialogue = FindCurrentDialogue();
+            bool playOnceAlreadyCompleted = currentDialogue != null &&
+                                           currentDialogue.behavior == DialogueBehavior.PlayOnce &&
+                                           DialogueProgressState.HasCompletedConversation(currentDialogue.conversationID);
 
             if (!manager.IsDialogueActive &&
-                (currentDialogue == null || (currentDialogue.behavior != DialogueBehavior.PlayOnce || !currentDialogue.hasBeenPlayed)))
+                (currentDialogue == null || currentDialogue.behavior != DialogueBehavior.PlayOnce || !playOnceAlreadyCompleted))
             {
                 if (interactPrompt != null) interactPrompt.SetActive(true);
 
@@ -318,11 +329,6 @@ public class DialogueTrigger : MonoBehaviour
             else
             {
                 conversationID_ToPlay = cd.conversationID;
-
-                if (cd.behavior == DialogueBehavior.PlayOnce)
-                {
-                    cd.hasBeenPlayed = true;
-                }
             }
         }
 
@@ -331,6 +337,19 @@ public class DialogueTrigger : MonoBehaviour
         {
             if (facePlayerOnDialogueStart)
                 FaceTowardPlayer();
+
+            if (cd != null && cd.playInStoryScene)
+            {
+                string storyConversationId = !string.IsNullOrWhiteSpace(cd.storyConversationID)
+                    ? cd.storyConversationID
+                    : conversationID_ToPlay;
+                string targetReturnScene = !string.IsNullOrWhiteSpace(cd.returnSceneName)
+                    ? cd.returnSceneName
+                    : SceneManager.GetActiveScene().name;
+
+                TemporaryStorySceneFlow.Begin(storyConversationId, targetReturnScene, cd.preserveReturnPosition, cd.preserveLunchClock);
+                return;
+            }
 
             if (manager != null)
                 manager.SetUpcomingLinePresentations(BuildLinePresentations(cd));
@@ -415,12 +434,10 @@ public class DialogueTrigger : MonoBehaviour
                     lineID = src.lineID,
                     lineIndexStart = src.lineIndexStart,
                     lineIndexEnd = src.lineIndexEnd,
-                    afterLineID = src.afterLineID,
-                    afterLineIndexStart = src.afterLineIndexStart,
-                    afterLineIndexEnd = src.afterLineIndexEnd,
                     targetCharacterId = src.targetCharacterId,
                     animationTrigger = src.animationTrigger,
                     animationClip = src.animationClip,
+                    sneakersAnimationClip = src.sneakersAnimationClip,
                     soundEffectName = src.soundEffectName,
                     beforeTextDelaySeconds = Mathf.Max(0f, src.beforeTextDelaySeconds)
                 });
@@ -433,9 +450,6 @@ public class DialogueTrigger : MonoBehaviour
             {
                 lineIndexStart = cd.customLineIndex,
                 lineIndexEnd = cd.customLineIndex,
-                afterLineID = string.Empty,
-                afterLineIndexStart = -1,
-                afterLineIndexEnd = -1,
                 targetCharacterId = string.Empty,
                 animationTrigger = cd.animationTrigger,
                 soundEffectName = cd.soundEffectName,

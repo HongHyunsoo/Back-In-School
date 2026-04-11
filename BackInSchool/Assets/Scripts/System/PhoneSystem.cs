@@ -104,12 +104,25 @@ public class PhoneSystem : MonoBehaviour
         if (root == null)
             return;
 
+        Canvas postProcessCanvas = root.GetComponent<Canvas>();
+        if (postProcessCanvas == null)
+            postProcessCanvas = root.GetComponentInChildren<Canvas>(true);
+
         var canvases = root.GetComponentsInChildren<Canvas>(true);
         for (int i = 0; i < canvases.Length; i++)
         {
             var canvas = canvases[i];
             if (canvas == null || canvas.renderMode == RenderMode.WorldSpace)
                 continue;
+
+            if (canvas == postProcessCanvas)
+            {
+                var postProcessTarget = canvas.GetComponent<CanvasPostProcessTarget>();
+                if (postProcessTarget == null)
+                    postProcessTarget = canvas.gameObject.AddComponent<CanvasPostProcessTarget>();
+
+                postProcessTarget.Apply();
+            }
 
             var rt = canvas.transform as RectTransform;
             if (rt != null)

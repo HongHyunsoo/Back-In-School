@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using LayoutRebuilder = UnityEngine.UI.LayoutRebuilder;
 
 [DisallowMultipleComponent]
 public class PhoneGalleryAppController : MonoBehaviour
@@ -12,6 +14,7 @@ public class PhoneGalleryAppController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI galleryCountLabel;
     [SerializeField] private TextMeshProUGUI galleryEmptyLabel;
     [SerializeField] private GameObject detailPanel;
+    [SerializeField] private Button detailBackButton;
     [SerializeField] private Image detailPreviewImage;
     [SerializeField] private TextMeshProUGUI detailTitleLabel;
     [SerializeField] private TextMeshProUGUI detailDescriptionLabel;
@@ -28,9 +31,9 @@ public class PhoneGalleryAppController : MonoBehaviour
 
     private readonly List<CardWidgets> cards = new();
     private readonly Dictionary<string, Sprite> spriteCache = new();
-    private readonly List<Button> photoSlots = new();
 
     private GameObject galleryPanel;
+    private GameObject galleryListPanel;
     private Button galleryButton;
     private RectTransform contentRoot;
     private TextMeshProUGUI titleText;
@@ -41,17 +44,23 @@ public class PhoneGalleryAppController : MonoBehaviour
     private TextMeshProUGUI detailTitleText;
     private TextMeshProUGUI detailDescriptionText;
     private TMP_FontAsset sharedFont;
+    private Sprite defaultCardBackground;
 
     private const string GalleryLabelKo = "\uAC24\uB7EC\uB9AC";
     private const string EmptyKo = "\uC544\uC9C1 \uB4F1\uB85D\uB41C \uAC24\uB7EC\uB9AC \uD56D\uBAA9\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.";
     private const string UnlockedKo = "\uD574\uAE08";
-    private const string TapToViewKo = "\uB20C\uB7EC\uC11C \uBCF4\uAE30";
     private const string LockedKo = "\uC7A0\uAE40";
+    private const string LockedTitleKo = "\uC7A0\uAE34 \uC0AC\uC9C4";
+    private const string LockedTitleEn = "Locked Photo";
+    private const string LockedDescriptionKo = "\uC544\uC9C1 \uD574\uAE08\uB418\uC9C0 \uC54A\uC740 \uC0AC\uC9C4\uC785\uB2C8\uB2E4.";
+    private const string LockedDescriptionEn = "This photo has not been unlocked yet.";
+    private const string LockedPlaceholderResource = "Gallery/Pictures#Pictures_0";
 
     private void Start()
     {
         ResolveTargets();
         HookEvents(true);
+        PhoneGalleryService.RefreshUnlocksFromSavedState();
         RefreshLabels();
         RefreshEntries();
     }
@@ -59,6 +68,7 @@ public class PhoneGalleryAppController : MonoBehaviour
     private void OnEnable()
     {
         HookEvents(true);
+        PhoneGalleryService.RefreshUnlocksFromSavedState();
         RefreshLabels();
         RefreshEntries();
     }
@@ -108,10 +118,21 @@ public class PhoneGalleryAppController : MonoBehaviour
         RefreshEntries();
     }
 
+    private void HookDetailBackButton()
+    {
+        if (detailBackButton == null)
+            return;
+
+        detailBackButton.onClick.RemoveListener(ShowGalleryList);
+        detailBackButton.onClick.AddListener(ShowGalleryList);
+    }
+
     private void ResolveTargets()
     {
         if (galleryPanel == null)
             galleryPanel = FindByName("App_Gallery") ?? FindByName("App_Music");
+        if (galleryListPanel == null && galleryPanel != null)
+            galleryListPanel = FindByNameUnder(galleryPanel.transform, "Gallery");
 
         if (galleryButton == null)
         {
@@ -134,6 +155,21 @@ public class PhoneGalleryAppController : MonoBehaviour
         titleText = galleryTitleLabel;
         countText = galleryCountLabel;
         emptyStateText = galleryEmptyLabel;
+        if (detailPanel == null && galleryPanel != null)
+            detailPanel = FindByNameUnder(galleryPanel.transform, "Photo Page");
+        if (detailBackButton == null && detailPanel != null)
+        {
+            GameObject backGo = FindByNameUnder(detailPanel.transform, "Back");
+            if (backGo != null)
+                detailBackButton = backGo.GetComponent<Button>();
+        }
+        if (detailPreviewImage == null && detailPanel != null)
+            detailPreviewImage = FindImage(detailPanel.transform, "Image");
+        if (detailTitleLabel == null && detailPanel != null)
+            detailTitleLabel = FindText(detailPanel.transform, "Image_Title");
+        if (detailDescriptionLabel == null && detailPanel != null)
+            detailDescriptionLabel = FindText(detailPanel.transform, "Image_Outline");
+
         detailOverlay = detailPanel;
         detailImage = detailPreviewImage;
         detailTitleText = detailTitleLabel;
@@ -142,10 +178,12 @@ public class PhoneGalleryAppController : MonoBehaviour
         if (photoTemplate != null)
             photoTemplate.gameObject.SetActive(false);
 
-        CollectPhotoSlots();
-
         sharedFont = ResolveSharedFont();
+        defaultCardBackground = ResolveDefaultCardBackground();
         EnsureGalleryButtonLabel();
+        HookDetailBackButton();
+
+        HideDetailView();
     }
 
     private void RefreshLabels()
@@ -186,21 +224,29 @@ public class PhoneGalleryAppController : MonoBehaviour
         if (contentRoot == null)
             return;
 
+        ShowGalleryList();
+
         ClearCards();
 
-        var entries = PhoneGalleryService.EnsureExists().GetEntries();
-        if (emptyStateText != null)
-            emptyStateText.gameObject.SetActive(entries.Count == 0);
-
-        for (int i = 0; i < entries.Count; i++)
+        var allEntries = PhoneGalleryService.EnsureExists().GetEntries();
+        var visibleEntries = new List<PhoneGalleryEntry>();
+        for (int i = 0; i < allEntries.Count; i++)
         {
-            var card = CreateCard(entries[i], i);
+            if (IsEntryUnlocked(allEntries[i]))
+                visibleEntries.Add(allEntries[i]);
+        }
+
+        if (emptyStateText != null)
+            emptyStateText.gameObject.SetActive(visibleEntries.Count == 0);
+
+        for (int i = 0; i < visibleEntries.Count; i++)
+        {
+            var card = CreateCard(visibleEntries[i], i);
             if (card != null)
                 cards.Add(card);
         }
-
-        for (int i = entries.Count; i < photoSlots.Count; i++)
-            photoSlots[i].gameObject.SetActive(false);
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(contentRoot);
     }
 
     private CardWidgets CreateCard(PhoneGalleryEntry entry, int index)
@@ -217,11 +263,13 @@ public class PhoneGalleryAppController : MonoBehaviour
 
         var cardRect = button.transform as RectTransform;
         if (cardRect != null)
+        {
             cardRect.localScale = Vector3.one;
+            cardRect.SetSiblingIndex(Mathf.Min(index + 1, contentRoot.childCount - 1));
+        }
 
         var thumbImage = button.GetComponent<Image>();
         var title = FindText(button.transform, "PhotoName");
-        var status = FindSecondaryText(button.transform, title);
 
         var widgets = new CardWidgets
         {
@@ -230,7 +278,7 @@ public class PhoneGalleryAppController : MonoBehaviour
             button = button,
             thumbnail = thumbImage,
             title = title,
-            status = status
+            status = null
         };
 
         ApplyCardState(widgets);
@@ -239,27 +287,29 @@ public class PhoneGalleryAppController : MonoBehaviour
 
     private void ApplyCardState(CardWidgets widgets)
     {
-        bool unlocked = PhoneGalleryService.EnsureExists().IsUnlocked(widgets.entry.entryId);
         Language language = GetLanguage();
 
         if (widgets.title != null)
-            widgets.title.text = widgets.entry.GetTitle(language);
-        if (widgets.status != null)
         {
-            widgets.status.text = unlocked
-                ? (language == Language.English ? "Tap to view" : TapToViewKo)
-                : (language == Language.English ? "Locked" : LockedKo);
+            widgets.title.text = widgets.entry.GetTitle(language);
+            widgets.title.enableWordWrapping = false;
+            widgets.title.overflowMode = TextOverflowModes.Truncate;
+            widgets.title.alignment = TextAlignmentOptions.Center;
+            widgets.title.raycastTarget = false;
         }
 
         widgets.button.onClick.RemoveAllListeners();
-        widgets.button.interactable = unlocked;
         widgets.button.onClick.AddListener(() => ShowDetail(widgets.entry));
+        widgets.button.interactable = true;
+        EnsurePointerOpenTrigger(widgets.button.gameObject, widgets.entry);
 
-        Sprite sprite = unlocked ? LoadSprite(widgets.entry.imageResourcePath) : null;
-        widgets.thumbnail.sprite = sprite;
-        widgets.thumbnail.color = unlocked
-            ? new Color(1f, 1f, 1f, sprite == null ? 0.22f : 1f)
-            : new Color(0.18f, 0.18f, 0.18f, 0.55f);
+        if (widgets.thumbnail != null)
+        {
+            Sprite sprite = LoadSprite(widgets.entry.imageResourcePath);
+            widgets.thumbnail.sprite = sprite;
+            widgets.thumbnail.preserveAspect = true;
+            widgets.thumbnail.color = new Color(1f, 1f, 1f, sprite == null ? 0.22f : 1f);
+        }
     }
 
     private void ShowDetail(PhoneGalleryEntry entry)
@@ -268,18 +318,32 @@ public class PhoneGalleryAppController : MonoBehaviour
             return;
 
         Language language = GetLanguage();
-        if (detailTitleText != null)
-            detailTitleText.text = entry.GetTitle(language);
-        if (detailDescriptionText != null)
-            detailDescriptionText.text = entry.GetDescription(language);
+        bool unlocked = IsEntryUnlocked(entry);
 
-        Sprite sprite = LoadSprite(entry.imageResourcePath);
+        if (detailTitleText != null)
+        {
+            detailTitleText.text = unlocked
+                ? entry.GetTitle(language)
+                : (language == Language.English ? LockedTitleEn : LockedTitleKo);
+        }
+        if (detailDescriptionText != null)
+        {
+            detailDescriptionText.text = unlocked
+                ? entry.GetDescription(language)
+                : (language == Language.English ? LockedDescriptionEn : LockedDescriptionKo);
+        }
+
+        Sprite sprite = LoadSprite(unlocked ? entry.imageResourcePath : LockedPlaceholderResource);
         if (detailImage != null)
         {
             detailImage.sprite = sprite;
+            detailImage.preserveAspect = true;
             detailImage.color = sprite != null ? Color.white : new Color(0.78f, 0.75f, 0.72f, 1f);
         }
 
+        if (galleryListPanel != null)
+            galleryListPanel.SetActive(false);
+        detailOverlay.transform.SetAsLastSibling();
         detailOverlay.SetActive(true);
     }
 
@@ -288,12 +352,61 @@ public class PhoneGalleryAppController : MonoBehaviour
         if (string.IsNullOrWhiteSpace(resourcePath))
             return null;
 
-        if (spriteCache.TryGetValue(resourcePath, out Sprite cached))
+        if (spriteCache.TryGetValue(resourcePath, out Sprite cached) && cached != null)
             return cached;
 
-        Sprite sprite = Resources.Load<Sprite>(resourcePath);
-        spriteCache[resourcePath] = sprite;
+        Sprite sprite = null;
+        string normalized = resourcePath.Trim();
+        int separatorIndex = normalized.IndexOf('#');
+        if (separatorIndex < 0)
+            separatorIndex = normalized.IndexOf('@');
+
+        if (separatorIndex > 0 && separatorIndex < normalized.Length - 1)
+        {
+            string sheetPath = normalized.Substring(0, separatorIndex).Trim();
+            string spriteName = normalized.Substring(separatorIndex + 1).Trim();
+            Sprite[] sprites = Resources.LoadAll<Sprite>(sheetPath);
+            for (int i = 0; i < sprites.Length; i++)
+            {
+                if (sprites[i] != null && string.Equals(sprites[i].name, spriteName, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    sprite = sprites[i];
+                    break;
+                }
+            }
+        }
+
+        if (sprite == null)
+            sprite = Resources.Load<Sprite>(normalized);
+
+        if (sprite != null)
+            spriteCache[resourcePath] = sprite;
         return sprite;
+    }
+
+    private bool IsEntryUnlocked(PhoneGalleryEntry entry)
+    {
+        if (entry == null)
+            return false;
+
+        if (PhoneGalleryService.EnsureExists().IsUnlocked(entry.entryId))
+            return true;
+
+        if (string.IsNullOrWhiteSpace(entry.unlockValue))
+            return entry.unlockType == GalleryUnlockType.None;
+
+        switch (entry.unlockType)
+        {
+            case GalleryUnlockType.None:
+                return true;
+            case GalleryUnlockType.Conversation:
+                return DialogueProgressState.HasCompletedConversation(entry.unlockValue);
+            case GalleryUnlockType.Flow:
+                return !string.IsNullOrEmpty(FlowContext.CurrentId) &&
+                       FlowContext.CurrentId.IndexOf(entry.unlockValue, System.StringComparison.OrdinalIgnoreCase) >= 0;
+            default:
+                return false;
+        }
     }
 
     private void ClearCards()
@@ -322,56 +435,43 @@ public class PhoneGalleryAppController : MonoBehaviour
         return null;
     }
 
-    private void CollectPhotoSlots()
-    {
-        photoSlots.Clear();
-
-        if (contentRoot == null)
-            return;
-
-        var buttons = contentRoot.GetComponentsInChildren<Button>(true);
-        for (int i = 0; i < buttons.Length; i++)
-        {
-            if (buttons[i] == photoTemplate)
-                continue;
-
-            if (buttons[i].transform.parent != contentRoot)
-                continue;
-
-            if (!buttons[i].name.StartsWith("Photo", System.StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            photoSlots.Add(buttons[i]);
-        }
-
-        photoSlots.Sort((a, b) => a.transform.GetSiblingIndex().CompareTo(b.transform.GetSiblingIndex()));
-    }
-
     private Button GetOrCreatePhotoSlot(int index)
     {
-        if (index < photoSlots.Count)
-            return photoSlots[index];
-
-        if (photoTemplate == null || contentRoot == null)
+        if (contentRoot == null)
             return null;
 
-        Button button = Instantiate(photoTemplate, contentRoot);
+        Button button = null;
+        if (photoTemplate != null)
+        {
+            button = Instantiate(photoTemplate, contentRoot);
+        }
+        else
+        {
+            button = CreateRuntimePhotoSlot(index);
+        }
+
+        if (button == null)
+            return null;
+
         button.gameObject.name = $"Photo_{index + 1}";
         button.gameObject.SetActive(true);
-        photoSlots.Add(button);
         return button;
     }
 
     private RectTransform FindContentRoot()
     {
-        if (galleryPanel == null)
+        Transform searchRoot = galleryListPanel != null ? galleryListPanel.transform : galleryPanel != null ? galleryPanel.transform : null;
+        if (searchRoot == null)
             return null;
 
-        var photo = FindPhotoTemplate();
-        if (photo != null && photo.transform.parent is RectTransform parent)
-            return parent;
+        var scrollRects = searchRoot.GetComponentsInChildren<ScrollRect>(true);
+        for (int i = 0; i < scrollRects.Length; i++)
+        {
+            if (scrollRects[i] != null && scrollRects[i].content != null)
+                return scrollRects[i].content;
+        }
 
-        var rects = galleryPanel.GetComponentsInChildren<RectTransform>(true);
+        var rects = searchRoot.GetComponentsInChildren<RectTransform>(true);
         for (int i = 0; i < rects.Length; i++)
         {
             if (rects[i].name == "Content")
@@ -383,10 +483,11 @@ public class PhoneGalleryAppController : MonoBehaviour
 
     private Button FindPhotoTemplate()
     {
-        if (galleryPanel == null)
+        Transform searchRoot = contentRoot != null ? contentRoot : galleryPanel != null ? galleryPanel.transform : null;
+        if (searchRoot == null)
             return null;
 
-        var buttons = galleryPanel.GetComponentsInChildren<Button>(true);
+        var buttons = searchRoot.GetComponentsInChildren<Button>(true);
         for (int i = 0; i < buttons.Length; i++)
         {
             if (buttons[i].name == "Photo")
@@ -426,8 +527,44 @@ public class PhoneGalleryAppController : MonoBehaviour
         return null;
     }
 
+    private static GameObject FindByNameUnder(Transform root, string targetName)
+    {
+        if (root == null || string.IsNullOrEmpty(targetName))
+            return null;
+
+        var all = root.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < all.Length; i++)
+        {
+            if (all[i].name == targetName)
+                return all[i].gameObject;
+        }
+
+        return null;
+    }
+
+    private static Image FindImage(Transform root, string childName)
+    {
+        if (root == null)
+            return null;
+
+        var images = root.GetComponentsInChildren<Image>(true);
+        for (int i = 0; i < images.Length; i++)
+        {
+            if (images[i] != null && images[i].name == childName)
+                return images[i];
+        }
+
+        return null;
+    }
+
     private TMP_FontAsset ResolveSharedFont()
     {
+        if (detailTitleLabel != null && detailTitleLabel.font != null)
+            return detailTitleLabel.font;
+
+        if (galleryTitleLabel != null && galleryTitleLabel.font != null)
+            return galleryTitleLabel.font;
+
         var texts = GetComponentsInChildren<TextMeshProUGUI>(true);
         for (int i = 0; i < texts.Length; i++)
         {
@@ -436,6 +573,18 @@ public class PhoneGalleryAppController : MonoBehaviour
         }
 
         return TMP_Settings.defaultFontAsset;
+    }
+
+    private Sprite ResolveDefaultCardBackground()
+    {
+        if (photoTemplate != null)
+        {
+            var image = photoTemplate.GetComponent<Image>();
+            if (image != null && image.sprite != null)
+                return image.sprite;
+        }
+
+        return Resources.GetBuiltinResource<Sprite>("UI/Skin/UISprite.psd");
     }
 
     private void EnsureGalleryButtonLabel()
@@ -480,6 +629,63 @@ public class PhoneGalleryAppController : MonoBehaviour
         return rect;
     }
 
+    private Button CreateRuntimePhotoSlot(int index)
+    {
+        if (contentRoot == null)
+            return null;
+
+        var cardRect = CreateRect($"Photo_{index + 1}", contentRoot, new Vector2(0f, 1f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+        cardRect.pivot = new Vector2(0.5f, 1f);
+        cardRect.sizeDelta = new Vector2(0f, 118f);
+        cardRect.anchoredPosition = new Vector2(0f, -126f * index);
+
+        var image = cardRect.gameObject.AddComponent<Image>();
+        image.sprite = defaultCardBackground;
+        image.type = defaultCardBackground != null ? Image.Type.Sliced : Image.Type.Simple;
+        image.color = new Color(0.96f, 0.93f, 0.9f, 0.95f);
+
+        var button = cardRect.gameObject.AddComponent<Button>();
+
+        var titleRect = CreateRect("PhotoName", cardRect, new Vector2(0f, 1f), new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
+        titleRect.pivot = new Vector2(0f, 1f);
+        titleRect.anchoredPosition = new Vector2(116f, -16f);
+        titleRect.sizeDelta = new Vector2(340f, 28f);
+        var title = titleRect.gameObject.AddComponent<TextMeshProUGUI>();
+        title.font = sharedFont;
+        title.fontSize = 18f;
+        title.fontStyle = FontStyles.Bold;
+        title.alignment = TextAlignmentOptions.TopLeft;
+        title.enableWordWrapping = false;
+        title.overflowMode = TextOverflowModes.Ellipsis;
+        title.raycastTarget = false;
+        title.color = new Color(0.12f, 0.12f, 0.16f, 1f);
+
+        var statusRect = CreateRect("PhotoStatus", cardRect, new Vector2(0f, 1f), new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
+        statusRect.pivot = new Vector2(0f, 1f);
+        statusRect.anchoredPosition = new Vector2(116f, -44f);
+        statusRect.sizeDelta = new Vector2(340f, 20f);
+        var status = statusRect.gameObject.AddComponent<TextMeshProUGUI>();
+        status.font = sharedFont;
+        status.fontSize = 14f;
+        status.fontStyle = FontStyles.Normal;
+        status.alignment = TextAlignmentOptions.TopLeft;
+        status.enableWordWrapping = false;
+        status.overflowMode = TextOverflowModes.Ellipsis;
+        status.raycastTarget = false;
+        status.color = new Color(0.34f, 0.34f, 0.4f, 1f);
+
+        var previewRect = CreateRect("Preview", cardRect, new Vector2(0f, 1f), new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
+        previewRect.pivot = new Vector2(0f, 1f);
+        previewRect.anchoredPosition = new Vector2(16f, -16f);
+        previewRect.sizeDelta = new Vector2(88f, 88f);
+        var previewImage = previewRect.gameObject.AddComponent<Image>();
+        previewImage.preserveAspect = true;
+        previewImage.raycastTarget = false;
+        previewImage.color = new Color(0.78f, 0.75f, 0.72f, 0.45f);
+
+        return button;
+    }
+
     private TextMeshProUGUI CreateLabel(string name, RectTransform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax, float fontSize, FontStyles style, TextAlignmentOptions alignment)
     {
         var rect = CreateRect(name, parent, anchorMin, anchorMax, offsetMin, offsetMax);
@@ -491,5 +697,42 @@ public class PhoneGalleryAppController : MonoBehaviour
         text.color = new Color(0.14f, 0.14f, 0.16f, 1f);
         text.enableWordWrapping = false;
         return text;
+    }
+
+    private void ShowGalleryList()
+    {
+        if (galleryListPanel != null)
+            galleryListPanel.SetActive(true);
+
+        HideDetailView();
+    }
+
+    private void HideDetailView()
+    {
+        if (detailOverlay != null)
+            detailOverlay.SetActive(false);
+    }
+
+    private void EnsurePointerOpenTrigger(GameObject target, PhoneGalleryEntry entry)
+    {
+        if (target == null || entry == null)
+            return;
+
+        var trigger = target.GetComponent<EventTrigger>();
+        if (trigger == null)
+            trigger = target.AddComponent<EventTrigger>();
+
+        trigger.triggers ??= new List<EventTrigger.Entry>();
+        trigger.triggers.Clear();
+
+        AddPointerEvent(trigger, EventTriggerType.PointerClick, () => ShowDetail(entry));
+        AddPointerEvent(trigger, EventTriggerType.PointerUp, () => ShowDetail(entry));
+    }
+
+    private static void AddPointerEvent(EventTrigger trigger, EventTriggerType eventType, UnityEngine.Events.UnityAction action)
+    {
+        var entry = new EventTrigger.Entry { eventID = eventType };
+        entry.callback.AddListener(_ => action());
+        trigger.triggers.Add(entry);
     }
 }

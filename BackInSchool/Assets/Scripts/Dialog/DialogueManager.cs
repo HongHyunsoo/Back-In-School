@@ -62,10 +62,12 @@ public class DialogueManager : MonoBehaviour
     private readonly List<DialogueLinePresentation> pendingLinePresentations = new List<DialogueLinePresentation>();
     private readonly List<DialogueLinePresentation> activeLinePresentations = new List<DialogueLinePresentation>();
     private int currentLineIndex = -1;
-    private PlayableGraph presentationGraph;
-    private Animator activePresentationAnimator;
-    private AnimationClip activePresentationClip;
-    private string activePresentationTrigger = string.Empty;
+    private readonly Dictionary<Animator, PlayableGraph> presentationGraphs = new Dictionary<Animator, PlayableGraph>();
+    private readonly Dictionary<Animator, AnimationClipPlayable> activePresentationPlayables = new Dictionary<Animator, AnimationClipPlayable>();
+    private readonly Dictionary<Animator, AnimationClip> activePresentationClips = new Dictionary<Animator, AnimationClip>();
+    private readonly Dictionary<Animator, string> activePresentationTriggers = new Dictionary<Animator, string>();
+    private readonly Dictionary<Animator, DialogueCharacterPresentation> suspendedDefaultSources = new Dictionary<Animator, DialogueCharacterPresentation>();
+    private readonly HashSet<Animator> currentLinePresentationAnimators = new HashSet<Animator>();
 
     private void StopPlayerMotionImmediate()
     {
@@ -552,20 +554,15 @@ public class DialogueManager : MonoBehaviour
             return;
         }
 
-        if (currentLine != null && TryTakeAfterLinePresentation(currentLine, currentLineIndex, out DialogueLinePresentation afterPresentation))
-        {
-            StartCoroutine(PlayAfterLinePresentationThenContinue(afterPresentation));
-            return;
-        }
-
         currentLine = lines.Dequeue();
         currentLineIndex++;
         DialogueLineShown?.Invoke(CurrentConversationId, currentLine.lineID);
-        string currentSpeakerID = currentLine.speakerID;
-        if (string.Equals(CurrentConversationId, "DAY1_LUNCH_MING", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(CurrentConversationId, "DAY1_MOR_ADULT", System.StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(currentLine.lineID, "DAY1_MOR_ADULT_12", System.StringComparison.OrdinalIgnoreCase))
         {
-            Debug.Log($"[DialogueDebug] enter line idx={currentLineIndex} lineID={currentLine.lineID} speaker={currentSpeakerID}");
+            PhoneGalleryService.UnlockStatic("DAY1_MOR_ADULT_PHOTO");
         }
+        string currentSpeakerID = currentLine.speakerID;
         // STORY line-level set switching: lineID -> setId
         if (SceneManager.GetActiveScene().name == "STORY")
         {
@@ -594,21 +591,24 @@ public class DialogueManager : MonoBehaviour
 
         DialogueCharacterPresentation speakerPresentationSource = ResolveSpeakerPresentationComponent(currentSpeaker);
         DialogueLinePresentation speakerDefaults = speakerPresentationSource != null ? speakerPresentationSource.ToPresentation() : null;
-        DialogueLinePresentation linePresentation = ResolveLinePresentation(currentLine, currentLineIndex);
-        DialogueLinePresentation presentation = MergePresentations(speakerDefaults, linePresentation);
-        Transform presentationTarget = ResolvePresentationTarget(presentation, currentSpeaker);
-        DialogueCharacterPresentation presentationTargetSource = ResolveSpeakerPresentationComponent(presentationTarget);
+        List<DialogueLinePresentation> matchingPresentations = ResolveLinePresentations(currentLine, currentLineIndex);
+        DialogueLinePresentation speakerSpecificPresentation = ResolveSpeakerSpecificPresentation(matchingPresentations, currentSpeakerID);
+        DialogueLinePresentation speakerPresentation = MergePresentations(speakerDefaults, speakerSpecificPresentation);
+
+        currentLinePresentationAnimators.Clear();
 
         // 애니메이션 재생
-        string animationTrigger = presentation != null && !string.IsNullOrEmpty(presentation.animationTrigger)
-            ? presentation.animationTrigger
+        string animationTrigger = speakerPresentation != null && !string.IsNullOrEmpty(speakerPresentation.animationTrigger)
+            ? speakerPresentation.animationTrigger
             : currentLine.animationTrigger;
-        AnimationClip presentationClip = presentation != null ? presentation.animationClip : null;
-        PlayPresentationVisuals(presentationTarget, presentationTargetSource, presentationClip, animationTrigger);
+        AnimationClip presentationClip = ResolvePresentationAnimationClip(speakerPresentation, currentSpeaker);
+        PlayPresentationVisuals(currentSpeaker, speakerPresentationSource, presentationClip, animationTrigger);
+        PlayAdditionalLinePresentations(matchingPresentations, speakerSpecificPresentation, currentSpeaker, currentSpeakerID);
+        RestoreInactivePresentationTargets();
 
         // 소리 이펙트 재생
-        string soundEffectName = presentation != null && !string.IsNullOrEmpty(presentation.soundEffectName)
-            ? presentation.soundEffectName
+        string soundEffectName = speakerPresentation != null && !string.IsNullOrEmpty(speakerPresentation.soundEffectName)
+            ? speakerPresentation.soundEffectName
             : currentLine.soundEffectName;
         if (!string.IsNullOrEmpty(soundEffectName))
         {
@@ -625,7 +625,7 @@ public class DialogueManager : MonoBehaviour
 
         // 대사 표시
         string translatedSentence = LocalizationManager.Instance.GetLine(currentLine.lineID);
-        float beforeTextDelaySeconds = presentation != null ? Mathf.Max(0f, presentation.beforeTextDelaySeconds) : 0f;
+        float beforeTextDelaySeconds = GetLinePresentationDelaySeconds(speakerPresentation, matchingPresentations, speakerSpecificPresentation);
         StartCoroutine(RunCommandsThenType(translatedSentence, beforeTextDelaySeconds, currentSpeaker, currentSpeakerID));
 
     }
@@ -722,6 +722,9 @@ public class DialogueManager : MonoBehaviour
                 DialogueConversationCompleted?.Invoke(completedConversationId);
             }
 
+            if (TemporaryStorySceneFlow.HasPendingStory())
+                return;
+
             if (FlowManager.Instance != null)
                 FlowManager.Instance.CompleteCurrentEvent(0);
             else
@@ -759,22 +762,22 @@ public class DialogueManager : MonoBehaviour
                 lineID = src.lineID,
                 lineIndexStart = src.lineIndexStart,
                 lineIndexEnd = src.lineIndexEnd,
-                afterLineID = src.afterLineID,
-                afterLineIndexStart = src.afterLineIndexStart,
-                afterLineIndexEnd = src.afterLineIndexEnd,
                 targetCharacterId = src.targetCharacterId,
                 animationTrigger = src.animationTrigger,
                 animationClip = src.animationClip,
+                sneakersAnimationClip = src.sneakersAnimationClip,
                 soundEffectName = src.soundEffectName,
                 beforeTextDelaySeconds = Mathf.Max(0f, src.beforeTextDelaySeconds)
             });
         }
     }
 
-    private DialogueLinePresentation ResolveLinePresentation(DialogueLine line, int lineIndex)
+    private List<DialogueLinePresentation> ResolveLinePresentations(DialogueLine line, int lineIndex)
     {
+        var matches = new List<DialogueLinePresentation>();
+
         if (activeLinePresentations.Count == 0)
-            return null;
+            return matches;
 
         int lineNumber = lineIndex + 1;
 
@@ -784,24 +787,13 @@ public class DialogueManager : MonoBehaviour
             if (p == null)
                 continue;
 
-            if (MatchesLineId(p, line.lineID))
-                return p;
+            bool matchedById = MatchesLineId(p, line.lineID);
+            bool matchedByRange = MatchesLineIndexRange(p, lineNumber);
+            if (matchedById || matchedByRange)
+                matches.Add(p);
         }
 
-        for (int i = 0; i < activeLinePresentations.Count; i++)
-        {
-            DialogueLinePresentation p = activeLinePresentations[i];
-            if (p == null)
-                continue;
-
-            if (!string.IsNullOrEmpty(p.lineID))
-                continue;
-
-            if (MatchesLineIndexRange(p, lineNumber))
-                return p;
-        }
-
-        return null;
+        return matches;
     }
 
     private DialogueCharacterPresentation ResolveSpeakerPresentationComponent(Transform speaker)
@@ -862,12 +854,10 @@ public class DialogueManager : MonoBehaviour
             lineID = !string.IsNullOrEmpty(specific.lineID) ? specific.lineID : defaults.lineID,
             lineIndexStart = specific.lineIndexStart >= 0 ? specific.lineIndexStart : defaults.lineIndexStart,
             lineIndexEnd = specific.lineIndexEnd >= 0 ? specific.lineIndexEnd : defaults.lineIndexEnd,
-            afterLineID = !string.IsNullOrEmpty(specific.afterLineID) ? specific.afterLineID : defaults.afterLineID,
-            afterLineIndexStart = specific.afterLineIndexStart >= 0 ? specific.afterLineIndexStart : defaults.afterLineIndexStart,
-            afterLineIndexEnd = specific.afterLineIndexEnd >= 0 ? specific.afterLineIndexEnd : defaults.afterLineIndexEnd,
             targetCharacterId = !string.IsNullOrEmpty(specific.targetCharacterId) ? specific.targetCharacterId : defaults.targetCharacterId,
             animationTrigger = !string.IsNullOrEmpty(specific.animationTrigger) ? specific.animationTrigger : defaults.animationTrigger,
             animationClip = specific.animationClip != null ? specific.animationClip : defaults.animationClip,
+            sneakersAnimationClip = specific.sneakersAnimationClip != null ? specific.sneakersAnimationClip : defaults.sneakersAnimationClip,
             soundEffectName = !string.IsNullOrEmpty(specific.soundEffectName) ? specific.soundEffectName : defaults.soundEffectName,
             beforeTextDelaySeconds = specific.beforeTextDelaySeconds > 0f ? specific.beforeTextDelaySeconds : defaults.beforeTextDelaySeconds
         };
@@ -875,74 +865,102 @@ public class DialogueManager : MonoBehaviour
 
     private Transform ResolvePresentationTarget(DialogueLinePresentation presentation, Transform fallbackTarget)
     {
-        if (presentation == null || string.IsNullOrEmpty(presentation.targetCharacterId))
+        if (presentation == null)
+            return fallbackTarget;
+
+        if (string.IsNullOrEmpty(presentation.targetCharacterId))
             return fallbackTarget;
 
         Transform resolved = ResolveSpeakerTransform(presentation.targetCharacterId);
-        return resolved != null ? resolved : fallbackTarget;
+        if (resolved != null)
+            return resolved;
+
+        Debug.LogWarning($"[DialogueManager] Presentation target not found for character ID '{presentation.targetCharacterId}'. Conversation='{CurrentConversationId}', Line='{CurrentLineId}'.");
+        return null;
     }
 
-    private bool TryTakeAfterLinePresentation(DialogueLine line, int lineIndex, out DialogueLinePresentation presentation)
+    private DialogueLinePresentation ResolveSpeakerSpecificPresentation(List<DialogueLinePresentation> matches, string speakerId)
     {
-        presentation = null;
-        if (line == null || activeLinePresentations.Count == 0)
-            return false;
+        if (matches == null || matches.Count == 0)
+            return null;
 
-        int lineNumber = lineIndex + 1;
-
-        for (int i = 0; i < activeLinePresentations.Count; i++)
+        DialogueLinePresentation best = null;
+        for (int i = 0; i < matches.Count; i++)
         {
-            DialogueLinePresentation candidate = activeLinePresentations[i];
-            if (candidate == null)
+            DialogueLinePresentation p = matches[i];
+            if (p == null)
                 continue;
 
-            bool matchesById = MatchesAfterLineId(candidate, line.lineID);
-            bool matchesByIndex = MatchesAfterLineIndexRange(candidate, lineNumber);
-
-            if (!matchesById && !matchesByIndex)
-                continue;
-
-            presentation = candidate;
-            activeLinePresentations.RemoveAt(i);
-            if (string.Equals(CurrentConversationId, "DAY1_LUNCH_MING", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(p.targetCharacterId) ||
+                string.Equals(p.targetCharacterId, speakerId, StringComparison.OrdinalIgnoreCase))
             {
-                Debug.Log($"[DialogueDebug] after-line trigger from lineID={line.lineID} idx={lineIndex} -> target={candidate.targetCharacterId} clip={(candidate.animationClip != null ? candidate.animationClip.name : "(none)")}");
+                if (IsMoreSpecificPresentation(p, best))
+                    best = p;
             }
-            return true;
         }
 
-        return false;
+        return best;
     }
 
-    private IEnumerator PlayAfterLinePresentationThenContinue(DialogueLinePresentation presentation)
+    private void PlayAdditionalLinePresentations(List<DialogueLinePresentation> matches, DialogueLinePresentation speakerSpecificPresentation, Transform currentSpeakerTarget, string currentSpeakerId)
     {
-        isBusy = true;
+        if (matches == null || matches.Count == 0)
+            return;
 
-        Transform target = ResolvePresentationTarget(presentation, currentSpeaker != null ? currentSpeaker : currentNpcSpeaker);
-        DialogueCharacterPresentation targetSource = ResolveSpeakerPresentationComponent(target);
-        string animationTrigger = presentation != null ? presentation.animationTrigger : string.Empty;
-        AnimationClip presentationClip = presentation != null ? presentation.animationClip : null;
+        Dictionary<string, DialogueLinePresentation> bestByTarget = new Dictionary<string, DialogueLinePresentation>(StringComparer.OrdinalIgnoreCase);
 
-        if (string.Equals(CurrentConversationId, "DAY1_LUNCH_MING", StringComparison.OrdinalIgnoreCase))
+        for (int i = 0; i < matches.Count; i++)
         {
-            string targetName = target != null ? target.name : "(null)";
-            Debug.Log($"[DialogueDebug] play after-line target={targetName} trigger={animationTrigger} clip={(presentationClip != null ? presentationClip.name : "(none)")}");
+            DialogueLinePresentation presentation = matches[i];
+            if (presentation == null)
+                continue;
+
+            if (ReferenceEquals(presentation, speakerSpecificPresentation))
+                continue;
+
+            if (string.IsNullOrEmpty(presentation.targetCharacterId))
+                continue;
+
+            if (!string.IsNullOrEmpty(currentSpeakerId) &&
+                string.Equals(presentation.targetCharacterId, currentSpeakerId, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (!bestByTarget.TryGetValue(presentation.targetCharacterId, out DialogueLinePresentation currentBest) ||
+                IsMoreSpecificPresentation(presentation, currentBest))
+            {
+                bestByTarget[presentation.targetCharacterId] = presentation;
+            }
         }
 
-        PlayPresentationVisuals(target, targetSource, presentationClip, animationTrigger);
-        PlayPresentationSound(presentation);
+        foreach (var pair in bestByTarget)
+        {
+            DialogueLinePresentation presentation = pair.Value;
+            Transform target = ResolvePresentationTarget(presentation, currentSpeakerTarget);
+            if (target == null)
+                continue;
 
-        float delaySeconds = presentation != null ? Mathf.Max(0f, presentation.beforeTextDelaySeconds) : 0f;
-        float clipSeconds = presentationClip != null ? Mathf.Max(0f, presentationClip.length) : 0f;
-        float waitSeconds = Mathf.Max(delaySeconds, clipSeconds);
-        if (waitSeconds > 0f)
-            yield return new WaitForSeconds(waitSeconds);
+            DialogueCharacterPresentation targetSource = ResolveSpeakerPresentationComponent(target);
+            AnimationClip resolvedClip = ResolvePresentationAnimationClip(presentation, target);
+            PlayPresentationVisuals(target, targetSource, resolvedClip, presentation.animationTrigger);
+        }
+    }
 
-        // After-line insert animations should finish before the next spoken line begins.
-        StopPresentationAnimationImmediate();
+    private static float GetLinePresentationDelaySeconds(DialogueLinePresentation speakerPresentation, List<DialogueLinePresentation> matches, DialogueLinePresentation speakerSpecificPresentation)
+    {
+        float delay = speakerPresentation != null ? Mathf.Max(0f, speakerPresentation.beforeTextDelaySeconds) : 0f;
+        if (matches == null)
+            return delay;
 
-        isBusy = false;
-        DisplayNextSentence();
+        for (int i = 0; i < matches.Count; i++)
+        {
+            DialogueLinePresentation presentation = matches[i];
+            if (presentation == null || ReferenceEquals(presentation, speakerSpecificPresentation))
+                continue;
+
+            delay = Mathf.Max(delay, Mathf.Max(0f, presentation.beforeTextDelaySeconds));
+        }
+
+        return delay;
     }
 
     private void PlayPresentationVisuals(Transform target, DialogueCharacterPresentation targetSource, AnimationClip presentationClip, string animationTrigger)
@@ -954,27 +972,42 @@ public class DialogueManager : MonoBehaviour
         if (animator == null)
             return;
 
+        bool hasExplicitPresentation = presentationClip != null || !string.IsNullOrEmpty(animationTrigger);
+        if (!hasExplicitPresentation)
+        {
+            currentLinePresentationAnimators.Remove(animator);
+            RestoreAnimatorToDefault(animator);
+            return;
+        }
+
+        currentLinePresentationAnimators.Add(animator);
+
         if (targetSource != null && (presentationClip != null || !string.IsNullOrEmpty(animationTrigger)))
+        {
             targetSource.SuspendDefaultPresentation();
+            suspendedDefaultSources[animator] = targetSource;
+        }
 
         if (presentationClip != null)
         {
-            if (activePresentationAnimator == animator && activePresentationClip == presentationClip)
+            if (activePresentationClips.TryGetValue(animator, out AnimationClip activeClip) &&
+                activeClip == presentationClip &&
+                IsPresentationClipStillPlaying(animator))
+            {
                 return;
+            }
 
             PlayPresentationClip(animator, presentationClip);
-            activePresentationTrigger = string.Empty;
         }
         else if (!string.IsNullOrEmpty(animationTrigger))
         {
-            if (activePresentationAnimator == animator &&
-                string.Equals(activePresentationTrigger, animationTrigger, StringComparison.Ordinal))
+            if (activePresentationTriggers.TryGetValue(animator, out string activeTrigger) &&
+                string.Equals(activeTrigger, animationTrigger, StringComparison.Ordinal))
                 return;
 
+            StopPresentationAnimationForAnimator(animator);
             animator.SetTrigger(animationTrigger);
-            activePresentationAnimator = animator;
-            activePresentationClip = null;
-            activePresentationTrigger = animationTrigger;
+            activePresentationTriggers[animator] = animationTrigger;
         }
     }
 
@@ -994,33 +1027,121 @@ public class DialogueManager : MonoBehaviour
         if (animator == null || clip == null)
             return;
 
-        StopPresentationAnimationImmediate();
+        StopPresentationAnimationForAnimator(animator);
 
-        presentationGraph = PlayableGraph.Create("DialoguePresentationClip");
-        var output = AnimationPlayableOutput.Create(presentationGraph, "DialoguePresentation", animator);
-        var playable = AnimationClipPlayable.Create(presentationGraph, clip);
+        PlayableGraph graph = PlayableGraph.Create("DialoguePresentationClip");
+        var output = AnimationPlayableOutput.Create(graph, "DialoguePresentation", animator);
+        var playable = AnimationClipPlayable.Create(graph, clip);
         playable.SetApplyFootIK(false);
         playable.SetApplyPlayableIK(false);
         output.SetSourcePlayable(playable);
-        presentationGraph.Play();
-        activePresentationAnimator = animator;
-        activePresentationClip = clip;
-        activePresentationTrigger = string.Empty;
+        graph.Play();
+        presentationGraphs[animator] = graph;
+        activePresentationPlayables[animator] = playable;
+        activePresentationClips[animator] = clip;
+        activePresentationTriggers.Remove(animator);
 
     }
 
     private void StopPresentationAnimationImmediate()
     {
-        if (presentationGraph.IsValid())
-            presentationGraph.Destroy();
+        foreach (var pair in presentationGraphs)
+        {
+            PlayableGraph graph = pair.Value;
+            if (graph.IsValid())
+                graph.Destroy();
+        }
 
-        activePresentationAnimator = null;
-        activePresentationClip = null;
-        activePresentationTrigger = string.Empty;
+        presentationGraphs.Clear();
+        activePresentationPlayables.Clear();
+        activePresentationClips.Clear();
+        activePresentationTriggers.Clear();
+        suspendedDefaultSources.Clear();
+        currentLinePresentationAnimators.Clear();
 
         DialogueCharacterPresentation[] defaults = FindObjectsByType<DialogueCharacterPresentation>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         for (int i = 0; i < defaults.Length; i++)
             defaults[i].ResumeDefaultPresentation();
+    }
+
+    private void StopPresentationAnimationForAnimator(Animator animator)
+    {
+        if (animator == null)
+            return;
+
+        if (presentationGraphs.TryGetValue(animator, out PlayableGraph graph) && graph.IsValid())
+            graph.Destroy();
+
+        presentationGraphs.Remove(animator);
+        activePresentationPlayables.Remove(animator);
+        activePresentationClips.Remove(animator);
+        activePresentationTriggers.Remove(animator);
+    }
+
+    private void RestoreInactivePresentationTargets()
+    {
+        if (presentationGraphs.Count == 0 && suspendedDefaultSources.Count == 0)
+            return;
+
+        List<Animator> toRestore = new List<Animator>();
+
+        foreach (var pair in presentationGraphs)
+        {
+            Animator animator = pair.Key;
+            if (animator == null || currentLinePresentationAnimators.Contains(animator))
+                continue;
+
+            toRestore.Add(animator);
+        }
+
+        foreach (var pair in suspendedDefaultSources)
+        {
+            Animator animator = pair.Key;
+            if (animator == null || currentLinePresentationAnimators.Contains(animator) || toRestore.Contains(animator))
+                continue;
+
+            toRestore.Add(animator);
+        }
+
+        for (int i = 0; i < toRestore.Count; i++)
+            RestoreAnimatorToDefault(toRestore[i]);
+    }
+
+    private void RestoreAnimatorToDefault(Animator animator)
+    {
+        if (animator == null)
+            return;
+
+        StopPresentationAnimationForAnimator(animator);
+
+        if (suspendedDefaultSources.TryGetValue(animator, out DialogueCharacterPresentation source) && source != null)
+            source.ResumeDefaultPresentation();
+
+        suspendedDefaultSources.Remove(animator);
+    }
+
+    private bool IsPresentationClipStillPlaying(Animator animator)
+    {
+        if (animator == null)
+            return false;
+
+        if (!activePresentationPlayables.TryGetValue(animator, out AnimationClipPlayable playable) || !playable.IsValid())
+            return false;
+
+        if (!activePresentationClips.TryGetValue(animator, out AnimationClip clip) || clip == null)
+            return false;
+
+        if (clip.isLooping)
+            return true;
+
+        double duration = playable.GetDuration();
+        if (duration <= 0d)
+            duration = clip.length;
+
+        if (duration <= 0d)
+            return true;
+
+        return playable.GetTime() < duration - 0.01d;
     }
 
     private static bool MatchesLineId(DialogueLinePresentation presentation, string lineId)
@@ -1030,18 +1151,6 @@ public class DialogueManager : MonoBehaviour
 
         if (!string.IsNullOrEmpty(presentation.lineID) &&
             string.Equals(presentation.lineID, lineId, StringComparison.OrdinalIgnoreCase))
-            return true;
-
-        return false;
-    }
-
-    private static bool MatchesAfterLineId(DialogueLinePresentation presentation, string lineId)
-    {
-        if (presentation == null || string.IsNullOrEmpty(lineId))
-            return false;
-
-        if (!string.IsNullOrEmpty(presentation.afterLineID) &&
-            string.Equals(presentation.afterLineID, lineId, StringComparison.OrdinalIgnoreCase))
             return true;
 
         return false;
@@ -1058,15 +1167,67 @@ public class DialogueManager : MonoBehaviour
         return lineIndex >= presentation.lineIndexStart && lineIndex <= presentation.lineIndexEnd;
     }
 
-    private static bool MatchesAfterLineIndexRange(DialogueLinePresentation presentation, int lineIndex)
+    private static bool IsMoreSpecificPresentation(DialogueLinePresentation candidate, DialogueLinePresentation current)
     {
-        if (presentation == null || lineIndex < 0)
+        if (candidate == null)
             return false;
+        if (current == null)
+            return true;
 
-        if (presentation.afterLineIndexStart < 0 || presentation.afterLineIndexEnd < 0)
-            return false;
+        int candidateScore = GetPresentationSpecificityScore(candidate);
+        int currentScore = GetPresentationSpecificityScore(current);
+        return candidateScore >= currentScore;
+    }
 
-        return lineIndex >= presentation.afterLineIndexStart && lineIndex <= presentation.afterLineIndexEnd;
+    private static int GetPresentationSpecificityScore(DialogueLinePresentation presentation)
+    {
+        if (presentation == null)
+            return int.MinValue;
+
+        int score = 0;
+
+        if (!string.IsNullOrEmpty(presentation.lineID))
+            score += 10000;
+
+        if (presentation.lineIndexStart >= 0 && presentation.lineIndexEnd >= 0)
+        {
+            int width = Mathf.Max(0, presentation.lineIndexEnd - presentation.lineIndexStart);
+            score += 5000 - Mathf.Min(width, 4999);
+        }
+
+        if (!string.IsNullOrEmpty(presentation.targetCharacterId))
+            score += 1000;
+
+        if (presentation.animationClip != null)
+            score += 100;
+
+        if (!string.IsNullOrEmpty(presentation.animationTrigger))
+            score += 10;
+
+        return score;
+    }
+
+    private AnimationClip ResolvePresentationAnimationClip(DialogueLinePresentation presentation, Transform target)
+    {
+        if (presentation == null)
+            return null;
+
+        bool usesSlippers = IsTargetUsingSlippers(target, presentation.targetCharacterId);
+        if (!usesSlippers && presentation.sneakersAnimationClip != null)
+            return presentation.sneakersAnimationClip;
+
+        return presentation.animationClip;
+    }
+
+    private bool IsTargetUsingSlippers(Transform target, string targetCharacterId)
+    {
+        if (target != null && target.GetComponent<PlayerShoeVisual>() != null)
+            return FlowManager.Instance != null && FlowManager.Instance.IsWearingSlippers;
+
+        if (!string.IsNullOrEmpty(targetCharacterId) && IsPlayerSpeakerId(targetCharacterId))
+            return FlowManager.Instance != null && FlowManager.Instance.IsWearingSlippers;
+
+        return false;
     }
 }
 

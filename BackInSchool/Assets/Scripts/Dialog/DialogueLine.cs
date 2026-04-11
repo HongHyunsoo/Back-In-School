@@ -30,15 +30,6 @@ public class DialogueLinePresentation
     [Tooltip("Inclusive end line order (0-based) for applying this presentation to a line range.")]
     public int lineIndexEnd = -1;
 
-    [Tooltip("Optional line ID that triggers this presentation after that line completes.")]
-    public string afterLineID;
-
-    [Tooltip("Inclusive start completed line order (0-based) for after-line trigger ranges.")]
-    public int afterLineIndexStart = -1;
-
-    [Tooltip("Inclusive end completed line order (0-based) for after-line trigger ranges.")]
-    public int afterLineIndexEnd = -1;
-
     [Tooltip("Optional character ID that should receive this presentation. Leave empty to use the speaking character.")]
     public string targetCharacterId;
 
@@ -47,6 +38,9 @@ public class DialogueLinePresentation
 
     [Tooltip("Optional direct animation clip to play for this line.")]
     public AnimationClip animationClip;
+
+    [Tooltip("Optional animation clip used when the target character is wearing sneakers / not using slippers.")]
+    public AnimationClip sneakersAnimationClip;
 
     [Tooltip("Optional sound effect override played for this line.")]
     public string soundEffectName;

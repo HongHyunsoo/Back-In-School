@@ -1,18 +1,30 @@
-﻿using UnityEngine;
+using System.Collections;
+using UnityEngine;
 
 public class StorySceneEntry : MonoBehaviour
 {
-    void Start()
+    private string temporaryConversationId = string.Empty;
+    private StoryDialoguePresentationCatalog presentationCatalog;
+
+    private void OnDisable()
     {
-        // STORY 이벤트가 아니면 아무것도 안 함
-        if (PlayerPrefs.GetString("FLOW_TYPE", "") != "STORY") return;
+        DialogueManager.DialogueConversationCompleted -= HandleTemporaryConversationCompleted;
+    }
+
+    private void Start()
+    {
+        presentationCatalog = GetComponent<StoryDialoguePresentationCatalog>();
+
+        if (TryStartTemporaryStoryConversation())
+            return;
+
+        if (PlayerPrefs.GetString("FLOW_TYPE", "") != "STORY")
+            return;
 
         string convoId = PlayerPrefs.GetString("FLOW_ID", "");
-
-        // ✅ 아직 대화ID 없으면 개발 중이니까 그냥 스킵해서 다음으로
         if (string.IsNullOrEmpty(convoId))
         {
-            Debug.LogWarning("[StorySceneEntry] STORY인데 FLOW_ID가 비어있음 → 자동 스킵");
+            Debug.LogWarning("[StorySceneEntry] STORY but FLOW_ID is empty, auto-skipping.");
             FlowManager.Instance?.CompleteCurrentEvent(0);
             return;
         }
@@ -20,23 +32,83 @@ public class StorySceneEntry : MonoBehaviour
         var dm = FindAnyObjectByType<DialogueManager>();
         if (dm == null)
         {
-            Debug.LogError("[StorySceneEntry] DialogueManager 없음 → 자동 스킵");
+            Debug.LogError("[StorySceneEntry] DialogueManager missing, auto-skipping.");
             FlowManager.Instance?.CompleteCurrentEvent(0);
             return;
         }
 
-        // ✅ CSV에 없는 ID면 멈추지 말고 스킵
         var convo = LocalizationManager.Instance != null
             ? LocalizationManager.Instance.GetConversation(convoId)
             : null;
 
         if (convo == null || convo.Count == 0)
         {
-            Debug.LogWarning($"[StorySceneEntry] '{convoId}' 대화 없음 → 자동 스킵");
+            Debug.LogWarning($"[StorySceneEntry] Conversation '{convoId}' missing, auto-skipping.");
             FlowManager.Instance?.CompleteCurrentEvent(0);
             return;
         }
 
+        ApplyStoryPresentations(dm, convoId);
         dm.StartDialogue(convoId, null);
+    }
+
+    private bool TryStartTemporaryStoryConversation()
+    {
+        if (!TemporaryStorySceneFlow.HasPendingStory())
+            return false;
+
+        temporaryConversationId = TemporaryStorySceneFlow.GetPendingConversationId();
+        if (string.IsNullOrEmpty(temporaryConversationId))
+        {
+            TemporaryStorySceneFlow.ReturnToStoredScene();
+            return true;
+        }
+
+        var dm = FindAnyObjectByType<DialogueManager>();
+        if (dm == null)
+        {
+            Debug.LogError("[StorySceneEntry] Temporary story requested but DialogueManager is missing.");
+            TemporaryStorySceneFlow.ReturnToStoredScene();
+            return true;
+        }
+
+        var convo = LocalizationManager.Instance != null
+            ? LocalizationManager.Instance.GetConversation(temporaryConversationId)
+            : null;
+        if (convo == null || convo.Count == 0)
+        {
+            Debug.LogWarning($"[StorySceneEntry] Temporary story '{temporaryConversationId}' is missing.");
+            TemporaryStorySceneFlow.ReturnToStoredScene();
+            return true;
+        }
+
+        DialogueManager.DialogueConversationCompleted -= HandleTemporaryConversationCompleted;
+        DialogueManager.DialogueConversationCompleted += HandleTemporaryConversationCompleted;
+        ApplyStoryPresentations(dm, temporaryConversationId);
+        dm.StartDialogue(temporaryConversationId, null);
+        return true;
+    }
+
+    private void ApplyStoryPresentations(DialogueManager dm, string conversationId)
+    {
+        if (dm == null || presentationCatalog == null)
+            return;
+
+        dm.SetUpcomingLinePresentations(presentationCatalog.GetPresentations(conversationId));
+    }
+
+    private void HandleTemporaryConversationCompleted(string conversationId)
+    {
+        if (!string.Equals(conversationId, temporaryConversationId, System.StringComparison.OrdinalIgnoreCase))
+            return;
+
+        DialogueManager.DialogueConversationCompleted -= HandleTemporaryConversationCompleted;
+        StartCoroutine(CoReturnFromTemporaryStory());
+    }
+
+    private IEnumerator CoReturnFromTemporaryStory()
+    {
+        yield return null;
+        TemporaryStorySceneFlow.ReturnToStoredScene();
     }
 }

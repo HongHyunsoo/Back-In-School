@@ -118,12 +118,10 @@ public class DialogueCharacterPresentation : MonoBehaviour
             lineID = string.Empty,
             lineIndexStart = -1,
             lineIndexEnd = -1,
-            afterLineID = string.Empty,
-            afterLineIndexStart = -1,
-            afterLineIndexEnd = -1,
             targetCharacterId = string.Empty,
             animationTrigger = defaultAnimationTrigger,
             animationClip = defaultAnimationClip,
+            sneakersAnimationClip = null,
             soundEffectName = defaultSoundEffectName,
             beforeTextDelaySeconds = Mathf.Max(0f, defaultBeforeTextDelaySeconds)
         };
