@@ -29,6 +29,12 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
     [SerializeField] private float patrolPauseMaxSeconds = 1.25f;
     [SerializeField] private bool flipSpriteWithDirection = true;
 
+    [Header("Patrol Animation")]
+    [SerializeField] private Animator patrolAnimator;
+    [SerializeField] private string idleStateName = "HomeRoom_Idle";
+    [SerializeField] private string walkStateName = "HomeRoom_Walk";
+    [SerializeField] private float animationBlendSeconds = 0.08f;
+
     [Header("Bubble")]
     [SerializeField] private SpeechBubbleUI warningBubbleTemplate;
     [SerializeField] private Vector3 bubbleWorldOffset = new Vector3(0f, 1.25f, 0f);
@@ -67,6 +73,9 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
     private bool hasPatrolTarget;
     private float patrolResumeTime;
     private float lastPatrolDirectionX = 1f;
+    private int currentPatrolStateHash;
+    private int idleStateHash;
+    private int walkStateHash;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics()
@@ -79,9 +88,13 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
     {
         EnsureDetectionTrigger();
         cachedSpriteRenderer = GetComponent<SpriteRenderer>() ?? GetComponentInChildren<SpriteRenderer>();
+        patrolAnimator = ResolvePatrolAnimator();
+        idleStateHash = string.IsNullOrEmpty(idleStateName) ? 0 : Animator.StringToHash(idleStateName);
+        walkStateHash = string.IsNullOrEmpty(walkStateName) ? 0 : Animator.StringToHash(walkStateName);
         patrolOriginLocalPosition = transform.localPosition;
         patrolOriginInitialized = true;
         ResetPatrolState(true);
+        ApplyPatrolAnimation(false, true);
     }
 
     private void Update()
@@ -91,6 +104,7 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
             playerInRange = false;
             consumedCurrentRun = false;
             HideBubble();
+            ApplyPatrolAnimation(false);
             return;
         }
 
@@ -329,7 +343,10 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
     private void TickPatrol()
     {
         if (!enablePatrol)
+        {
+            ApplyPatrolAnimation(false);
             return;
+        }
 
         if (!patrolOriginInitialized)
         {
@@ -344,7 +361,10 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
         if (!hasPatrolTarget)
         {
             if (Time.time < patrolResumeTime)
+            {
+                ApplyPatrolAnimation(false);
                 return;
+            }
 
             patrolTargetLocalX = PickNextPatrolTargetX(currentX);
             hasPatrolTarget = true;
@@ -354,18 +374,20 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
         float deltaX = nextX - currentX;
         local.x = nextX;
         transform.localPosition = local;
+        ApplyPatrolAnimation(Mathf.Abs(deltaX) > 0.0001f);
 
         if (flipSpriteWithDirection && cachedSpriteRenderer != null)
         {
             if (Mathf.Abs(deltaX) > 0.0001f)
                 lastPatrolDirectionX = deltaX;
 
-            cachedSpriteRenderer.flipX = lastPatrolDirectionX < 0f;
+            cachedSpriteRenderer.flipX = lastPatrolDirectionX > 0f;
         }
 
         if (Mathf.Abs(nextX - patrolTargetLocalX) <= 0.001f)
         {
             hasPatrolTarget = false;
+            ApplyPatrolAnimation(false);
             patrolResumeTime = Time.time + Random.Range(
                 Mathf.Max(0f, patrolPauseMinSeconds),
                 Mathf.Max(Mathf.Max(0f, patrolPauseMinSeconds), patrolPauseMaxSeconds));
@@ -377,6 +399,7 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
         hasPatrolTarget = false;
         patrolResumeTime = Time.time + Random.Range(0.05f, 0.35f);
         patrolTargetLocalX = patrolOriginLocalPosition.x;
+        ApplyPatrolAnimation(false, true);
 
         if (!snapToOrigin)
             return;
@@ -403,6 +426,45 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
 
         float fallbackOffset = currentX >= patrolOriginLocalPosition.x ? -minMove : minMove;
         return Mathf.Clamp(currentX + fallbackOffset, minX, maxX);
+    }
+
+    private Animator ResolvePatrolAnimator()
+    {
+        if (patrolAnimator != null)
+            return patrolAnimator;
+
+        patrolAnimator = GetComponent<Animator>();
+        if (patrolAnimator != null)
+            return patrolAnimator;
+
+        patrolAnimator = GetComponentInChildren<Animator>(true);
+        if (patrolAnimator != null)
+            return patrolAnimator;
+
+        patrolAnimator = GetComponentInParent<Animator>();
+        return patrolAnimator;
+    }
+
+    private void ApplyPatrolAnimation(bool moving, bool force = false)
+    {
+        if (patrolAnimator == null)
+            patrolAnimator = ResolvePatrolAnimator();
+
+        if (patrolAnimator == null)
+            return;
+
+        int targetHash = moving ? walkStateHash : idleStateHash;
+        if (targetHash == 0)
+            return;
+
+        if (!force && currentPatrolStateHash == targetHash)
+            return;
+
+        if (!patrolAnimator.HasState(0, targetHash))
+            return;
+
+        patrolAnimator.CrossFadeInFixedTime(targetHash, Mathf.Max(0f, animationBlendSeconds));
+        currentPatrolStateHash = targetHash;
     }
 
     private Transform ResolveBubbleParent()

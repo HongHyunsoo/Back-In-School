@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: cea7620036f3ba547be5f6f96ff62da9
+guid: b7081a73f5299784a99bb8a1184fbbf6
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,91 +110,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Teachers_0
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 96
-        width: 32
-        height: 48
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: bc2f4b9d0d809fa48b129d671a156f0b
-      internalID: -746110066
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Teachers_1
-      rect:
-        serializedVersion: 2
-        x: 32
-        y: 96
-        width: 32
-        height: 48
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: aef2a1270f4e3f145bb687b7c5af2557
-      internalID: 1148733455
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Teachers_2
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 48
-        width: 32
-        height: 48
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 7086d8126c258a24cb77e12f37199f35
-      internalID: 374872946
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Teachers_3
-      rect:
-        serializedVersion: 2
-        x: 32
-        y: 48
-        width: 32
-        height: 48
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 9fe8f143bf729ba41bf2f27654824567
-      internalID: 1854692174
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Teachers_4
+      name: Teachers_Walk_0
       rect:
         serializedVersion: 2
         x: 0
@@ -208,14 +124,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 650507580c65c0642be2e898d11e05ce
-      internalID: 925761593
+      spriteID: 2ecfdd167d2f5bc47bf6bf768448fe07
+      internalID: -691667794
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Teachers_5
+      name: Teachers_Walk_1
       rect:
         serializedVersion: 2
         x: 32
@@ -229,8 +145,71 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: a0b38943f5309af40b5cf7c17c399f0e
-      internalID: -182817742
+      spriteID: f0fa86f0f6f24d54dab56626e1c511ac
+      internalID: 2037615299
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Teachers_Walk_2
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 0
+        width: 32
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4654e3dbe8e1c674da64260f223619c6
+      internalID: -711173679
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Teachers_Walk_3
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 0
+        width: 32
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 63360ce844e3af74b89921a1ee545104
+      internalID: -1633563765
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Teachers_Walk_4
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 0
+        width: 32
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 210839403cdfb9c45b2d5304e1a409a0
+      internalID: -644010306
       vertices: []
       indices: 
       edges: []
@@ -246,12 +225,11 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      Teachers_0: -746110066
-      Teachers_1: 1148733455
-      Teachers_2: 374872946
-      Teachers_3: 1854692174
-      Teachers_4: 925761593
-      Teachers_5: -182817742
+      Teachers_Walk_0: -691667794
+      Teachers_Walk_1: 2037615299
+      Teachers_Walk_2: -711173679
+      Teachers_Walk_3: -1633563765
+      Teachers_Walk_4: -644010306
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
