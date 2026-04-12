@@ -839,6 +839,9 @@ public class DialogueManager : MonoBehaviour
                 animator = target.gameObject.GetComponent<Animator>() ?? target.gameObject.AddComponent<Animator>();
         }
 
+        if (animator != null && presentationSource != null && presentationSource.targetAnimator == null)
+            presentationSource.targetAnimator = animator;
+
         return animator;
     }
 

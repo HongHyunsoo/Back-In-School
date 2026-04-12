@@ -44,7 +44,6 @@ public class PhoneGalleryAppController : MonoBehaviour
     private TextMeshProUGUI detailTitleText;
     private TextMeshProUGUI detailDescriptionText;
     private TMP_FontAsset sharedFont;
-    private Sprite defaultCardBackground;
 
     private const string GalleryLabelKo = "\uAC24\uB7EC\uB9AC";
     private const string EmptyKo = "\uC544\uC9C1 \uB4F1\uB85D\uB41C \uAC24\uB7EC\uB9AC \uD56D\uBAA9\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.";
@@ -179,7 +178,6 @@ public class PhoneGalleryAppController : MonoBehaviour
             photoTemplate.gameObject.SetActive(false);
 
         sharedFont = ResolveSharedFont();
-        defaultCardBackground = ResolveDefaultCardBackground();
         EnsureGalleryButtonLabel();
         HookDetailBackButton();
 
@@ -440,19 +438,10 @@ public class PhoneGalleryAppController : MonoBehaviour
         if (contentRoot == null)
             return null;
 
-        Button button = null;
-        if (photoTemplate != null)
-        {
-            button = Instantiate(photoTemplate, contentRoot);
-        }
-        else
-        {
-            button = CreateRuntimePhotoSlot(index);
-        }
-
-        if (button == null)
+        if (photoTemplate == null)
             return null;
 
+        Button button = Instantiate(photoTemplate, contentRoot);
         button.gameObject.name = $"Photo_{index + 1}";
         button.gameObject.SetActive(true);
         return button;
@@ -512,21 +501,6 @@ public class PhoneGalleryAppController : MonoBehaviour
         return texts.Length > 0 ? texts[0] : null;
     }
 
-    private static TextMeshProUGUI FindSecondaryText(Transform root, TextMeshProUGUI primary)
-    {
-        if (root == null)
-            return null;
-
-        var texts = root.GetComponentsInChildren<TextMeshProUGUI>(true);
-        for (int i = 0; i < texts.Length; i++)
-        {
-            if (texts[i] != primary)
-                return texts[i];
-        }
-
-        return null;
-    }
-
     private static GameObject FindByNameUnder(Transform root, string targetName)
     {
         if (root == null || string.IsNullOrEmpty(targetName))
@@ -575,18 +549,6 @@ public class PhoneGalleryAppController : MonoBehaviour
         return TMP_Settings.defaultFontAsset;
     }
 
-    private Sprite ResolveDefaultCardBackground()
-    {
-        if (photoTemplate != null)
-        {
-            var image = photoTemplate.GetComponent<Image>();
-            if (image != null && image.sprite != null)
-                return image.sprite;
-        }
-
-        return Resources.GetBuiltinResource<Sprite>("UI/Skin/UISprite.psd");
-    }
-
     private void EnsureGalleryButtonLabel()
     {
         if (galleryButton == null)
@@ -627,76 +589,6 @@ public class PhoneGalleryAppController : MonoBehaviour
         rect.offsetMax = offsetMax;
         rect.localScale = Vector3.one;
         return rect;
-    }
-
-    private Button CreateRuntimePhotoSlot(int index)
-    {
-        if (contentRoot == null)
-            return null;
-
-        var cardRect = CreateRect($"Photo_{index + 1}", contentRoot, new Vector2(0f, 1f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
-        cardRect.pivot = new Vector2(0.5f, 1f);
-        cardRect.sizeDelta = new Vector2(0f, 118f);
-        cardRect.anchoredPosition = new Vector2(0f, -126f * index);
-
-        var image = cardRect.gameObject.AddComponent<Image>();
-        image.sprite = defaultCardBackground;
-        image.type = defaultCardBackground != null ? Image.Type.Sliced : Image.Type.Simple;
-        image.color = new Color(0.96f, 0.93f, 0.9f, 0.95f);
-
-        var button = cardRect.gameObject.AddComponent<Button>();
-
-        var titleRect = CreateRect("PhotoName", cardRect, new Vector2(0f, 1f), new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
-        titleRect.pivot = new Vector2(0f, 1f);
-        titleRect.anchoredPosition = new Vector2(116f, -16f);
-        titleRect.sizeDelta = new Vector2(340f, 28f);
-        var title = titleRect.gameObject.AddComponent<TextMeshProUGUI>();
-        title.font = sharedFont;
-        title.fontSize = 18f;
-        title.fontStyle = FontStyles.Bold;
-        title.alignment = TextAlignmentOptions.TopLeft;
-        title.enableWordWrapping = false;
-        title.overflowMode = TextOverflowModes.Ellipsis;
-        title.raycastTarget = false;
-        title.color = new Color(0.12f, 0.12f, 0.16f, 1f);
-
-        var statusRect = CreateRect("PhotoStatus", cardRect, new Vector2(0f, 1f), new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
-        statusRect.pivot = new Vector2(0f, 1f);
-        statusRect.anchoredPosition = new Vector2(116f, -44f);
-        statusRect.sizeDelta = new Vector2(340f, 20f);
-        var status = statusRect.gameObject.AddComponent<TextMeshProUGUI>();
-        status.font = sharedFont;
-        status.fontSize = 14f;
-        status.fontStyle = FontStyles.Normal;
-        status.alignment = TextAlignmentOptions.TopLeft;
-        status.enableWordWrapping = false;
-        status.overflowMode = TextOverflowModes.Ellipsis;
-        status.raycastTarget = false;
-        status.color = new Color(0.34f, 0.34f, 0.4f, 1f);
-
-        var previewRect = CreateRect("Preview", cardRect, new Vector2(0f, 1f), new Vector2(0f, 1f), Vector2.zero, Vector2.zero);
-        previewRect.pivot = new Vector2(0f, 1f);
-        previewRect.anchoredPosition = new Vector2(16f, -16f);
-        previewRect.sizeDelta = new Vector2(88f, 88f);
-        var previewImage = previewRect.gameObject.AddComponent<Image>();
-        previewImage.preserveAspect = true;
-        previewImage.raycastTarget = false;
-        previewImage.color = new Color(0.78f, 0.75f, 0.72f, 0.45f);
-
-        return button;
-    }
-
-    private TextMeshProUGUI CreateLabel(string name, RectTransform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax, float fontSize, FontStyles style, TextAlignmentOptions alignment)
-    {
-        var rect = CreateRect(name, parent, anchorMin, anchorMax, offsetMin, offsetMax);
-        var text = rect.gameObject.AddComponent<TextMeshProUGUI>();
-        text.font = sharedFont;
-        text.fontSize = fontSize;
-        text.fontStyle = style;
-        text.alignment = alignment;
-        text.color = new Color(0.14f, 0.14f, 0.16f, 1f);
-        text.enableWordWrapping = false;
-        return text;
     }
 
     private void ShowGalleryList()

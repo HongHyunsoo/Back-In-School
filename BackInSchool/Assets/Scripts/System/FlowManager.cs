@@ -206,6 +206,51 @@ public class FlowManager : MonoBehaviour
         PlayCurrent();
     }
 
+    public bool TryGetNextPlayableEvent(out FlowEvent nextEvent, out int nextIndex)
+    {
+        nextEvent = null;
+        nextIndex = -1;
+
+        if (!timeline.TryGetValue(day, out var list))
+            return false;
+
+        int probeIndex = stepIndex + 1;
+        while (probeIndex < list.Count && list[probeIndex].condition != null && !list[probeIndex].condition(this))
+            probeIndex++;
+
+        if (probeIndex < 0 || probeIndex >= list.Count)
+            return false;
+
+        nextIndex = probeIndex;
+        nextEvent = list[probeIndex];
+        return nextEvent != null;
+    }
+
+    public bool TryPrepareNextEventWithoutSceneLoad(FlowEventType expectedType, int penaltyDelta, out string resolvedId)
+    {
+        resolvedId = null;
+
+        if (!TryGetNextPlayableEvent(out var nextEvent, out int nextIndex))
+            return false;
+
+        if (nextEvent == null || nextEvent.type != expectedType)
+            return false;
+
+        penaltyPoints += penaltyDelta;
+        stepIndex = nextIndex;
+        EnsureShoeStateForCurrentDay();
+
+        resolvedId = ResolveFlowId(nextEvent);
+        FlowContext.Set(resolvedId, nextEvent.type);
+        PhoneGalleryService.NotifyFlowVisited(resolvedId);
+
+        var gm = FindAnyObjectByType<GameManager>();
+        if (gm != null)
+            gm.currentDay = day;
+
+        return true;
+    }
+
     public void SetLunchFreeTimeStartMinuteForCurrentDay(int minute)
     {
         PlayerPrefs.SetInt(LunchFreeTimeStartMinutePrefKey, minute);

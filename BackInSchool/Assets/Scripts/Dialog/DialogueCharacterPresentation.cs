@@ -61,6 +61,29 @@ public class DialogueCharacterPresentation : MonoBehaviour
             targetAnimator = GetComponentInChildren<Animator>(true);
         if (targetAnimator == null)
             targetAnimator = GetComponentInParent<Animator>();
+
+        if (targetAnimator == null)
+        {
+            SpriteRenderer targetSprite = GetComponent<SpriteRenderer>();
+            Transform targetTransform = transform;
+
+            if (targetSprite == null)
+            {
+                targetSprite = GetComponentInChildren<SpriteRenderer>(true);
+                if (targetSprite != null)
+                    targetTransform = targetSprite.transform;
+            }
+
+            if (targetSprite == null)
+            {
+                targetSprite = GetComponentInParent<SpriteRenderer>();
+                if (targetSprite != null)
+                    targetTransform = targetSprite.transform;
+            }
+
+            if (targetSprite != null)
+                targetAnimator = targetTransform.gameObject.GetComponent<Animator>() ?? targetTransform.gameObject.AddComponent<Animator>();
+        }
     }
 
     public void SuspendDefaultPresentation()

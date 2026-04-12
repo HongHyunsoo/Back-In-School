@@ -2,6 +2,7 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class ArrivalSpaceMashMinigameController : MonoBehaviour
@@ -66,6 +67,9 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
     private bool ended;
     private bool advancing;
     private Coroutine completeRoutine;
+    private Coroutine preloadRoutine;
+    private AsyncOperation pendingFreeroamLoad;
+    private bool useAsFreeroamLoadingScreen;
 
     private Sprite sceneBackgroundSprite;
     private Sprite sceneGaugeSprite;
@@ -100,6 +104,7 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
             BuildRuntimeUI();
 
         RefreshUI();
+        TryBeginFreeroamPreload();
     }
 
     private void OnDisable()
@@ -290,7 +295,31 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
             completeRoutine = null;
         }
 
+        if (preloadRoutine != null)
+        {
+            StopCoroutine(preloadRoutine);
+            preloadRoutine = null;
+        }
+
         CleanupRuntimeObjects();
+
+        if (useAsFreeroamLoadingScreen && FlowManager.Instance != null)
+        {
+            if (FlowManager.Instance.TryPrepareNextEventWithoutSceneLoad(FlowEventType.FREEROAM, success ? 0 : penaltyOnGiveUp, out _))
+            {
+                if (pendingFreeroamLoad != null)
+                {
+                    pendingFreeroamLoad.allowSceneActivation = true;
+                    pendingFreeroamLoad = null;
+                }
+                else
+                {
+                    SceneManager.LoadScene("FREEROAM");
+                }
+
+                return;
+            }
+        }
 
         if (FlowManager.Instance != null)
         {
@@ -301,6 +330,39 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
         var gm = FindAnyObjectByType<GameManager>();
         if (gm != null)
             gm.MinigameFinished(success);
+    }
+
+    private void TryBeginFreeroamPreload()
+    {
+        if (FlowManager.Instance == null)
+            return;
+
+        if (!ShouldRunForCurrentFlow())
+            return;
+
+        if (!FlowManager.Instance.TryGetNextPlayableEvent(out var nextEvent, out _))
+            return;
+
+        if (nextEvent == null || nextEvent.type != FlowEventType.FREEROAM)
+            return;
+
+        useAsFreeroamLoadingScreen = true;
+        preloadRoutine = StartCoroutine(CoPreloadFreeroamScene());
+    }
+
+    private IEnumerator CoPreloadFreeroamScene()
+    {
+        yield return null;
+
+        pendingFreeroamLoad = SceneManager.LoadSceneAsync("FREEROAM");
+        if (pendingFreeroamLoad == null)
+            yield break;
+
+        pendingFreeroamLoad.allowSceneActivation = false;
+        while (pendingFreeroamLoad.progress < 0.9f)
+            yield return null;
+
+        preloadRoutine = null;
     }
 
     private void BuildRuntimeUI()
