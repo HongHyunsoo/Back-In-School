@@ -6,7 +6,7 @@ AnimationClip:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: CharAmin_Boring
+  m_Name: NUREONG_Idle
   serializedVersion: 7
   m_Legacy: 0
   m_Compressed: 0
@@ -21,11 +21,11 @@ AnimationClip:
   - serializedVersion: 2
     curve:
     - time: 0
-      value: {fileID: -634354244, guid: 8fb0d5d4b78b7aa4dbca1261fac31b40, type: 3}
+      value: {fileID: 1137536335, guid: 5d003a023a9ee374498c08af9fb72669, type: 3}
     - time: 0.5
-      value: {fileID: 1655654974, guid: 8fb0d5d4b78b7aa4dbca1261fac31b40, type: 3}
+      value: {fileID: 230401100, guid: 5d003a023a9ee374498c08af9fb72669, type: 3}
     - time: 0.9166667
-      value: {fileID: -634354244, guid: 8fb0d5d4b78b7aa4dbca1261fac31b40, type: 3}
+      value: {fileID: 1137536335, guid: 5d003a023a9ee374498c08af9fb72669, type: 3}
     attribute: m_Sprite
     path: 
     classID: 212
@@ -48,9 +48,9 @@ AnimationClip:
       isIntCurve: 0
       isSerializeReferenceCurve: 0
     pptrCurveMapping:
-    - {fileID: -634354244, guid: 8fb0d5d4b78b7aa4dbca1261fac31b40, type: 3}
-    - {fileID: 1655654974, guid: 8fb0d5d4b78b7aa4dbca1261fac31b40, type: 3}
-    - {fileID: -634354244, guid: 8fb0d5d4b78b7aa4dbca1261fac31b40, type: 3}
+    - {fileID: 1137536335, guid: 5d003a023a9ee374498c08af9fb72669, type: 3}
+    - {fileID: 230401100, guid: 5d003a023a9ee374498c08af9fb72669, type: 3}
+    - {fileID: 1137536335, guid: 5d003a023a9ee374498c08af9fb72669, type: 3}
   m_AnimationClipSettings:
     serializedVersion: 2
     m_AdditiveReferencePoseClip: {fileID: 0}

@@ -114,11 +114,11 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 0
-        y: 0
+        y: 64
         width: 32
         height: 32
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -135,6 +135,69 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 32
+        y: 64
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9f2e2b448b27b1741b5e95af80a8b175
+      internalID: 322443296
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Char_PURPLE_2
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 32
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9022a1b2e81ddba46a80f16794d3f0a9
+      internalID: -69085300
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Char_PURPLE_3
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 32
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f2643020bf914324a8ba0e12e7424fc0
+      internalID: 1988894580
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Char_PURPLE_4
+      rect:
+        serializedVersion: 2
+        x: 0
         y: 0
         width: 32
         height: 32
@@ -145,8 +208,29 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 9f2e2b448b27b1741b5e95af80a8b175
-      internalID: 322443296
+      spriteID: 08194923389a73a40bfb9332a21cb5c4
+      internalID: 1711491457
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Char_PURPLE_5
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 0
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: d0fcfc40ec890f34aa83f1fd8cffa8c9
+      internalID: 1426965013
       vertices: []
       indices: 
       edges: []
@@ -164,6 +248,10 @@ TextureImporter:
     nameFileIdTable:
       Char_PURPLE_0: -1907945891
       Char_PURPLE_1: 322443296
+      Char_PURPLE_2: -69085300
+      Char_PURPLE_3: 1988894580
+      Char_PURPLE_4: 1711491457
+      Char_PURPLE_5: 1426965013
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

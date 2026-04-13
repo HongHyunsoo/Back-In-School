@@ -114,11 +114,11 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 0
-        y: 0
+        y: 96
         width: 32
         height: 32
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -135,6 +135,90 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 32
+        y: 96
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 966f14a9661cb7d43ac841328e22558e
+      internalID: 230401100
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Char_NUREONG_2
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 64
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6ecc6b6f9d566c149a2565139948e034
+      internalID: 498108195
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Char_NUREONG_3
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 32
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: fc500fb5ab1ff85458f7dac8073e08b6
+      internalID: -240618096
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Char_NUREONG_4
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 32
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9deb78608c7546d4fa22696a4159ff14
+      internalID: -909175782
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Char_NUREONG_5
+      rect:
+        serializedVersion: 2
+        x: 0
         y: 0
         width: 32
         height: 32
@@ -145,8 +229,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 966f14a9661cb7d43ac841328e22558e
-      internalID: 230401100
+      spriteID: 76d15373c01f6364ba9e4870dfe3382f
+      internalID: 902391581
       vertices: []
       indices: 
       edges: []
@@ -164,6 +248,10 @@ TextureImporter:
     nameFileIdTable:
       Char_NUREONG_0: 1137536335
       Char_NUREONG_1: 230401100
+      Char_NUREONG_2: 498108195
+      Char_NUREONG_3: -240618096
+      Char_NUREONG_4: -909175782
+      Char_NUREONG_5: 902391581
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
