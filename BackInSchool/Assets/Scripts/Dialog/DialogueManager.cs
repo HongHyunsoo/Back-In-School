@@ -138,6 +138,7 @@ public class DialogueManager : MonoBehaviour
         lines = new Queue<DialogueLine>();
 
         RebindForScene();
+        EnsureSpeechBubbleBindings();
 
 
         IsDialogueActive = false;
@@ -245,17 +246,18 @@ public class DialogueManager : MonoBehaviour
         // 3) 말풍선 인스턴스가 없으면 생성, 있으면 부모만 갱신
         if (speechBubblePrefab == null)
         {
-            Debug.LogError("[DialogueManager] speechBubblePrefab이 인스펙터에 연결되지 않았습니다.");
-            return;
+            speechBubblePrefab = Resources.Load<SpeechBubbleUI>("DialogBox");
+            if (speechBubblePrefab == null)
+            {
+                Debug.LogError("[DialogueManager] speechBubblePrefab이 인스펙터에 연결되지 않았고 Resources/DialogBox도 찾지 못했습니다.");
+                return;
+            }
         }
 
         if (speechBubble == null)
         {
             speechBubble = Instantiate(speechBubblePrefab, speechBubbleParent);
             speechBubble.gameObject.SetActive(false);
-
-            nameText = speechBubble.nameText;
-            dialogueText = speechBubble.bodyText;
         }
         else
         {
@@ -264,11 +266,69 @@ public class DialogueManager : MonoBehaviour
                 speechBubble.transform.SetParent(speechBubbleParent, false);
         }
 
+        EnsureSpeechBubbleBindings();
         EnsureBubbleVisuals(speechBubble);
 
         if (nameText == null || dialogueText == null)
         {
             Debug.LogError("[DialogueManager] SpeechBubbleUI에 nameText/bodyText 연결이 필요합니다.");
+        }
+    }
+
+    private void EnsureSpeechBubbleBindings()
+    {
+        if (speechBubble == null)
+            return;
+
+        if (speechBubble.nameText == null || speechBubble.bodyText == null)
+        {
+            var texts = speechBubble.GetComponentsInChildren<TextMeshProUGUI>(true);
+            for (int i = 0; i < texts.Length; i++)
+            {
+                var text = texts[i];
+                if (text == null)
+                    continue;
+
+                string objectName = text.gameObject.name;
+
+                if (speechBubble.nameText == null &&
+                    (string.Equals(objectName, "Name", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(objectName, "NameText", StringComparison.OrdinalIgnoreCase)))
+                {
+                    speechBubble.nameText = text;
+                    continue;
+                }
+
+                if (speechBubble.bodyText == null &&
+                    (string.Equals(objectName, "Dialog", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(objectName, "Body", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(objectName, "BodyText", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(objectName, "Text", StringComparison.OrdinalIgnoreCase)))
+                {
+                    speechBubble.bodyText = text;
+                }
+            }
+
+            if (speechBubble.nameText == null && texts.Length > 0)
+                speechBubble.nameText = texts[0];
+
+            if (speechBubble.bodyText == null && texts.Length > 0)
+                speechBubble.bodyText = texts[texts.Length - 1];
+        }
+
+        nameText = speechBubble.nameText;
+        dialogueText = speechBubble.bodyText;
+
+        if (dialogueText != null)
+        {
+            dialogueText.alignment = TextAlignmentOptions.Center;
+            dialogueText.verticalAlignment = VerticalAlignmentOptions.Middle;
+            dialogueText.overflowMode = TextOverflowModes.Masking;
+            dialogueText.margin = new Vector4(18f, 18f, 18f, 18f);
+
+            var maskRoot = dialogueText.transform.parent as RectTransform;
+            if (maskRoot != null && maskRoot.GetComponent<RectMask2D>() == null)
+                maskRoot.gameObject.AddComponent<RectMask2D>();
         }
     }
 
@@ -466,6 +526,11 @@ public class DialogueManager : MonoBehaviour
         isBusy = false;
         blockAdvanceInputThisFrame = false;
 
+        if (speechBubble == null || dialogueText == null || nameText == null)
+            RebindForScene();
+
+        EnsureSpeechBubbleBindings();
+
         if (dialogueText == null)
         {
             Debug.LogError("[DialogueManager] dialogueText가 null입니다. SpeechBubbleUI 연결을 확인하세요.");
@@ -643,6 +708,7 @@ public class DialogueManager : MonoBehaviour
 
         // 2) 태그 제거한 텍스트만 보여주기
         string clean = TagParser.Strip(translatedSentence);
+        string wrappedForBubble = PrepareBubbleTextForWordWrapping(clean, dialogueText);
 
         isBusy = false;
 
@@ -650,12 +716,16 @@ public class DialogueManager : MonoBehaviour
         if (nameText != null)
             nameText.text = LocalizationManager.Instance.GetName(speakerId);
         if (dialogueText != null)
+        {
+            dialogueText.enableWordWrapping = false;
+            dialogueText.overflowMode = TextOverflowModes.Masking;
             dialogueText.text = string.Empty;
+        }
         if (speechBubble != null)
             speechBubble.gameObject.SetActive(currentBubbleSpeaker != null);
 
         // 3) 타이핑 코루틴 실행 (기존 기능 그대로)
-        yield return StartCoroutine(TypeSentence(clean));
+        yield return StartCoroutine(TypeSentence(wrappedForBubble));
     }
 
 
@@ -673,6 +743,80 @@ public class DialogueManager : MonoBehaviour
         isTyping = false;
 
         
+    }
+
+    private static string PrepareBubbleTextForWordWrapping(string source, TextMeshProUGUI targetText = null)
+    {
+        if (string.IsNullOrEmpty(source))
+            return source;
+
+        if (targetText == null)
+            return source;
+
+        float maxWidth = GetBubbleBodyMaxWidth(targetText);
+        if (maxWidth <= 0f)
+            return source;
+
+        string normalized = source.Replace("\r\n", "\n").Replace('\r', '\n');
+        string[] paragraphs = normalized.Split('\n');
+        var wrapped = new System.Text.StringBuilder(normalized.Length + 16);
+
+        for (int i = 0; i < paragraphs.Length; i++)
+        {
+            if (i > 0)
+                wrapped.Append('\n');
+
+            string paragraph = paragraphs[i];
+            if (string.IsNullOrWhiteSpace(paragraph))
+                continue;
+
+            AppendWrappedParagraph(wrapped, paragraph, targetText, maxWidth);
+        }
+
+        return wrapped.ToString();
+    }
+
+    private static void AppendWrappedParagraph(System.Text.StringBuilder sb, string paragraph, TextMeshProUGUI targetText, float maxWidth)
+    {
+        string[] words = paragraph.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length == 0)
+            return;
+
+        string currentLine = words[0];
+
+        for (int i = 1; i < words.Length; i++)
+        {
+            string candidate = currentLine + " " + words[i];
+            float candidateWidth = targetText.GetPreferredValues(candidate).x;
+            if (candidateWidth <= maxWidth)
+            {
+                currentLine = candidate;
+                continue;
+            }
+
+            if (sb.Length > 0 && sb[sb.Length - 1] != '\n')
+                sb.Append('\n');
+
+            sb.Append(currentLine);
+            currentLine = words[i];
+        }
+
+        if (sb.Length > 0 && sb[sb.Length - 1] != '\n')
+            sb.Append('\n');
+
+        sb.Append(currentLine);
+    }
+
+    private static float GetBubbleBodyMaxWidth(TextMeshProUGUI targetText)
+    {
+        if (targetText == null)
+            return 0f;
+
+        RectTransform rect = targetText.rectTransform;
+        float width = rect.rect.width;
+        Vector4 margin = targetText.margin;
+        width -= margin.x + margin.z;
+        return Mathf.Max(0f, width);
     }
 
     public void EndDialogue()

@@ -97,6 +97,9 @@ public class PhoneSystem : MonoBehaviour
 
         if (phoneUIInstance.GetComponent<PhoneGalleryAppController>() == null)
             phoneUIInstance.AddComponent<PhoneGalleryAppController>();
+
+        if (phoneUIInstance.GetComponent<PhonePhotoSlotUnlockController>() == null)
+            phoneUIInstance.AddComponent<PhonePhotoSlotUnlockController>();
     }
 
     private void NormalizePhoneUICanvas(GameObject root)
