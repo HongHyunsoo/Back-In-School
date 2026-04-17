@@ -196,8 +196,8 @@ public class TetrisMinigameController : MonoBehaviour
         }
 
         AutoBindFailOverlayReferences();
-        if (failOverlayObject != null && !failOverlayObject.activeSelf)
-            failOverlayObject.SetActive(true);
+        if (failOverlayObject != null && failOverlayObject.activeSelf)
+            failOverlayObject.SetActive(false);
         AutoBindFailOverlayShowObjects();
         SetFailOverlayShowObjectsActive(false);
         AutoBindFailOverlayHideObjects();
@@ -209,6 +209,9 @@ public class TetrisMinigameController : MonoBehaviour
 
     private void Start()
     {
+        if (failOverlayObject != null)
+            failOverlayObject.SetActive(false);
+
         board.Init();
         PlayFailCharacterLoop(failCharacterIdleClip);
         SpawnNewPiece();
@@ -1053,6 +1056,8 @@ public class TetrisMinigameController : MonoBehaviour
 
         if (failOverlayObject != null)
         {
+            failOverlayObject.SetActive(true);
+
             if (failOverlayTextLabel == null)
                 failOverlayTextLabel = failOverlayObject.GetComponentInChildren<TMP_Text>(true);
 
@@ -1064,6 +1069,7 @@ public class TetrisMinigameController : MonoBehaviour
             yield return new WaitForSecondsRealtime(seconds);
             SetFailOverlayShowObjectsActive(false);
             SetFailOverlayHideObjectsActive(true);
+            failOverlayObject.SetActive(false);
             SetHudVisible(true);
             yield break;
         }
@@ -1367,15 +1373,37 @@ public class TetrisMinigameController : MonoBehaviour
             if (sr == null)
                 continue;
 
-            bool isBackground = string.Equals(sr.gameObject.name, "Square", System.StringComparison.OrdinalIgnoreCase);
-            sr.sortingOrder = isBackground ? failOverlayBackgroundSortingOrder : failOverlayContentSortingOrder;
+            string objectName = sr.gameObject.name;
+            bool isDimBlack = string.Equals(objectName, "Black", System.StringComparison.OrdinalIgnoreCase);
+            bool isPanelBackground = string.Equals(objectName, "Square", System.StringComparison.OrdinalIgnoreCase);
+            bool isHealthRoom = string.Equals(objectName, "HealthRoom_0", System.StringComparison.OrdinalIgnoreCase);
+
+            if (isDimBlack)
+            {
+                sr.sortingOrder = failOverlayBackgroundSortingOrder - 1;
+                continue;
+            }
+
+            if (isPanelBackground)
+            {
+                sr.sortingOrder = failOverlayBackgroundSortingOrder;
+                continue;
+            }
+
+            if (isHealthRoom)
+            {
+                sr.sortingOrder = failOverlayContentSortingOrder + 1;
+                continue;
+            }
+
+            sr.sortingOrder = failOverlayContentSortingOrder;
         }
 
         if (failOverlayTextLabel != null)
         {
             var meshRenderer = failOverlayTextLabel.GetComponent<Renderer>();
             if (meshRenderer != null)
-                meshRenderer.sortingOrder = failOverlayContentSortingOrder + 1;
+                meshRenderer.sortingOrder = failOverlayContentSortingOrder + 2;
         }
     }
 

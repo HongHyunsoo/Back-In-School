@@ -159,7 +159,31 @@ public class MinigameSceneBootstrap : MonoBehaviour
     private static T FindController<T>() where T : MonoBehaviour
     {
         var found = FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        return found != null && found.Length > 0 ? found[0] : null;
+        if (found != null && found.Length > 0)
+            return found[0];
+
+        // Build-safe fallback for inactive scene objects that may not be surfaced
+        // reliably through FindObjectsByType during early bootstrap timing.
+        var all = Resources.FindObjectsOfTypeAll<T>();
+        if (all == null || all.Length == 0)
+            return null;
+
+        for (int i = 0; i < all.Length; i++)
+        {
+            T candidate = all[i];
+            if (candidate == null)
+                continue;
+
+            if (candidate.gameObject == null)
+                continue;
+
+            if (!candidate.gameObject.scene.IsValid())
+                continue;
+
+            return candidate;
+        }
+
+        return null;
     }
 
     private bool CanToggleHostGameObject(MonoBehaviour controller)

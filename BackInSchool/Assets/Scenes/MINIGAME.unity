@@ -2481,7 +2481,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1365675791
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3386,7 +3386,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1930148084
 Transform:
   m_ObjectHideFlags: 0
@@ -3634,8 +3634,8 @@ MonoBehaviour:
   class2PresentationFlowIds:
   - CLASS2_D2
   autoCreateMissingControllers: 0
-  tetris: {fileID: 0}
-  tetrisConfig: {fileID: 0}
+  tetris: {fileID: 223206328}
+  tetrisConfig: {fileID: 11400000, guid: 916c741168255a54eba75895f7eb1495, type: 2}
   arrivalSpaceMash: {fileID: 0}
   croquis: {fileID: 756319441}
   croquisConfig: {fileID: 11400000, guid: f24dfb4ff038d7c4995411c07861d8d4, type: 2}
