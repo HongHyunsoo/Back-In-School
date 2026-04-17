@@ -116,6 +116,9 @@ public class PhoneAppManager : MonoBehaviour
     {
         if (IsLocked) return;
 
+        if (TryHandleCurrentAppBack())
+            return;
+
         if (openRoutine != null)
         {
             StopCoroutine(openRoutine);
@@ -125,6 +128,26 @@ public class PhoneAppManager : MonoBehaviour
         HideAllSplashPanels();
 
         ShowHome();
+    }
+
+    private bool TryHandleCurrentAppBack()
+    {
+        switch (CurrentApp)
+        {
+            case PhoneAppId.Gallery:
+            {
+                var galleryController = GetComponent<PhoneGalleryAppController>();
+                if (galleryController != null && galleryController.HandleBackRequest())
+                    return true;
+
+                var photoSlotController = GetComponent<PhonePhotoSlotUnlockController>();
+                if (photoSlotController != null && photoSlotController.HandleBackRequest())
+                    return true;
+                break;
+            }
+        }
+
+        return false;
     }
 
     private void ShowHome()

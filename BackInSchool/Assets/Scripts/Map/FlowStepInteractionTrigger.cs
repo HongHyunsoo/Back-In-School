@@ -26,6 +26,8 @@ public class FlowStepInteractionTrigger : MonoBehaviour
 
     [Header("Complete")]
     [SerializeField] private int penaltyDelta = 0;
+    [SerializeField] private AudioClip completeSfx;
+    [SerializeField] [Range(0f, 1f)] private float completeSfxVolume = 1f;
     [SerializeField] private bool oneShot = true;
     [SerializeField] private bool disableAfterTriggered = true;
 
@@ -33,6 +35,7 @@ public class FlowStepInteractionTrigger : MonoBehaviour
     private bool consumed;
     private KeyCode lastInteractKey = KeyCode.None;
     private static TMP_FontAsset cachedPromptFont;
+    private AudioSource audioSource;
 
     private void Awake()
     {
@@ -40,6 +43,7 @@ public class FlowStepInteractionTrigger : MonoBehaviour
         if (col != null && !col.isTrigger)
             col.isTrigger = true;
 
+        EnsureAudioSource();
         EnsurePromptBinding();
     }
 
@@ -75,6 +79,7 @@ public class FlowStepInteractionTrigger : MonoBehaviour
         if (fm == null)
             return;
 
+        PlayCompleteSfx();
         fm.CompleteCurrentEvent(penaltyDelta);
         consumed = true;
 
@@ -215,5 +220,32 @@ public class FlowStepInteractionTrigger : MonoBehaviour
 
         cachedPromptFont = TMP_Settings.defaultFontAsset;
         return cachedPromptFont;
+    }
+
+    private void EnsureAudioSource()
+    {
+        if (audioSource != null)
+            return;
+
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.spatialBlend = 0f;
+        audioSource.ignoreListenerPause = true;
+    }
+
+    private void PlayCompleteSfx()
+    {
+        if (completeSfx == null)
+            return;
+
+        EnsureAudioSource();
+        if (audioSource == null)
+            return;
+
+        audioSource.PlayOneShot(completeSfx, AudioSettingsService.ScaleSfx(completeSfxVolume));
     }
 }

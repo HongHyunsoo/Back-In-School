@@ -17,6 +17,7 @@ public class PhoneSubwayFlowGate : MonoBehaviour
 {
     [Header("Bubble Template (Optional)")]
     [SerializeField] private SpeechBubbleUI warningBubbleTemplate;
+    [SerializeField] private float warningBubbleScale = 1f;
 
     private static readonly HashSet<int> healthCheckedDays = new();
 
@@ -329,7 +330,7 @@ public class PhoneSubwayFlowGate : MonoBehaviour
             warningNameText = bubble.nameText;
             warningBodyText = bubble.bodyText;
 
-            warningBubbleRoot.localScale = Vector3.one * 0.65f;
+            warningBubbleRoot.localScale = Vector3.one * Mathf.Max(0.1f, warningBubbleScale);
             warningBubbleRoot.gameObject.name = "SubwayRobotBubble";
             warningBubbleRoot.gameObject.SetActive(false);
             EnsureBubbleHasVisibleBackground(warningBubbleRoot);

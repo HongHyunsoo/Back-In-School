@@ -599,6 +599,17 @@ public class PhoneGalleryAppController : MonoBehaviour
         HideDetailView();
     }
 
+    public bool HandleBackRequest()
+    {
+        if (detailOverlay != null && detailOverlay.activeSelf)
+        {
+            ShowGalleryList();
+            return true;
+        }
+
+        return false;
+    }
+
     private void HideDetailView()
     {
         if (detailOverlay != null)

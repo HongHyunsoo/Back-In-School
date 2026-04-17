@@ -19,6 +19,7 @@ public class PhoneHealthSurveyController : MonoBehaviour
 {
     [Header("Bubble Template (Optional)")]
     [SerializeField] private SpeechBubbleUI warningBubbleTemplate;
+    [SerializeField] private float warningBubbleScale = 1f;
 
     private GameObject healthPanel;
     private GameObject questionPage;
@@ -114,15 +115,24 @@ public class PhoneHealthSurveyController : MonoBehaviour
     private void RebindSubmitButtons()
     {
         submitButtons.Clear();
+        if (questionPage == null)
+        {
+            Debug.LogWarning("[HealthSurvey] Question page not found while rebinding submit buttons.", this);
+            return;
+        }
+
         var all = GetComponentsInChildren<Button>(true);
         for (int i = 0; i < all.Length; i++)
         {
+            if (all[i] == null)
+                continue;
+
             bool byName = all[i].name == "Submit" || all[i].name.Contains("Submit");
             bool byText = false;
             var txt = all[i].GetComponentInChildren<TextMeshProUGUI>(true);
             if (txt != null)
             {
-                string t = txt.text.Replace(" ", "").Trim();
+                string t = (txt.text ?? string.Empty).Replace(" ", "").Trim();
                 byText = t.Contains("제출") || t.Contains("Submit");
             }
 
@@ -252,7 +262,7 @@ public class PhoneHealthSurveyController : MonoBehaviour
             warningBubbleRoot.anchorMax = new Vector2(0.5f, 0.5f);
             warningBubbleRoot.pivot = new Vector2(0.5f, 0f);
             warningBubbleRoot.anchoredPosition = new Vector2(0f, 0f);
-            warningBubbleRoot.localScale = Vector3.one * 0.65f;
+            warningBubbleRoot.localScale = Vector3.one * Mathf.Max(0.1f, warningBubbleScale);
 
             EnsureBubbleHasVisibleBackground(warningBubbleRoot);
 

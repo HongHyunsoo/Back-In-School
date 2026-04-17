@@ -9,6 +9,7 @@ public class PhonePhotoSlotUnlockController : MonoBehaviour
 {
     private const string AdultMorningConversationId = "DAY1_MOR_ADULT";
     private const string MinumLunchConversationId = "DAY1_LUNCH_MINUM";
+    private const string AdultMorningEntryId = "DAY1_MOR_ADULT_PHOTO";
 
     private const string AdultPhotoResource = "Gallery/Pictures#Pictures_2";
     private const string MinumPhotoResource = "Gallery/Pictures#Pictures_3";
@@ -97,12 +98,19 @@ public class PhonePhotoSlotUnlockController : MonoBehaviour
         ResolveDetailPage();
         HookPhotoSlotButtons();
 
-        if (DialogueProgressState.HasCompletedConversation(AdultMorningConversationId))
+        bool adultUnlocked =
+            PhoneGalleryService.EnsureExists().IsUnlocked(AdultMorningEntryId) ||
+            DialogueProgressState.HasCompletedConversation(AdultMorningConversationId);
+
+        bool minumUnlocked =
+            DialogueProgressState.HasCompletedConversation(MinumLunchConversationId);
+
+        if (adultUnlocked)
             ApplyAdultMorningPhoto();
         else
             RestoreDefaultPhoto01();
 
-        if (DialogueProgressState.HasCompletedConversation(MinumLunchConversationId))
+        if (minumUnlocked)
             ApplyMinumLunchPhoto();
         else
             RestoreDefaultPhoto02();
@@ -271,6 +279,17 @@ public class PhonePhotoSlotUnlockController : MonoBehaviour
     {
         if (photoPage != null)
             photoPage.SetActive(false);
+    }
+
+    public bool HandleBackRequest()
+    {
+        if (photoPage != null && photoPage.activeSelf)
+        {
+            HidePhotoPage();
+            return true;
+        }
+
+        return false;
     }
 
     private void ApplyAdultMorningPhoto()

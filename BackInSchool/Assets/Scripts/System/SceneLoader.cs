@@ -1,37 +1,34 @@
-using UnityEngine;
-using UnityEngine.SceneManagement;
+癤퓎sing UnityEngine;
 
 public class SceneLoader : MonoBehaviour
 {
-    // 버튼에서 문자열로 씬 이름 넣어서 호출 가능
     public void LoadSceneByName(string sceneName)
     {
-        SceneManager.LoadScene(sceneName);
+        SceneTransitionFader.LoadSceneWithFade(sceneName);
     }
 
-    // Subway로 고정 이동 버튼용 (인자 없이도 가능)
     public void LoadSchoolFreeTime()
     {
-        SceneManager.LoadScene("FREEROAM");
-    } 
-    
+        SceneTransitionFader.LoadSceneWithFade("FREEROAM");
+    }
+
     public void LoadSubway()
     {
-        SceneManager.LoadScene("CHAT");
+        SceneTransitionFader.LoadSceneWithFade("CHAT");
     }
-    
+
     public void Story()
     {
-        SceneManager.LoadScene("STORY");
+        SceneTransitionFader.LoadSceneWithFade("STORY");
     }
-    
+
     public void MINIGAME()
     {
-        SceneManager.LoadScene("MINIGAME");
+        SceneTransitionFader.LoadSceneWithFade("MINIGAME");
     }
 
     public void LoadMainMenu()
     {
-        SceneManager.LoadScene("MainMenu");
+        SceneTransitionFader.LoadSceneWithFade("MainMenu");
     }
 }

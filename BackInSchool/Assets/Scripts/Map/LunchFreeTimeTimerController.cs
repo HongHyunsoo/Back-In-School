@@ -20,6 +20,7 @@ public class LunchFreeTimeTimerController : MonoBehaviour
     [SerializeField] private bool pauseDuringDialogue = true;
     [SerializeField] private bool waitForLandingBeforeFreeze = true;
     [SerializeField] private bool freezeSceneWithTimeScale = true;
+    [SerializeField] [Min(0)] private int bellWarningMinutes = 2;
     [SerializeField] private float bellLeadSeconds = 0.85f;
     [SerializeField] private float fadeOutSeconds = 0.45f;
     [SerializeField] private float fadeInSeconds = 0.35f;
@@ -29,6 +30,7 @@ public class LunchFreeTimeTimerController : MonoBehaviour
 
     [Header("UI")]
     [SerializeField] private bool showTimerUI = true;
+    [SerializeField] private GameObject uiPrefab;
     [SerializeField] private Vector2 uiAnchorMin = new Vector2(0f, 1f);
     [SerializeField] private Vector2 uiAnchorMax = new Vector2(0f, 1f);
     [SerializeField] private Vector2 uiPivot = new Vector2(0f, 1f);
@@ -65,14 +67,18 @@ public class LunchFreeTimeTimerController : MonoBehaviour
     private bool timerInitialized;
     private bool completionQueued;
     private bool sceneFrozen;
+    private bool warningBellPlayed;
     private float cachedTimeScale = 1f;
+    private float defaultAudioSourceVolume = 1f;
 
     private Canvas runtimeCanvas;
+    private GameObject runtimeUiInstance;
     private RectTransform panelRoot;
     private TextMeshProUGUI titleText;
     private TextMeshProUGUI timeText;
     private TextMeshProUGUI statusText;
     private Image fillImage;
+    private Slider fillSlider;
 
     private void OnEnable()
     {
@@ -105,6 +111,7 @@ public class LunchFreeTimeTimerController : MonoBehaviour
         if (!paused && !completionQueued)
         {
             remainingSeconds = Mathf.Max(0f, remainingSeconds - Time.unscaledDeltaTime);
+            TryPlayWarningBell();
             if (remainingSeconds <= 0f)
                 HandleTimeout();
         }
@@ -135,6 +142,7 @@ public class LunchFreeTimeTimerController : MonoBehaviour
         durationSeconds = 0f;
         startClockMinutes = 0;
         endClockMinutes = 0;
+        warningBellPlayed = false;
         UnfreezeScene();
         if (playerController != null)
             playerController.ExternalInputLocked = false;
@@ -179,6 +187,19 @@ public class LunchFreeTimeTimerController : MonoBehaviour
         }
 
         return fallback;
+    }
+
+    private void TryPlayWarningBell()
+    {
+        if (warningBellPlayed || bellClip == null)
+            return;
+
+        float triggerSeconds = Mathf.Max(0f, bellWarningMinutes) * Mathf.Max(0.1f, realSecondsPerGameMinute);
+        if (remainingSeconds > triggerSeconds)
+            return;
+
+        warningBellPlayed = true;
+        PlayBell();
     }
 
     private void HandleTimeout()
@@ -238,7 +259,10 @@ public class LunchFreeTimeTimerController : MonoBehaviour
 
         ClosePhoneIfOpen();
         FreezeScene();
-        PlayBell();
+
+        float bellFadeDuration = Mathf.Max(0f, fadeOutSeconds + fadeInSeconds);
+        if (audioSource != null && audioSource.isPlaying && bellFadeDuration > 0f)
+            StartCoroutine(FadeBellOutRealtime(bellFadeDuration));
 
         float bellWait = Mathf.Max(0f, bellLeadSeconds);
         if (bellWait > 0f)
@@ -293,6 +317,7 @@ public class LunchFreeTimeTimerController : MonoBehaviour
         if (audioSource == null || bellClip == null)
             return;
 
+        audioSource.volume = defaultAudioSourceVolume;
         audioSource.PlayOneShot(bellClip, AudioSettingsService.ScaleSfx(bellVolume));
     }
 
@@ -313,14 +338,48 @@ public class LunchFreeTimeTimerController : MonoBehaviour
 
         audioSource.playOnAwake = false;
         audioSource.loop = false;
+        audioSource.volume = 1f;
         audioSource.spatialBlend = 0f;
         audioSource.ignoreListenerPause = true;
+        defaultAudioSourceVolume = audioSource.volume;
+    }
+
+    private IEnumerator FadeBellOutRealtime(float duration)
+    {
+        if (audioSource == null)
+            yield break;
+
+        float startVolume = audioSource.volume;
+        if (startVolume <= 0f)
+            yield break;
+
+        float elapsed = 0f;
+        while (elapsed < duration && audioSource != null && audioSource.isPlaying)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            audioSource.volume = Mathf.Lerp(startVolume, 0f, t);
+            yield return null;
+        }
+
+        if (audioSource != null)
+        {
+            audioSource.volume = defaultAudioSourceVolume;
+            if (audioSource.isPlaying)
+                audioSource.Stop();
+        }
     }
 
     private void EnsureUi()
     {
         if (!showTimerUI || panelRoot != null)
             return;
+
+        if (TryCreateUiFromPrefab())
+        {
+            SetUiVisible(false);
+            return;
+        }
 
         var canvasGo = new GameObject("__LunchTimerCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         canvasGo.transform.SetParent(transform, false);
@@ -365,6 +424,76 @@ public class LunchFreeTimeTimerController : MonoBehaviour
         SetUiVisible(false);
     }
 
+    private bool TryCreateUiFromPrefab()
+    {
+        if (uiPrefab == null)
+            return false;
+
+        runtimeUiInstance = Instantiate(uiPrefab, transform);
+        runtimeUiInstance.name = uiPrefab.name;
+
+        runtimeCanvas = runtimeUiInstance.GetComponent<Canvas>();
+        if (runtimeCanvas == null)
+            runtimeCanvas = runtimeUiInstance.GetComponentInChildren<Canvas>(true);
+
+        if (runtimeCanvas != null)
+        {
+            runtimeCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            runtimeCanvas.sortingOrder = 5;
+
+            var scaler = runtimeCanvas.GetComponent<CanvasScaler>();
+            if (scaler != null)
+            {
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920f, 1080f);
+                scaler.matchWidthOrHeight = 0.5f;
+            }
+
+            var raycaster = runtimeCanvas.GetComponent<GraphicRaycaster>();
+            if (raycaster != null)
+                raycaster.enabled = false;
+        }
+
+        panelRoot = FindRectByName(runtimeUiInstance.transform, "Root");
+        if (panelRoot == null)
+            panelRoot = runtimeUiInstance.GetComponent<RectTransform>();
+
+        titleText = FindTextByName(runtimeUiInstance.transform, "Title");
+        if (titleText == null)
+            titleText = FindTextByName(runtimeUiInstance.transform, "TItle");
+
+        timeText = FindTextByName(runtimeUiInstance.transform, "Time");
+        statusText = FindTextByName(runtimeUiInstance.transform, "Status");
+        fillSlider = FindSliderByName(runtimeUiInstance.transform, "Slider");
+
+        if (fillSlider != null)
+        {
+            fillSlider.interactable = false;
+            fillSlider.minValue = 0f;
+            fillSlider.maxValue = 1f;
+            fillImage = fillSlider.fillRect != null ? fillSlider.fillRect.GetComponent<Image>() : null;
+        }
+
+        if (panelRoot == null || titleText == null || timeText == null || statusText == null || (fillSlider == null && fillImage == null))
+        {
+            Debug.LogWarning("[LunchFreeTimeTimerController] Lunch timer prefab is missing required references. Falling back to generated UI.", this);
+            if (runtimeUiInstance != null)
+                Destroy(runtimeUiInstance);
+
+            runtimeUiInstance = null;
+            runtimeCanvas = null;
+            panelRoot = null;
+            titleText = null;
+            timeText = null;
+            statusText = null;
+            fillSlider = null;
+            fillImage = null;
+            return false;
+        }
+
+        return true;
+    }
+
     private void UpdateUi(bool paused, string forcedStatus = null)
     {
         if (!showTimerUI || panelRoot == null)
@@ -378,14 +507,19 @@ public class LunchFreeTimeTimerController : MonoBehaviour
         if (!string.IsNullOrEmpty(forcedStatus))
             statusText.text = forcedStatus;
         else if (paused)
-            statusText.text = $"{Localized(pausedKo, pausedEn)}  |  {BuildRemainingText()}";
+            statusText.text = $"{Localized(pausedKo, pausedEn)}  |  {BuildScheduleText()}";
         else
-            statusText.text = BuildRemainingText();
+            statusText.text = BuildScheduleText();
 
         float normalized = durationSeconds > 0.01f ? Mathf.Clamp01(remainingSeconds / durationSeconds) : 0f;
+        if (fillSlider != null)
+            fillSlider.SetValueWithoutNotify(normalized);
+
         if (fillImage != null)
         {
-            fillImage.rectTransform.localScale = new Vector3(Mathf.Max(0f, normalized), 1f, 1f);
+            if (fillSlider == null)
+                fillImage.rectTransform.localScale = new Vector3(Mathf.Max(0f, normalized), 1f, 1f);
+
             if (!string.IsNullOrEmpty(forcedStatus))
                 fillImage.color = warningFillColor;
             else if (paused)
@@ -399,13 +533,12 @@ public class LunchFreeTimeTimerController : MonoBehaviour
 
     private string BuildTitle()
     {
-        string title = Localized(titleKo, titleEn);
-        return $"{title}  {FormatClock(startClockMinutes)} - {FormatClock(endClockMinutes)}";
+        return Localized(titleKo, titleEn);
     }
 
-    private string BuildRemainingText()
+    private string BuildScheduleText()
     {
-        return $"{Localized(remainingKo, remainingEn)} {FormatSeconds(remainingSeconds)}";
+        return $"{FormatClock(startClockMinutes)}~{FormatClock(endClockMinutes)}";
     }
 
     private float ResolveCurrentClockMinutes()
@@ -495,5 +628,47 @@ public class LunchFreeTimeTimerController : MonoBehaviour
         text.enableWordWrapping = false;
         text.raycastTarget = false;
         return text;
+    }
+
+    private static RectTransform FindRectByName(Transform root, string targetName)
+    {
+        if (root == null || string.IsNullOrEmpty(targetName))
+            return null;
+
+        foreach (var rect in root.GetComponentsInChildren<RectTransform>(true))
+        {
+            if (string.Equals(rect.name, targetName, System.StringComparison.OrdinalIgnoreCase))
+                return rect;
+        }
+
+        return null;
+    }
+
+    private static TextMeshProUGUI FindTextByName(Transform root, string targetName)
+    {
+        if (root == null || string.IsNullOrEmpty(targetName))
+            return null;
+
+        foreach (var text in root.GetComponentsInChildren<TextMeshProUGUI>(true))
+        {
+            if (string.Equals(text.name, targetName, System.StringComparison.OrdinalIgnoreCase))
+                return text;
+        }
+
+        return null;
+    }
+
+    private static Slider FindSliderByName(Transform root, string targetName)
+    {
+        if (root == null || string.IsNullOrEmpty(targetName))
+            return null;
+
+        foreach (var slider in root.GetComponentsInChildren<Slider>(true))
+        {
+            if (string.Equals(slider.name, targetName, System.StringComparison.OrdinalIgnoreCase))
+                return slider;
+        }
+
+        return null;
     }
 }

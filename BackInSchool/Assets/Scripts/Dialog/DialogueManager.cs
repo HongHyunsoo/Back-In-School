@@ -42,6 +42,10 @@ public class DialogueManager : MonoBehaviour
 
     [Header("오디오")]
     public AudioSource audioSource; // 소리 이펙트 재생용
+    [SerializeField] private AudioClip typingSfx;
+    [SerializeField] [Range(0f, 1f)] private float typingSfxVolume = 0.2f;
+    [SerializeField] [Min(1)] private int typingSfxInterval = 2;
+    [SerializeField] private bool typingSfxIgnoreWhitespace = true;
 
     private Queue<DialogueLine> lines;
     private bool isTyping = false;
@@ -139,6 +143,7 @@ public class DialogueManager : MonoBehaviour
 
         RebindForScene();
         EnsureSpeechBubbleBindings();
+        EnsureAudioSource();
 
 
         IsDialogueActive = false;
@@ -268,6 +273,7 @@ public class DialogueManager : MonoBehaviour
 
         EnsureSpeechBubbleBindings();
         EnsureBubbleVisuals(speechBubble);
+        EnsureAudioSource();
 
         if (nameText == null || dialogueText == null)
         {
@@ -323,7 +329,8 @@ public class DialogueManager : MonoBehaviour
         {
             dialogueText.alignment = TextAlignmentOptions.Center;
             dialogueText.verticalAlignment = VerticalAlignmentOptions.Middle;
-            dialogueText.overflowMode = TextOverflowModes.Masking;
+            dialogueText.overflowMode = TextOverflowModes.Overflow;
+            dialogueText.enableWordWrapping = true;
             dialogueText.margin = new Vector4(18f, 18f, 18f, 18f);
 
             var maskRoot = dialogueText.transform.parent as RectTransform;
@@ -380,6 +387,21 @@ public class DialogueManager : MonoBehaviour
         Debug.Log("[DialogueManager] Runtime dialogue canvas created: " + canvasName);
 
         return canvas;
+    }
+
+    private void EnsureAudioSource()
+    {
+        if (audioSource != null)
+            return;
+
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.spatialBlend = 0f;
+        audioSource.ignoreListenerPause = true;
     }
 
     private void EnsureBubbleVisuals(SpeechBubbleUI bubble)
@@ -717,8 +739,8 @@ public class DialogueManager : MonoBehaviour
             nameText.text = LocalizationManager.Instance.GetName(speakerId);
         if (dialogueText != null)
         {
-            dialogueText.enableWordWrapping = false;
-            dialogueText.overflowMode = TextOverflowModes.Masking;
+            dialogueText.enableWordWrapping = true;
+            dialogueText.overflowMode = TextOverflowModes.Overflow;
             dialogueText.text = string.Empty;
         }
         if (speechBubble != null)
@@ -733,10 +755,13 @@ public class DialogueManager : MonoBehaviour
     {
         isTyping = true;
         dialogueText.text = "";
+        int audibleCharacterCount = 0;
 
         foreach (char letter in sentence.ToCharArray())
         {
             dialogueText.text += letter;
+            if (ShouldPlayTypingSfx(letter, ref audibleCharacterCount))
+                PlayTypingSfx();
             yield return new WaitForSeconds(typingSpeed);
         }
 
@@ -745,12 +770,37 @@ public class DialogueManager : MonoBehaviour
         
     }
 
+    private bool ShouldPlayTypingSfx(char letter, ref int audibleCharacterCount)
+    {
+        if (typingSfx == null || audioSource == null)
+            return false;
+
+        if (typingSfxIgnoreWhitespace && (char.IsWhiteSpace(letter) || char.IsPunctuation(letter)))
+            return false;
+
+        audibleCharacterCount++;
+        int interval = Mathf.Max(1, typingSfxInterval);
+        return audibleCharacterCount % interval == 1;
+    }
+
+    private void PlayTypingSfx()
+    {
+        if (typingSfx == null || audioSource == null)
+            return;
+
+        audioSource.PlayOneShot(typingSfx, AudioSettingsService.ScaleSfx(typingSfxVolume));
+    }
+
     private static string PrepareBubbleTextForWordWrapping(string source, TextMeshProUGUI targetText = null)
     {
         if (string.IsNullOrEmpty(source))
             return source;
 
         if (targetText == null)
+            return source;
+
+        // Let TMP handle CJK wrapping naturally. Manual wrapping below only works well for space-separated languages.
+        if (ContainsCjk(source))
             return source;
 
         float maxWidth = GetBubbleBodyMaxWidth(targetText);
@@ -817,6 +867,27 @@ public class DialogueManager : MonoBehaviour
         Vector4 margin = targetText.margin;
         width -= margin.x + margin.z;
         return Mathf.Max(0f, width);
+    }
+
+    private static bool ContainsCjk(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return false;
+
+        for (int i = 0; i < value.Length; i++)
+        {
+            char c = value[i];
+            if ((c >= '\u1100' && c <= '\u11FF') ||
+                (c >= '\u3130' && c <= '\u318F') ||
+                (c >= '\uAC00' && c <= '\uD7AF') ||
+                (c >= '\u4E00' && c <= '\u9FFF') ||
+                (c >= '\u3040' && c <= '\u30FF'))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void EndDialogue()

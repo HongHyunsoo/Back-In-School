@@ -31,6 +31,9 @@ public class PhoneUiHotfixes : MonoBehaviour
         var all = GetComponentsInChildren<Button>(true);
         for (int i = 0; i < all.Length; i++)
         {
+            if (all[i] == null)
+                continue;
+
             string target = ResolveTargetPanelForButton(all[i]);
             if (!string.IsNullOrEmpty(target))
                 appButtons.Add(all[i]);
@@ -117,6 +120,9 @@ public class PhoneUiHotfixes : MonoBehaviour
         if (button == null)
             return null;
 
+        if (button.gameObject == null)
+            return null;
+
         if (button.name.Contains("Rules")) return "App_Rules";
         if (button.name.Contains("Health")) return "App_Health";
         if (button.name.Contains("Chat")) return "App_Chat";
@@ -126,7 +132,7 @@ public class PhoneUiHotfixes : MonoBehaviour
         var text = button.GetComponentInChildren<TextMeshProUGUI>(true);
         if (text != null)
         {
-            string t = text.text.Replace(" ", "").Trim().ToLowerInvariant();
+            string t = (text.text ?? string.Empty).Replace(" ", "").Trim().ToLowerInvariant();
             if (t.Contains("rule") || t.Contains("규칙")) return "App_Rules";
             if (t.Contains("health") || t.Contains("자가진단") || t.Contains("건강")) return "App_Health";
             if (t.Contains("chat") || t.Contains("채팅")) return "App_Chat";

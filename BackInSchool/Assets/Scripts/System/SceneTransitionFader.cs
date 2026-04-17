@@ -11,6 +11,8 @@ using UnityEngine.UI;
 public class SceneTransitionFader : MonoBehaviour
 {
     public static SceneTransitionFader Instance { get; private set; }
+    public const float DefaultFadeOutDuration = 0.3f;
+    public const float DefaultFadeInDuration = 0.25f;
 
     private Canvas canvas;
     private Image fadeImage;
@@ -28,6 +30,30 @@ public class SceneTransitionFader : MonoBehaviour
         Instance = go.AddComponent<SceneTransitionFader>();
         DontDestroyOnLoad(go);
         return Instance;
+    }
+
+    public static void LoadSceneWithFade(string sceneName, float fadeOutDuration = DefaultFadeOutDuration, float fadeInDuration = DefaultFadeInDuration)
+    {
+        var fader = EnsureInstance();
+        if (fader == null)
+        {
+            SceneManager.LoadScene(sceneName);
+            return;
+        }
+
+        fader.StartCoroutine(fader.CoLoadScene(sceneName, fadeOutDuration, fadeInDuration));
+    }
+
+    public static IEnumerator LoadSceneWithFadeRoutine(string sceneName, float fadeOutDuration = DefaultFadeOutDuration, float fadeInDuration = DefaultFadeInDuration)
+    {
+        var fader = EnsureInstance();
+        if (fader == null)
+        {
+            SceneManager.LoadScene(sceneName);
+            yield break;
+        }
+
+        yield return fader.CoLoadScene(sceneName, fadeOutDuration, fadeInDuration);
     }
 
     private void Awake()
@@ -145,5 +171,12 @@ public class SceneTransitionFader : MonoBehaviour
     {
         yield return FadeIn(nextSceneFadeInDuration);
         running = null;
+    }
+
+    private IEnumerator CoLoadScene(string sceneName, float fadeOutDuration, float fadeInDuration)
+    {
+        PrepareFadeInOnNextScene(fadeInDuration);
+        yield return FadeOut(fadeOutDuration);
+        SceneManager.LoadScene(sceneName);
     }
 }

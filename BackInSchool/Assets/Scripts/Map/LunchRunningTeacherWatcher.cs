@@ -38,7 +38,7 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
     [Header("Bubble")]
     [SerializeField] private SpeechBubbleUI warningBubbleTemplate;
     [SerializeField] private Vector3 bubbleWorldOffset = new Vector3(0f, 1.25f, 0f);
-    [SerializeField] private float bubbleScale = 0.65f;
+    [SerializeField] private float bubbleScale = 1f;
     [SerializeField] private float bubbleVisibleSeconds = 1.8f;
     [SerializeField] private string speakerNameKo = "\uC120\uC0DD\uB2D8";
     [SerializeField] private string speakerNameEn = "Teacher";
@@ -476,6 +476,9 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
                 cachedBubbleCanvas = existingCanvas.GetComponent<Canvas>();
         }
 
+        if (cachedBubbleCanvas != null)
+            return cachedBubbleCanvas.transform;
+
         if (cachedBubbleCanvas == null)
         {
             var canvasGo = new GameObject(RuntimeBubbleCanvasName, typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -494,23 +497,6 @@ public class LunchRunningTeacherWatcher : MonoBehaviour
 
         if (cachedBubbleCanvas != null)
             return cachedBubbleCanvas.transform;
-
-        var runtimeCanvas = GameObject.Find("__RuntimeDialogueCanvas");
-        if (runtimeCanvas != null)
-        {
-            var canvas = runtimeCanvas.GetComponent<Canvas>();
-            if (canvas != null)
-                return canvas.transform;
-        }
-
-        var active = SceneManager.GetActiveScene();
-        var roots = active.GetRootGameObjects();
-        for (int i = 0; i < roots.Length; i++)
-        {
-            var canvases = roots[i].GetComponentsInChildren<Canvas>(true);
-            if (canvases.Length > 0)
-                return canvases[0].transform;
-        }
 
         return null;
     }

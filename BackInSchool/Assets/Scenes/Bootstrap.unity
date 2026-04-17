@@ -2385,6 +2385,10 @@ MonoBehaviour:
   playerController: {fileID: 0}
   nextSentenceKey: 101
   audioSource: {fileID: 0}
+  typingSfx: {fileID: 8300000, guid: f5ee1fd0d9826954db931bce43cb8855, type: 3}
+  typingSfxVolume: 0.769
+  typingSfxInterval: 2
+  typingSfxIgnoreWhitespace: 1
 --- !u!114 &1437671242
 MonoBehaviour:
   m_ObjectHideFlags: 0

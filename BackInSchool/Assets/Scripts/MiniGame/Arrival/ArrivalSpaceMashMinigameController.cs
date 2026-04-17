@@ -314,7 +314,7 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
                 }
                 else
                 {
-                    SceneManager.LoadScene("FREEROAM");
+                    SceneTransitionFader.LoadSceneWithFade("FREEROAM");
                 }
 
                 return;

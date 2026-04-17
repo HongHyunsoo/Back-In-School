@@ -177,10 +177,10 @@ public class FlowManager : MonoBehaviour
 
         switch (ev.type)
         {
-            case FlowEventType.CHAT: SceneManager.LoadScene("CHAT"); break;
-            case FlowEventType.FREEROAM: SceneManager.LoadScene("FREEROAM"); break;
-            case FlowEventType.STORY: SceneManager.LoadScene("STORY"); break;
-            case FlowEventType.MINIGAME: SceneManager.LoadScene("MINIGAME"); break;
+            case FlowEventType.CHAT: SceneTransitionFader.LoadSceneWithFade("CHAT"); break;
+            case FlowEventType.FREEROAM: SceneTransitionFader.LoadSceneWithFade("FREEROAM"); break;
+            case FlowEventType.STORY: SceneTransitionFader.LoadSceneWithFade("STORY"); break;
+            case FlowEventType.MINIGAME: SceneTransitionFader.LoadSceneWithFade("MINIGAME"); break;
         }
     }
 

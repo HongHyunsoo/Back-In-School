@@ -6,6 +6,10 @@ using TMPro;
 [DisallowMultipleComponent]
 public class LunchFreeTimeAudioController : MonoBehaviour
 {
+    [Header("Activation")]
+    [SerializeField] private bool enableMorningBeforeAssemblyAudio = true;
+    [SerializeField] private bool enableLunchFreeTimeAudio = true;
+
     [Header("Footsteps")]
     [SerializeField] private AudioClip[] walkFootstepClips;
     [SerializeField] private AudioClip[] runFootstepClips;
@@ -77,7 +81,7 @@ public class LunchFreeTimeAudioController : MonoBehaviour
         RefreshReferences();
         SubscribeChatService();
 
-        if (!IsLunchAudioActive())
+        if (!IsFreeRoamAudioActive())
         {
             ResetFootsteps();
             FadeOutAmbient();
@@ -134,19 +138,22 @@ public class LunchFreeTimeAudioController : MonoBehaviour
         return source;
     }
 
-    private bool IsLunchAudioActive()
+    private bool IsFreeRoamAudioActive()
     {
         if (SceneManager.GetActiveScene().name != "FREEROAM")
             return false;
 
-        if (!FlowContext.IsLunchFreeRoam())
-            return false;
-
         var gm = FindAnyObjectByType<GameManager>();
-        if (gm != null && gm.currentState != GameState.Lunch_FreeTime)
-            return false;
 
-        return true;
+        bool morningActive = enableMorningBeforeAssemblyAudio &&
+            FlowContext.IsMorningBeforeAssemblyFreeRoam() &&
+            (gm == null || gm.currentState == GameState.Morning_Slippers);
+
+        bool lunchActive = enableLunchFreeTimeAudio &&
+            FlowContext.IsLunchFreeRoam() &&
+            (gm == null || gm.currentState == GameState.Lunch_FreeTime);
+
+        return morningActive || lunchActive;
     }
 
     private void UpdateFootsteps()
@@ -158,6 +165,8 @@ public class LunchFreeTimeAudioController : MonoBehaviour
         bool moving = Mathf.Abs(playerController.HorizontalInput) > 0.01f;
         bool running = playerController.IsActivelyRunning;
         AudioClip[] sourceSet = running ? runFootstepClips : walkFootstepClips;
+        if ((sourceSet == null || sourceSet.Length == 0) && running)
+            sourceSet = walkFootstepClips;
 
         if (!grounded || !moving || sourceSet == null || sourceSet.Length == 0)
         {
@@ -352,7 +361,7 @@ public class LunchFreeTimeAudioController : MonoBehaviour
         if (amount <= 0)
             return;
 
-        if (!IsLunchAudioActive())
+        if (!IsFreeRoamAudioActive())
             return;
 
         if (notificationSource != null && phoneNotificationClip != null)
