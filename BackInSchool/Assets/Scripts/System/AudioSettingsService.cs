@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public static class AudioSettingsService
@@ -8,6 +9,7 @@ public static class AudioSettingsService
     public const string SfxVolumePrefKey = "AUDIO_SFX_VOLUME";
 
     private const float DefaultVolume = 1f;
+    private static readonly Dictionary<string, AudioClip> ResourceClipCache = new(StringComparer.OrdinalIgnoreCase);
 
     public static event Action<float> MasterVolumeChanged;
     public static event Action<float> BgmVolumeChanged;
@@ -66,5 +68,18 @@ public static class AudioSettingsService
     public static float ScaleSfx(float baseVolume)
     {
         return Mathf.Clamp01(baseVolume) * SfxVolume;
+    }
+
+    public static AudioClip LoadResourceClip(string resourcePath)
+    {
+        if (string.IsNullOrWhiteSpace(resourcePath))
+            return null;
+
+        if (ResourceClipCache.TryGetValue(resourcePath, out var cached))
+            return cached;
+
+        var clip = Resources.Load<AudioClip>(resourcePath);
+        ResourceClipCache[resourcePath] = clip;
+        return clip;
     }
 }

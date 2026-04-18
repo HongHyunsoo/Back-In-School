@@ -258,6 +258,8 @@ MonoBehaviour:
   promptWorldScale: 0.08
   onlyMorningBeforeAssembly: 1
   changedToSlippersConversationId: SLIPPERS_CHANGED
+  changedSfx: {fileID: 0}
+  changedSfxVolume: 0.9
 --- !u!61 &4945448
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -767,6 +769,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &33559577
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -1916,6 +1920,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &62824124
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -3665,6 +3671,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &102530979
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -3862,6 +3870,8 @@ MonoBehaviour:
   promptWorldScale: 0.08
   onlyMorningBeforeAssembly: 1
   changedToSlippersConversationId: SLIPPERS_CHANGED
+  changedSfx: {fileID: 8300000, guid: 0b11155308e1c964fab7fdcdfe6605db, type: 3}
+  changedSfxVolume: 0.9
 --- !u!61 &104671541
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -4444,6 +4454,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &124745347
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -5368,6 +5380,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &142972187
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -6310,6 +6324,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &179777071
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -6485,6 +6501,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &184971436
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -9212,6 +9230,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &286674457
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -9623,8 +9643,7 @@ Transform:
   m_LocalPosition: {x: -5.25, y: -2.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 2025646346}
+  m_Children: []
   m_Father: {fileID: 1910092087}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &294223408
@@ -10293,6 +10312,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &314477713
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -10840,6 +10861,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: 3ead2bad35e719d4aafa77b58c7fd093, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &323414030
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -11214,6 +11237,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &336002031
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -12235,6 +12260,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &345384296
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -13992,6 +14019,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &389762249
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -15355,6 +15384,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &422480185
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -15530,6 +15561,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &429610761
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -16675,6 +16708,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: 3ead2bad35e719d4aafa77b58c7fd093, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &473016750
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -17930,6 +17965,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &510706580
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -19743,6 +19780,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &561143478
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -61085,6 +61124,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &597356400
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -61784,6 +61825,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &611675431
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -62816,6 +62859,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &648189657
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -66675,6 +66720,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &695671383
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -71164,6 +71211,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &720722356
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -73454,6 +73503,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &742932390
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -73629,6 +73680,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &745384265
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -80559,6 +80612,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &836322902
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -83727,6 +83782,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &913292548
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -84575,6 +84632,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &944353598
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -85932,6 +85991,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &969602150
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -86566,6 +86627,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &989844184
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -89166,6 +89229,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1050682902
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -98496,6 +98561,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1257044933
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -98979,6 +99046,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1273370677
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -99185,6 +99254,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1278343833
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -99477,6 +99548,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &1280896349
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -101908,6 +101981,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1339120175
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -102610,6 +102685,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1349548715
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -103083,6 +103160,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1375651536
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -104957,6 +105036,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &1406679085
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -106328,6 +106409,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1437452776
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -107273,6 +107356,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1468701634
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -110367,6 +110452,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &1532057642
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -110710,6 +110797,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &1541448690
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -111891,6 +111980,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1584565809
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -112949,6 +113040,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1612407069
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -114198,6 +114291,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1644115042
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -115525,6 +115620,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &1677158877
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -116252,6 +116349,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &1681957105
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -117050,6 +117149,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1713035751
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -119849,6 +119950,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &1763373542
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -121346,6 +121449,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1786037310
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -121521,6 +121626,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &1788740582
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -123806,6 +123913,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &1878585535
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -125594,6 +125703,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1893619493
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -129614,6 +129725,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1985594544
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -129911,6 +130024,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &1986873444
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -130086,6 +130201,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &1993118647
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -130658,6 +130775,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: a236da7dd7bd2c34ba08db5ae8e90180, type: 3}
+  transitionSfxVolume: 0.9
 --- !u!61 &2011238090
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -131161,6 +131280,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &2021836188
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -131342,112 +131463,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!1001 &2025646345
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 294223407}
-    m_Modifications:
-    - target: {fileID: 3188427768456636524, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_Name
-      value: KeyPrefab
-      objectReference: {fileID: 0}
-    - target: {fileID: 3188427768456636524, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_Pivot.x
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_Pivot.y
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_AnchorMin.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 1.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
---- !u!224 &2025646346 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 5795626134562478859, guid: 873bd1e69429ff44699dfb8049edfa3a, type: 3}
-  m_PrefabInstance: {fileID: 2025646345}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2030071189
 GameObject:
   m_ObjectHideFlags: 0
@@ -131526,6 +131541,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: 3ead2bad35e719d4aafa77b58c7fd093, type: 3}
+  transitionSfxVolume: 0.711
 --- !u!61 &2030071192
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -132166,6 +132183,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &2048813684
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -171206,6 +171225,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &2063439584
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -172073,6 +172094,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 0}
+  transitionSfxVolume: 0.9
 --- !u!61 &2085699551
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -172711,7 +172734,7 @@ MonoBehaviour:
   fadeInSeconds: 0.35
   timeoutPenaltyDelta: 0
   bellClip: {fileID: 8300000, guid: 22f44d3417428c54ebb98bf68d3cd84a, type: 3}
-  bellVolume: 1
+  bellVolume: 0.526
   showTimerUI: 1
   uiPrefab: {fileID: 1360405121658300028, guid: f9efa9bffe496964c98a6414b3d64129, type: 3}
   uiAnchorMin: {x: 0, y: 1}
@@ -173796,6 +173819,8 @@ MonoBehaviour:
   fadeOutDuration: 0.2
   fadeInDuration: 0.25
   retriggerBlockSeconds: 0.2
+  transitionSfx: {fileID: 8300000, guid: 3ead2bad35e719d4aafa77b58c7fd093, type: 3}
+  transitionSfxVolume: 0.711
 --- !u!61 &2118634431
 BoxCollider2D:
   m_ObjectHideFlags: 0

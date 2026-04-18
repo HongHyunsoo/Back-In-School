@@ -71,6 +71,9 @@ public class MapTransitionPortal : MonoBehaviour
     public float fadeInDuration = 0.25f;
     [Tooltip("Prevents immediate retrigger after in-scene teleport.")]
     public float retriggerBlockSeconds = 0.2f;
+    [Header("Audio")]
+    [SerializeField] private AudioClip transitionSfx;
+    [SerializeField] [Range(0f, 1f)] private float transitionSfxVolume = 0.9f;
 
     private bool playerInRange;
     private bool isTransitioning;
@@ -82,6 +85,7 @@ public class MapTransitionPortal : MonoBehaviour
     private KeyCode lastStairUpKey = KeyCode.None;
     private KeyCode lastStairDownKey = KeyCode.None;
     private static TMP_FontAsset cachedPromptFont;
+    private AudioSource audioSource;
 
     private static bool hookInstalled;
     private static bool hasPendingSpawn;
@@ -186,6 +190,8 @@ public class MapTransitionPortal : MonoBehaviour
         if (col != null && !col.isTrigger)
             col.isTrigger = true;
 
+        EnsureAudioSource();
+        EnsureDefaultAudio();
         EnsurePromptBinding();
     }
 
@@ -284,6 +290,8 @@ public class MapTransitionPortal : MonoBehaviour
     {
         if (isTransitioning)
             return;
+
+        PlayTransitionSfx();
 
         switch (mode)
         {
@@ -436,6 +444,58 @@ public class MapTransitionPortal : MonoBehaviour
         ApplyPromptFont(interactKeyText);
         ApplyPromptFont(stairUpKeyText);
         ApplyPromptFont(stairDownKeyText);
+    }
+
+    private void EnsureAudioSource()
+    {
+        if (audioSource != null)
+            return;
+
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.spatialBlend = 0f;
+        audioSource.ignoreListenerPause = true;
+    }
+
+    private void EnsureDefaultAudio()
+    {
+        if (transitionSfx != null)
+            return;
+
+        if (IsCorridorPortal())
+        {
+            transitionSfx = AudioSettingsService.LoadResourceClip("SFX/FREEROAM_SFX/Transition_Corrider_Sfx");
+            transitionSfxVolume = 0.5f;
+            return;
+        }
+
+        transitionSfx = AudioSettingsService.LoadResourceClip("SFX/UI/UI_confirm");
+    }
+
+    private bool IsCorridorPortal()
+    {
+        string portalName = gameObject != null ? gameObject.name : string.Empty;
+        if (string.IsNullOrWhiteSpace(portalName))
+            return false;
+
+        return portalName == "Portal"
+            || portalName == "Portal_L"
+            || portalName == "Portal_R";
+    }
+
+    private void PlayTransitionSfx()
+    {
+        EnsureAudioSource();
+        EnsureDefaultAudio();
+
+        if (audioSource == null || transitionSfx == null)
+            return;
+
+        audioSource.PlayOneShot(transitionSfx, AudioSettingsService.ScaleSfx(transitionSfxVolume));
     }
 
     private void ApplyPromptFont(TMP_Text text)

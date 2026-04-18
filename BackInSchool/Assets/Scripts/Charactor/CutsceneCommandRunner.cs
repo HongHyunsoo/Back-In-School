@@ -9,6 +9,11 @@ public class CutsceneCommandRunner : MonoBehaviour
     public CharacterRegistry characterRegistry; // 아래 4)에서 만들거
     public AudioSource sfxSource; // 있으면 연결
 
+    private void Awake()
+    {
+        EnsureAudioSource();
+    }
+
     public IEnumerator Execute(string rawText)
     {
         var tags = TagParser.Extract(rawText);
@@ -63,10 +68,11 @@ public class CutsceneCommandRunner : MonoBehaviour
                 case "sfx":
                     {
                         // [sfx:door]
+                        EnsureAudioSource();
                         if (sfxSource != null)
                         {
                             var clip = RuntimeAudioClipCatalog.Load(tag.args[0]);
-                            if (clip != null) sfxSource.PlayOneShot(clip);
+                            if (clip != null) sfxSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(1f));
                         }
                         break;
                     }
@@ -93,5 +99,20 @@ public class CutsceneCommandRunner : MonoBehaviour
     }
 
     float ParseF(string[] a, int idx) => float.Parse(a[idx], System.Globalization.CultureInfo.InvariantCulture);
+
+    private void EnsureAudioSource()
+    {
+        if (sfxSource != null)
+            return;
+
+        sfxSource = GetComponent<AudioSource>();
+        if (sfxSource == null)
+            sfxSource = gameObject.AddComponent<AudioSource>();
+
+        sfxSource.playOnAwake = false;
+        sfxSource.loop = false;
+        sfxSource.spatialBlend = 0f;
+        sfxSource.ignoreListenerPause = true;
+    }
 }
 

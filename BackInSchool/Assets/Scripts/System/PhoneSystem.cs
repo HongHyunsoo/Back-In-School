@@ -40,6 +40,8 @@ public class PhoneSystem : MonoBehaviour
         var dm = FindAnyObjectByType<DialogueManager>();
         if (dm != null)
             DontDestroyOnLoad(dm.gameObject);
+
+        EnsureDefaultAudioClips();
     }
 
     private void Start()
@@ -47,6 +49,8 @@ public class PhoneSystem : MonoBehaviour
         var dm = FindAnyObjectByType<DialogueManager>();
         if (dm != null)
             DontDestroyOnLoad(dm.gameObject);
+
+        EnsureDefaultAudioClips();
     }
 
     public void Open()
@@ -139,5 +143,11 @@ public class PhoneSystem : MonoBehaviour
             scaler.referenceResolution = phoneUiReferenceResolution;
             scaler.matchWidthOrHeight = phoneUiMatchWidthOrHeight;
         }
+    }
+
+    private void EnsureDefaultAudioClips()
+    {
+        if (phoneButtonClickClip == null)
+            phoneButtonClickClip = AudioSettingsService.LoadResourceClip("SFX/UI/UI_confirm");
     }
 }

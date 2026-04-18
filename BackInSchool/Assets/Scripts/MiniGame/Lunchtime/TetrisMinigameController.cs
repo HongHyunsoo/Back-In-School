@@ -229,6 +229,39 @@ public class TetrisMinigameController : MonoBehaviour
         ClearNextPreviewVisual();
     }
 
+    private void OnDisable()
+    {
+        if (failCharacterRoutine != null)
+        {
+            StopCoroutine(failCharacterRoutine);
+            failCharacterRoutine = null;
+        }
+
+        if (failOverlayObject != null)
+            failOverlayObject.SetActive(false);
+
+        SetFailOverlayShowObjectsActive(false);
+        SetFailOverlayHideObjectsActive(true);
+        SetHudVisible(false);
+        ClearNextPreviewVisual();
+    }
+
+    public void HideInactiveArtifacts()
+    {
+        AutoBindFailOverlayReferences();
+        AutoBindFailOverlayShowObjects();
+        AutoBindFailOverlayHideObjects();
+        AutoBindSideHudReferences();
+
+        if (failOverlayObject != null)
+            failOverlayObject.SetActive(false);
+
+        SetFailOverlayShowObjectsActive(false);
+        SetFailOverlayHideObjectsActive(true);
+        SetHudVisible(false);
+        ClearNextPreviewVisual();
+    }
+
     private void Update()
     {
         if (ended) return;

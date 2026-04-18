@@ -77,7 +77,6 @@ public class PhoneSubwayFlowGate : MonoBehaviour
         }
 
         sceneRobotTransform = FindSceneRobotTransform();
-        EnsureRobotBubble();
     }
 
     private void OnDestroy()
@@ -96,8 +95,6 @@ public class PhoneSubwayFlowGate : MonoBehaviour
 
     private void Update()
     {
-        if (warningBubbleRoot != null && warningBubbleRoot.gameObject.activeSelf)
-            PositionBubbleAtRobot();
     }
 
     private void OnPowerPressed()
@@ -107,7 +104,7 @@ public class PhoneSubwayFlowGate : MonoBehaviour
 
         if (!CanLeaveSubwayNow())
         {
-            ShowMessage("\uC544\uC9C1 \uB0B4\uB9B4 \uC5ED\uC774 \uC544\uB2C8\uC57C");
+            ShowMessage(GetLocalizedFailMessage("SUBWAY_EXIT_FAIL", "\uC544\uC9C1 \uB0B4\uB9B4 \uC5ED\uC774 \uC544\uB2C8\uC57C"));
             return;
         }
 
@@ -261,36 +258,21 @@ public class PhoneSubwayFlowGate : MonoBehaviour
 
     private void ShowMessage(string message)
     {
-        EnsureRobotBubble();
-        if (warningBubbleRoot == null || warningBodyText == null)
+        if (sceneRobotTransform == null || !sceneRobotTransform.gameObject.activeInHierarchy)
+            sceneRobotTransform = FindSceneRobotTransform();
+
+        if (sceneRobotTransform == null)
         {
             Debug.Log("[PhoneSubwayFlowGate] " + message);
             return;
         }
 
-        if (warningNameText != null)
-            warningNameText.text = "Robot";
-
-        warningBodyText.text = message;
-        warningBodyText.color = new Color(0.1f, 0.1f, 0.1f, 1f);
-        if (warningNameText != null)
-            warningNameText.color = new Color(0.05f, 0.05f, 0.05f, 1f);
-
-        PositionBubbleAtRobot();
-        warningBubbleRoot.gameObject.SetActive(true);
-        warningBubbleRoot.SetAsLastSibling();
-
-        if (messageRoutine != null)
-            StopCoroutine(messageRoutine);
-        messageRoutine = StartCoroutine(CoHideMessageLater());
-    }
-
-    private IEnumerator CoHideMessageLater()
-    {
-        yield return new WaitForSecondsRealtime(1.6f);
-        if (warningBubbleRoot != null)
-            warningBubbleRoot.gameObject.SetActive(false);
-        messageRoutine = null;
+        SharedRobotWarningBubble.Show(
+            sceneRobotTransform,
+            message,
+            warningBubbleTemplate,
+            warningBubbleScale,
+            1.6f);
     }
 
     private IEnumerator CoCompleteAfterFeedback(int penalty)
@@ -334,6 +316,15 @@ public class PhoneSubwayFlowGate : MonoBehaviour
             warningBubbleRoot.gameObject.name = "SubwayRobotBubble";
             warningBubbleRoot.gameObject.SetActive(false);
             EnsureBubbleHasVisibleBackground(warningBubbleRoot);
+            NormalizeWarningBubbleLayout(warningBubbleRoot);
+            if (warningBodyText != null)
+            {
+                warningBodyText.alignment = TextAlignmentOptions.Center;
+                warningBodyText.verticalAlignment = VerticalAlignmentOptions.Middle;
+                warningBodyText.color = Color.white;
+            }
+            if (warningNameText != null)
+                warningNameText.color = Color.white;
             return;
         }
 
@@ -360,8 +351,9 @@ public class PhoneSubwayFlowGate : MonoBehaviour
 
         warningBodyText = txtGo.GetComponent<TextMeshProUGUI>();
         warningBodyText.alignment = TextAlignmentOptions.Center;
+        warningBodyText.verticalAlignment = VerticalAlignmentOptions.Middle;
         warningBodyText.fontSize = 24f;
-        warningBodyText.color = new Color(0.1f, 0.1f, 0.1f, 1f);
+        warningBodyText.color = Color.white;
         warningBodyText.enableWordWrapping = true;
 
         warningBubbleRoot.gameObject.SetActive(false);
@@ -418,6 +410,41 @@ public class PhoneSubwayFlowGate : MonoBehaviour
             }
         }
         return null;
+    }
+
+    private static void NormalizeWarningBubbleLayout(RectTransform bubbleRoot)
+    {
+        if (bubbleRoot == null)
+            return;
+
+        var fitters = bubbleRoot.GetComponentsInChildren<ContentSizeFitter>(true);
+        for (int i = 0; i < fitters.Length; i++)
+            fitters[i].enabled = false;
+
+        var box = bubbleRoot.Find("DialogBox") as RectTransform;
+        if (box != null)
+        {
+            box.anchoredPosition = new Vector2(0f, -40f);
+            box.sizeDelta = new Vector2(350f, 256f);
+        }
+
+        var dialog = bubbleRoot.Find("DialogBox/Dialog") as RectTransform;
+        if (dialog != null)
+            dialog.sizeDelta = new Vector2(350f, 256f);
+    }
+
+    private static string GetLocalizedFailMessage(string lineId, string fallback)
+    {
+        if (LocalizationManager.Instance == null)
+            return fallback;
+
+        if (!LocalizationManager.Instance.TryGetLine(lineId, out string localized))
+            return fallback;
+
+        if (string.IsNullOrWhiteSpace(localized) || localized == lineId)
+            return fallback;
+
+        return localized;
     }
 
     private Transform GetBubbleCanvasTransform()

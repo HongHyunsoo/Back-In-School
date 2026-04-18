@@ -184,10 +184,10 @@ public class DialogueManager : MonoBehaviour
             var cam = Camera.main;
             if (cam == null) return;
 
-            // speechBubbleParent 기준으로 Canvas 찾기
+            // 말풍선은 항상 전용 Overlay Canvas 기준으로 배치
             var canvas = speechBubbleParent != null
                 ? speechBubbleParent.GetComponentInParent<Canvas>()
-                : FindSceneCanvasInActiveScene();
+                : null;
 
             if (canvas == null)
             {
@@ -198,7 +198,7 @@ public class DialogueManager : MonoBehaviour
                 speechBubble.transform.SetParent(speechBubbleParent, false);
             }
 
-            Vector3 targetPos = currentBubbleSpeaker.position + worldOffset;
+            Vector3 targetPos = GetBubbleAnchorWorldPosition(currentBubbleSpeaker);
             Vector3 screenPos = cam.WorldToScreenPoint(targetPos);
 
             // 카메라 뒤면 숨김
@@ -218,8 +218,11 @@ public class DialogueManager : MonoBehaviour
 
                 if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, uiCam, out var localPoint))
                 {
-                    // Snap to pixel to reduce sub-pixel shimmer/jitter.
-                    Vector2 target = localPoint + new Vector2(0f, bubbleScreenYOffset);
+                    float bubbleHeight = bubbleRect != null ? bubbleRect.rect.height : 0f;
+                    float pivotLift = bubbleHeight * (1f - bubbleRect.pivot.y);
+
+                    // 말풍선 중심이 아니라 하단이 캐릭터 머리 위로 오도록 올려준다.
+                    Vector2 target = localPoint + new Vector2(0f, bubbleScreenYOffset + pivotLift);
                     target.x = Mathf.Round(target.x);
                     target.y = Mathf.Round(target.y);
 
@@ -241,12 +244,10 @@ public class DialogueManager : MonoBehaviour
         playerController = FindAnyObjectByType<PlayerController>();
         gameManager = FindAnyObjectByType<GameManager>();
 
-        // 2) speechBubbleParent를 "현재 씬" Canvas로 강제
-        var sceneCanvas = FindSceneCanvasInActiveScene();
-        if (sceneCanvas == null)
-            sceneCanvas = EnsureRuntimeDialogueCanvas();
-        if (sceneCanvas != null)
-            speechBubbleParent = sceneCanvas.transform;
+        // 2) 말풍선은 씬별 Canvas 설정 영향 안 받게 항상 전용 Overlay Canvas 사용
+        var runtimeCanvas = EnsureRuntimeDialogueCanvas();
+        if (runtimeCanvas != null)
+            speechBubbleParent = runtimeCanvas.transform;
 
         // 3) 말풍선 인스턴스가 없으면 생성, 있으면 부모만 갱신
         if (speechBubblePrefab == null)
@@ -272,6 +273,7 @@ public class DialogueManager : MonoBehaviour
         }
 
         EnsureSpeechBubbleBindings();
+        EnsureSpeechBubbleOnRuntimeCanvas();
         EnsureBubbleVisuals(speechBubble);
         EnsureAudioSource();
 
@@ -329,14 +331,103 @@ public class DialogueManager : MonoBehaviour
         {
             dialogueText.alignment = TextAlignmentOptions.Center;
             dialogueText.verticalAlignment = VerticalAlignmentOptions.Middle;
-            dialogueText.overflowMode = TextOverflowModes.Overflow;
+            dialogueText.overflowMode = TextOverflowModes.Masking;
             dialogueText.enableWordWrapping = true;
             dialogueText.margin = new Vector4(18f, 18f, 18f, 18f);
+            ForceTmpReadable(dialogueText, Color.white);
 
             var maskRoot = dialogueText.transform.parent as RectTransform;
             if (maskRoot != null && maskRoot.GetComponent<RectMask2D>() == null)
                 maskRoot.gameObject.AddComponent<RectMask2D>();
         }
+
+        if (nameText != null)
+            ForceTmpReadable(nameText, Color.white);
+    }
+
+    private Vector3 GetBubbleAnchorWorldPosition(Transform speaker)
+    {
+        if (speaker == null)
+            return worldOffset;
+
+        float topY = float.NegativeInfinity;
+        float centerX = speaker.position.x;
+
+        SpriteRenderer[] spriteRenderers = speaker.GetComponentsInChildren<SpriteRenderer>(true);
+        for (int i = 0; i < spriteRenderers.Length; i++)
+        {
+            SpriteRenderer sr = spriteRenderers[i];
+            if (sr == null || !sr.enabled)
+                continue;
+
+            Bounds bounds = sr.bounds;
+            if (bounds.size.sqrMagnitude <= 0.0001f)
+                continue;
+
+            topY = Mathf.Max(topY, bounds.max.y);
+            centerX = bounds.center.x;
+        }
+
+        if (float.IsNegativeInfinity(topY))
+        {
+            Collider2D[] colliders = speaker.GetComponentsInChildren<Collider2D>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                Collider2D col = colliders[i];
+                if (col == null || !col.enabled)
+                    continue;
+
+                Bounds bounds = col.bounds;
+                if (bounds.size.sqrMagnitude <= 0.0001f)
+                    continue;
+
+                topY = Mathf.Max(topY, bounds.max.y);
+                centerX = bounds.center.x;
+            }
+        }
+
+        if (float.IsNegativeInfinity(topY))
+            return speaker.position + worldOffset;
+
+        return new Vector3(centerX, topY + worldOffset.y, speaker.position.z + worldOffset.z);
+    }
+
+    private static void ForceTmpReadable(TMP_Text text, Color color)
+    {
+        if (text == null)
+            return;
+
+        text.color = color;
+        text.alpha = 1f;
+        text.enableVertexGradient = false;
+        text.faceColor = color;
+        text.outlineColor = Color.black;
+
+        TMP_FontAsset fontAsset = text.font;
+        if (fontAsset != null && fontAsset.material != null)
+        {
+            // TMP 기본 머티리얼로 되돌린 뒤, 텍스트 색만 흰색으로 강제한다.
+            text.fontSharedMaterial = fontAsset.material;
+            text.fontMaterial = fontAsset.material;
+
+            Material material = text.fontMaterial;
+            if (material != null)
+            {
+                if (material.HasProperty(TMPro.ShaderUtilities.ID_FaceColor))
+                    material.SetColor(TMPro.ShaderUtilities.ID_FaceColor, color);
+
+                if (material.HasProperty(TMPro.ShaderUtilities.ID_OutlineColor))
+                    material.SetColor(TMPro.ShaderUtilities.ID_OutlineColor, Color.black);
+
+                if (material.HasProperty(TMPro.ShaderUtilities.ID_OutlineWidth))
+                    material.SetFloat(TMPro.ShaderUtilities.ID_OutlineWidth, 0.16f);
+            }
+        }
+
+        text.SetMaterialDirty();
+        text.SetVerticesDirty();
+        text.UpdateMeshPadding();
+        text.ForceMeshUpdate();
     }
 
     private Canvas FindSceneCanvasInActiveScene()
@@ -389,6 +480,22 @@ public class DialogueManager : MonoBehaviour
         return canvas;
     }
 
+    private void EnsureSpeechBubbleOnRuntimeCanvas()
+    {
+        if (speechBubble == null)
+            return;
+
+        Canvas runtimeCanvas = EnsureRuntimeDialogueCanvas();
+        if (runtimeCanvas == null)
+            return;
+
+        if (speechBubble.transform.parent != runtimeCanvas.transform)
+        {
+            speechBubble.transform.SetParent(runtimeCanvas.transform, false);
+            speechBubbleParent = runtimeCanvas.transform;
+        }
+    }
+
     private void EnsureAudioSource()
     {
         if (audioSource != null)
@@ -402,6 +509,9 @@ public class DialogueManager : MonoBehaviour
         audioSource.loop = false;
         audioSource.spatialBlend = 0f;
         audioSource.ignoreListenerPause = true;
+
+        if (typingSfx == null)
+            typingSfx = AudioSettingsService.LoadResourceClip("SFX/UI/UI_focus");
     }
 
     private void EnsureBubbleVisuals(SpeechBubbleUI bubble)
@@ -740,11 +850,17 @@ public class DialogueManager : MonoBehaviour
         if (dialogueText != null)
         {
             dialogueText.enableWordWrapping = true;
-            dialogueText.overflowMode = TextOverflowModes.Overflow;
+            dialogueText.overflowMode = TextOverflowModes.Masking;
+            ForceTmpReadable(dialogueText, Color.white);
             dialogueText.text = string.Empty;
         }
+        if (nameText != null)
+            ForceTmpReadable(nameText, Color.white);
         if (speechBubble != null)
+        {
+            EnsureSpeechBubbleOnRuntimeCanvas();
             speechBubble.gameObject.SetActive(currentBubbleSpeaker != null);
+        }
 
         // 3) 타이핑 코루틴 실행 (기존 기능 그대로)
         yield return StartCoroutine(TypeSentence(wrappedForBubble));

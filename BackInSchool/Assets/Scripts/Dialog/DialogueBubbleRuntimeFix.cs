@@ -37,6 +37,9 @@ public class DialogueBubbleRuntimeFix : MonoBehaviour
         if (dm == null || !dm.IsDialogueActive)
             return;
 
+        if (SceneManager.GetActiveScene().name != "STORY")
+            return;
+
         var bubble = fiSpeechBubble != null ? fiSpeechBubble.GetValue(dm) as SpeechBubbleUI : null;
         if (bubble == null)
         {

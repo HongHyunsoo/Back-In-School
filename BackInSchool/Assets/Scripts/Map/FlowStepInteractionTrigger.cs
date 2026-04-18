@@ -44,6 +44,7 @@ public class FlowStepInteractionTrigger : MonoBehaviour
             col.isTrigger = true;
 
         EnsureAudioSource();
+        EnsureDefaultAudio();
         EnsurePromptBinding();
     }
 
@@ -239,6 +240,8 @@ public class FlowStepInteractionTrigger : MonoBehaviour
 
     private void PlayCompleteSfx()
     {
+        EnsureDefaultAudio();
+
         if (completeSfx == null)
             return;
 
@@ -247,5 +250,11 @@ public class FlowStepInteractionTrigger : MonoBehaviour
             return;
 
         audioSource.PlayOneShot(completeSfx, AudioSettingsService.ScaleSfx(completeSfxVolume));
+    }
+
+    private void EnsureDefaultAudio()
+    {
+        if (completeSfx == null)
+            completeSfx = AudioSettingsService.LoadResourceClip("SFX/UI/UI_apply");
     }
 }

@@ -62,6 +62,9 @@ public class MinigameSceneBootstrap : MonoBehaviour
             shouldRunPixelPaint,
             shouldRunPresentationTyping);
 
+        if (!shouldRunTetris && tetris != null)
+            tetris.HideInactiveArtifacts();
+
         ApplyControllerState(tetris, shouldRunTetris, CanToggleHostGameObject(tetris));
         ApplyControllerState(arrivalSpaceMash, shouldRunArrivalSpaceMash, CanToggleHostGameObject(arrivalSpaceMash));
         ApplyControllerState(croquis, shouldRunCroquis, CanToggleHostGameObject(croquis));

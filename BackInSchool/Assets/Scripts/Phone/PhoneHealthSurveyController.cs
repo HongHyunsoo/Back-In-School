@@ -61,7 +61,7 @@ public class PhoneHealthSurveyController : MonoBehaviour
         if (previousHealthPanelActive)
             RefreshPageByState();
 
-        EnsureRobotAndWarningBubble();
+        sceneRobotTransform = FindSceneRobotTransform();
     }
 
     private void Update()
@@ -77,7 +77,7 @@ public class PhoneHealthSurveyController : MonoBehaviour
         {
             RebindSubmitButtons();
             RefreshPageByState();
-            EnsureRobotAndWarningBubble();
+            sceneRobotTransform = FindSceneRobotTransform();
         }
 
         if (now && !IsHealthAllowedInCurrentFlow())
@@ -89,9 +89,6 @@ public class PhoneHealthSurveyController : MonoBehaviour
             now = false;
         }
 
-        if (now && warningBubbleRoot != null && warningBubbleRoot.gameObject.activeSelf)
-            PositionWarningBubbleNearRobot();
-
         previousHealthPanelActive = now;
     }
 
@@ -100,7 +97,7 @@ public class PhoneHealthSurveyController : MonoBehaviour
         if (!HasRequiredAnswers())
         {
             Debug.Log("[HealthSurvey] Invalid answers. Showing robot warning.");
-            ShowRobotWarning(WarningMessage);
+            ShowRobotWarning(GetLocalizedFailMessage("SUBWAY_HEALTH_FAIL", WarningMessage));
             return;
         }
 
@@ -265,6 +262,15 @@ public class PhoneHealthSurveyController : MonoBehaviour
             warningBubbleRoot.localScale = Vector3.one * Mathf.Max(0.1f, warningBubbleScale);
 
             EnsureBubbleHasVisibleBackground(warningBubbleRoot);
+            NormalizeWarningBubbleLayout(warningBubbleRoot);
+            if (warningBodyText != null)
+            {
+                warningBodyText.alignment = TextAlignmentOptions.Center;
+                warningBodyText.verticalAlignment = VerticalAlignmentOptions.Middle;
+                warningBodyText.color = Color.white;
+            }
+            if (warningNameText != null)
+                warningNameText.color = Color.white;
 
             warningBubbleRoot.gameObject.name = "RobotWarningBubble";
             warningBubbleRoot.gameObject.SetActive(false);
@@ -294,9 +300,10 @@ public class PhoneHealthSurveyController : MonoBehaviour
         tr.offsetMax = new Vector2(-12f, -10f);
 
         warningBodyText = textObj.GetComponent<TextMeshProUGUI>();
-        warningBodyText.alignment = TextAlignmentOptions.TopLeft;
+        warningBodyText.alignment = TextAlignmentOptions.Center;
+        warningBodyText.verticalAlignment = VerticalAlignmentOptions.Middle;
         warningBodyText.fontSize = 20f;
-        warningBodyText.color = new Color(0.12f, 0.12f, 0.12f, 1f);
+        warningBodyText.color = Color.white;
         warningBodyText.enableWordWrapping = true;
 
         warningBubbleRoot.gameObject.SetActive(false);
@@ -362,30 +369,17 @@ public class PhoneHealthSurveyController : MonoBehaviour
 
     private void ShowRobotWarning(string message)
     {
-        EnsureRobotAndWarningBubble();
-        if (warningBubbleRoot == null || warningBodyText == null) return;
+        if (sceneRobotTransform == null || !sceneRobotTransform.gameObject.activeInHierarchy)
+            sceneRobotTransform = FindSceneRobotTransform();
+        if (sceneRobotTransform == null)
+            return;
 
-        if (warningNameText != null)
-            warningNameText.text = "Robot";
-
-        warningBodyText.text = message;
-        if (warningBodyText != null) warningBodyText.color = new Color(0.1f, 0.1f, 0.1f, 1f);
-        if (warningNameText != null) warningNameText.color = new Color(0.05f, 0.05f, 0.05f, 1f);
-        PositionWarningBubbleNearRobot();
-        warningBubbleRoot.gameObject.SetActive(true);
-        warningBubbleRoot.SetAsLastSibling();
-
-        if (warningRoutine != null)
-            StopCoroutine(warningRoutine);
-        warningRoutine = StartCoroutine(CoHideWarningLater());
-    }
-
-    private IEnumerator CoHideWarningLater()
-    {
-        yield return new WaitForSecondsRealtime(3.2f);
-        if (warningBubbleRoot != null)
-            warningBubbleRoot.gameObject.SetActive(false);
-        warningRoutine = null;
+        SharedRobotWarningBubble.Show(
+            sceneRobotTransform,
+            message,
+            warningBubbleTemplate,
+            warningBubbleScale,
+            3.2f);
     }
 
     private void PositionWarningBubbleNearRobot()
@@ -466,6 +460,27 @@ public class PhoneHealthSurveyController : MonoBehaviour
         return null;
     }
 
+    private static void NormalizeWarningBubbleLayout(RectTransform bubbleRoot)
+    {
+        if (bubbleRoot == null)
+            return;
+
+        var fitters = bubbleRoot.GetComponentsInChildren<ContentSizeFitter>(true);
+        for (int i = 0; i < fitters.Length; i++)
+            fitters[i].enabled = false;
+
+        var box = bubbleRoot.Find("DialogBox") as RectTransform;
+        if (box != null)
+        {
+            box.anchoredPosition = new Vector2(0f, -40f);
+            box.sizeDelta = new Vector2(350f, 256f);
+        }
+
+        var dialog = bubbleRoot.Find("DialogBox/Dialog") as RectTransform;
+        if (dialog != null)
+            dialog.sizeDelta = new Vector2(350f, 256f);
+    }
+
     private int GetCurrentDay()
     {
         if (FlowManager.Instance != null)
@@ -481,6 +496,20 @@ public class PhoneHealthSurveyController : MonoBehaviour
             return gm.currentDay;
 
         return 1;
+    }
+
+    private static string GetLocalizedFailMessage(string lineId, string fallback)
+    {
+        if (LocalizationManager.Instance == null)
+            return fallback;
+
+        if (!LocalizationManager.Instance.TryGetLine(lineId, out string localized))
+            return fallback;
+
+        if (string.IsNullOrWhiteSpace(localized) || localized == lineId)
+            return fallback;
+
+        return localized;
     }
 
     private Button FindExitButtonInSurmitPage()

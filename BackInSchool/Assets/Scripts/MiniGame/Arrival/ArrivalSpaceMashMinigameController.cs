@@ -446,8 +446,8 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
     private void RefreshUI()
     {
         string guide = progress < easyPhaseCap
-            ? L("MINIGAME_ARRIVAL_GUIDE_EASY", "스페이스를 눌러서 등교 게이지를 올리자.", "Press Space to build your arrival meter.")
-            : L("MINIGAME_ARRIVAL_GUIDE_FINAL", "마지막 30%! 빠르게 연타하지 않으면 70%로 떨어진다.", "Final 30%! Mash fast or it falls back to 70%.");
+            ? L("MINIGAME_ARRIVAL_GUIDE_EASY", "스페이스바 연타!", "Mash Space!")
+            : L("MINIGAME_ARRIVAL_GUIDE_FINAL", "더 빠르게 연타!", "Mash even faster!");
 
         string phase;
         if (advancing || progress >= 1f)

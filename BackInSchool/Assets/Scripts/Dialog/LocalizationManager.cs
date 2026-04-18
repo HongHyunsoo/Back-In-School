@@ -113,8 +113,9 @@ public class LocalizationManager : MonoBehaviour
             return;
         }
 
-        string[] lines = csvFile.text.Split('\n');
-        for (int i = 1; i < lines.Length; i++)
+        string normalizedText = csvFile.text.Replace("\r\n", "\n").Replace('\r', '\n');
+        List<string> lines = BuildCsvRecords(normalizedText.Split('\n'));
+        for (int i = 1; i < lines.Count; i++)
         {
             string row = lines[i].Trim();
             if (string.IsNullOrEmpty(row)) continue;
@@ -180,6 +181,49 @@ public class LocalizationManager : MonoBehaviour
 
         result.Add(currentField.ToString());
         return result.ToArray();
+    }
+
+    private static List<string> BuildCsvRecords(string[] rawLines)
+    {
+        List<string> records = new List<string>();
+        System.Text.StringBuilder current = new System.Text.StringBuilder();
+        bool inQuotes = false;
+
+        for (int i = 0; i < rawLines.Length; i++)
+        {
+            string line = rawLines[i];
+
+            if (current.Length > 0)
+                current.Append('\n');
+
+            current.Append(line);
+
+            for (int j = 0; j < line.Length; j++)
+            {
+                if (line[j] != '"')
+                    continue;
+
+                bool escaped = j + 1 < line.Length && line[j + 1] == '"';
+                if (escaped)
+                {
+                    j++;
+                    continue;
+                }
+
+                inQuotes = !inQuotes;
+            }
+
+            if (!inQuotes)
+            {
+                records.Add(current.ToString());
+                current.Clear();
+            }
+        }
+
+        if (current.Length > 0)
+            records.Add(current.ToString());
+
+        return records;
     }
 
     // --- 2. 'Conversations.csv' (대화) 로드 ---

@@ -12,12 +12,19 @@ public class SchoolLockerInteraction : MonoBehaviour
     [SerializeField] private float promptWorldScale = 0.08f;
     [SerializeField] private bool onlyMorningBeforeAssembly = true;
     [SerializeField] private string changedToSlippersConversationId = "SLIPPERS_CHANGED";
+    [Header("Audio")]
+    [SerializeField] private AudioClip changedSfx;
+    [SerializeField] [Range(0f, 1f)] private float changedSfxVolume = 0.9f;
 
     bool isPlayerInRange;
     private KeyCode lastInteractKey = KeyCode.None;
+    private AudioSource audioSource;
 
     private void Start()
     {
+        EnsureAudioSource();
+        EnsureDefaultAudio();
+
         if (interactPrompt != null)
             interactPrompt.SetActive(false);
 
@@ -51,6 +58,7 @@ public class SchoolLockerInteraction : MonoBehaviour
             var shoeVisual = FindAnyObjectByType<PlayerShoeVisual>();
             if (shoeVisual != null)
                 shoeVisual.ForceRefresh();
+            PlayChangedSfx();
             TryPlayChangedMessageDialogue();
         }
     }
@@ -110,6 +118,38 @@ public class SchoolLockerInteraction : MonoBehaviour
             return;
 
         dm.StartDialogue(changedToSlippersConversationId, null);
+    }
+
+    private void EnsureAudioSource()
+    {
+        if (audioSource != null)
+            return;
+
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.spatialBlend = 0f;
+        audioSource.ignoreListenerPause = true;
+    }
+
+    private void EnsureDefaultAudio()
+    {
+        if (changedSfx == null)
+            changedSfx = AudioSettingsService.LoadResourceClip("SFX/UI/UI_apply");
+    }
+
+    private void PlayChangedSfx()
+    {
+        EnsureAudioSource();
+        EnsureDefaultAudio();
+
+        if (audioSource == null || changedSfx == null)
+            return;
+
+        audioSource.PlayOneShot(changedSfx, AudioSettingsService.ScaleSfx(changedSfxVolume));
     }
 
 }
