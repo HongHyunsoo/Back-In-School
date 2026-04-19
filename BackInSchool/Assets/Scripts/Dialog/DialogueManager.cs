@@ -21,6 +21,8 @@ using UnityEngine.Animations;
  */
 public class DialogueManager : MonoBehaviour
 {
+    private const string CameraPresentationSfxResource = "SFX/Char/Camera";
+
     public static event Action<string, string> DialogueLineShown;
     public static event Action<string> DialogueConversationCompleted;
 
@@ -35,8 +37,8 @@ public class DialogueManager : MonoBehaviour
     private TextMeshProUGUI nameText;
     private TextMeshProUGUI dialogueText;
     public float typingSpeed = 0.08f;
-    public Vector3 worldOffset = new Vector3(0, 0.5f, 0);
-    [SerializeField] private float bubbleScreenYOffset = 54f;
+    public Vector3 worldOffset = new Vector3(0, 0.65f, 0);
+    [SerializeField] private float bubbleScreenYOffset = 16f;
     public PlayerController playerController;
     public KeyCode nextSentenceKey = KeyCode.E;
 
@@ -218,11 +220,7 @@ public class DialogueManager : MonoBehaviour
 
                 if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, uiCam, out var localPoint))
                 {
-                    float bubbleHeight = bubbleRect != null ? bubbleRect.rect.height : 0f;
-                    float pivotLift = bubbleHeight * (1f - bubbleRect.pivot.y);
-
-                    // 말풍선 중심이 아니라 하단이 캐릭터 머리 위로 오도록 올려준다.
-                    Vector2 target = localPoint + new Vector2(0f, bubbleScreenYOffset + pivotLift);
+                    Vector2 target = localPoint + new Vector2(0f, bubbleScreenYOffset);
                     target.x = Mathf.Round(target.x);
                     target.y = Mathf.Round(target.y);
 
@@ -738,7 +736,9 @@ public class DialogueManager : MonoBehaviour
         if (isTyping)
         {
             StopAllCoroutines();
-            dialogueText.text = LocalizationManager.Instance.GetLine(currentLine.lineID);
+            string fullSentence = LocalizationManager.Instance.GetLine(currentLine.lineID);
+            string cleanSentence = TagParser.Strip(fullSentence);
+            dialogueText.text = PrepareBubbleTextForWordWrapping(cleanSentence, dialogueText);
             isTyping = false;
 
             if (lines.Count == 0) EndDialogue();
@@ -800,13 +800,14 @@ public class DialogueManager : MonoBehaviour
             : currentLine.animationTrigger;
         AnimationClip presentationClip = ResolvePresentationAnimationClip(speakerPresentation, currentSpeaker);
         PlayPresentationVisuals(currentSpeaker, speakerPresentationSource, presentationClip, animationTrigger);
+        PlayPresentationSound(speakerPresentation, presentationClip);
         PlayAdditionalLinePresentations(matchingPresentations, speakerSpecificPresentation, currentSpeaker, currentSpeakerID);
         RestoreInactivePresentationTargets();
 
         // 소리 이펙트 재생
-        string soundEffectName = speakerPresentation != null && !string.IsNullOrEmpty(speakerPresentation.soundEffectName)
-            ? speakerPresentation.soundEffectName
-            : currentLine.soundEffectName;
+        string soundEffectName = (speakerPresentation == null || string.IsNullOrEmpty(speakerPresentation.soundEffectName))
+            ? currentLine.soundEffectName
+            : string.Empty;
         if (!string.IsNullOrEmpty(soundEffectName))
         {
             AudioClip clip = RuntimeAudioClipCatalog.Load(soundEffectName);
@@ -915,8 +916,8 @@ public class DialogueManager : MonoBehaviour
         if (targetText == null)
             return source;
 
-        // Let TMP handle CJK wrapping naturally. Manual wrapping below only works well for space-separated languages.
-        if (ContainsCjk(source))
+        // 띄어쓰기 자체가 없으면 단어 단위 줄바꿈을 할 수 없으니 TMP 기본 처리에 맡긴다.
+        if (!source.Contains(" "))
             return source;
 
         float maxWidth = GetBubbleBodyMaxWidth(targetText);
@@ -1276,6 +1277,7 @@ public class DialogueManager : MonoBehaviour
             DialogueCharacterPresentation targetSource = ResolveSpeakerPresentationComponent(target);
             AnimationClip resolvedClip = ResolvePresentationAnimationClip(presentation, target);
             PlayPresentationVisuals(target, targetSource, resolvedClip, presentation.animationTrigger);
+            PlayPresentationSound(presentation, resolvedClip);
         }
     }
 
@@ -1345,13 +1347,20 @@ public class DialogueManager : MonoBehaviour
         }
     }
 
-    private void PlayPresentationSound(DialogueLinePresentation presentation)
+    private void PlayPresentationSound(DialogueLinePresentation presentation, AnimationClip resolvedClip)
     {
         string soundEffectName = presentation != null ? presentation.soundEffectName : string.Empty;
-        if (string.IsNullOrEmpty(soundEffectName))
-            return;
+        AudioClip clip = null;
 
-        AudioClip clip = RuntimeAudioClipCatalog.Load(soundEffectName);
+        if (!string.IsNullOrEmpty(soundEffectName))
+        {
+            clip = RuntimeAudioClipCatalog.Load(soundEffectName);
+        }
+        else if (resolvedClip != null && resolvedClip.name.IndexOf("Photo", StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+            clip = AudioSettingsService.LoadResourceClip(CameraPresentationSfxResource);
+        }
+
         if (clip != null && audioSource != null)
             audioSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(1f));
     }

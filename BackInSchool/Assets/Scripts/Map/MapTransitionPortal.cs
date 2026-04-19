@@ -469,7 +469,14 @@ public class MapTransitionPortal : MonoBehaviour
         if (IsCorridorPortal())
         {
             transitionSfx = AudioSettingsService.LoadResourceClip("SFX/FREEROAM_SFX/Transition_Corrider_Sfx");
-            transitionSfxVolume = 0.5f;
+            transitionSfxVolume = 0.25f;
+            return;
+        }
+
+        if (IsDoorPortal())
+        {
+            transitionSfx = AudioSettingsService.LoadResourceClip("SFX/FREEROAM_SFX/Transition_Door_01Sfx");
+            transitionSfxVolume = 0.4f;
             return;
         }
 
@@ -485,6 +492,15 @@ public class MapTransitionPortal : MonoBehaviour
         return portalName == "Portal"
             || portalName == "Portal_L"
             || portalName == "Portal_R";
+    }
+
+    private bool IsDoorPortal()
+    {
+        string portalName = gameObject != null ? gameObject.name : string.Empty;
+        if (string.IsNullOrWhiteSpace(portalName))
+            return false;
+
+        return portalName.IndexOf("Door", System.StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private void PlayTransitionSfx()
