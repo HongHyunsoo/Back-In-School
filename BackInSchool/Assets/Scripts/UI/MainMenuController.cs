@@ -162,43 +162,9 @@ public class MainMenuController : MonoBehaviour
         isStarting = true;
         SetMainButtonsInteractable(false);
 
-        Transform zoomTarget = transitionZoomTarget != null ? transitionZoomTarget : transform;
-        Vector3 startScale = zoomTarget.localScale;
-        Vector3 endScale = startScale * Mathf.Max(1f, targetZoomScale);
-
-        Camera cam = transitionCamera != null ? transitionCamera : Camera.main;
-        bool canZoomCamera = cam != null && cam.orthographic;
-        float startOrtho = canZoomCamera ? cam.orthographicSize : 0f;
-        float endOrtho = canZoomCamera ? Mathf.Max(0.1f, targetCameraOrthoSize) : 0f;
-
-        float duration = Mathf.Max(0.01f, transitionDuration);
-        float elapsed = 0f;
-
-        while (elapsed < duration)
-        {
-            float dt = useUnscaledTimeForTransition ? Time.unscaledDeltaTime : Time.deltaTime;
-            elapsed += dt;
-            float t = Mathf.Clamp01(elapsed / duration);
-            float eased = 1f - Mathf.Pow(1f - t, 3f);
-
-            if (zoomTarget != null)
-                zoomTarget.localScale = Vector3.LerpUnclamped(startScale, endScale, eased);
-
-            if (canZoomCamera)
-                cam.orthographicSize = Mathf.LerpUnclamped(startOrtho, endOrtho, eased);
-
-            yield return null;
-        }
-
         var fader = SceneTransitionFader.EnsureInstance();
         fader.PrepareFadeInOnNextScene(fadeInDuration);
         yield return fader.FadeOut(fadeOutDuration);
-
-        // Safety reset before scene load in case camera/root survives scene changes.
-        if (zoomTarget != null)
-            zoomTarget.localScale = startScale;
-        if (canZoomCamera)
-            cam.orthographicSize = startOrtho;
 
         var fm = FlowManager.Instance;
         if (fm == null)
