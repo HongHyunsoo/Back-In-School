@@ -7,6 +7,19 @@ using UnityEngine.UI;
 
 public class ArrivalSpaceMashMinigameController : MonoBehaviour
 {
+    [Header("Audio")]
+    public AudioSource audioSource;
+    public AudioClip loopClip;
+    [Range(0f, 1f)] public float loopVolume = 0.45f;
+    public AudioClip pressSfx;
+    [Range(0f, 1f)] public float pressSfxVolume = 0.7f;
+    public AudioClip finalPhasePressSfx;
+    [Range(0f, 1f)] public float finalPhasePressSfxVolume = 0.8f;
+    public AudioClip successSfx;
+    [Range(0f, 1f)] public float successSfxVolume = 0.9f;
+    public AudioClip failSfx;
+    [Range(0f, 1f)] public float failSfxVolume = 0.8f;
+
     [Header("Flow")]
     public string[] supportedFlowPrefixes = new[] { "ARRIVAL_SPACE_" };
     public int penaltyOnGiveUp = 0;
@@ -99,12 +112,14 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
 
         EnsureUIFont();
         EnsureEventSystem();
+        EnsureAudioSource();
         usingSceneLayout = TryInitializeSceneLayout();
         if (!usingSceneLayout)
             BuildRuntimeUI();
 
         RefreshUI();
         TryBeginFreeroamPreload();
+        StartLoopIfNeeded();
     }
 
     private void OnDisable()
@@ -239,6 +254,7 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
         if (progress < easyPhaseCap - 0.0001f)
         {
             progress = Mathf.Min(easyPhaseCap, progress + easyPhaseGainPerPress);
+            PlayOneShot(pressSfx, pressSfxVolume);
         }
         else
         {
@@ -247,6 +263,8 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
                 progress = easyPhaseCap;
 
             progress = Mathf.Clamp01(progress + finalPhaseGainPerPress);
+            PlayOneShot(finalPhasePressSfx != null ? finalPhasePressSfx : pressSfx,
+                finalPhasePressSfx != null ? finalPhasePressSfxVolume : pressSfxVolume);
         }
 
         lastSpacePressedTime = now;
@@ -288,6 +306,8 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
             return;
 
         ended = true;
+        StopLoopIfNeeded();
+        PlayOneShot(success ? successSfx : failSfx, success ? successSfxVolume : failSfxVolume);
 
         if (completeRoutine != null)
         {
@@ -330,6 +350,51 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
         var gm = FindAnyObjectByType<GameManager>();
         if (gm != null)
             gm.MinigameFinished(success);
+    }
+
+    private void EnsureAudioSource()
+    {
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.spatialBlend = 0f;
+    }
+
+    private void StartLoopIfNeeded()
+    {
+        EnsureAudioSource();
+        if (loopClip == null)
+            return;
+
+        audioSource.clip = loopClip;
+        audioSource.loop = true;
+        audioSource.volume = AudioSettingsService.ScaleBgm(loopVolume);
+        if (!audioSource.isPlaying)
+            audioSource.Play();
+    }
+
+    private void StopLoopIfNeeded()
+    {
+        if (audioSource == null)
+            return;
+
+        if (audioSource.isPlaying && audioSource.clip == loopClip)
+            audioSource.Stop();
+        audioSource.loop = false;
+        audioSource.clip = null;
+    }
+
+    private void PlayOneShot(AudioClip clip, float volume)
+    {
+        EnsureAudioSource();
+        if (clip == null)
+            return;
+
+        audioSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(volume));
     }
 
     private void TryBeginFreeroamPreload()

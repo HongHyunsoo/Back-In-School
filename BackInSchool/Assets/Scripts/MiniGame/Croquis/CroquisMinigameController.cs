@@ -5,6 +5,21 @@ using UnityEngine.UI;
 
 public class CroquisMinigameController : MonoBehaviour
 {
+    [Header("Audio")]
+    public AudioSource audioSource;
+    public AudioClip loopClip;
+    [Range(0f, 1f)] public float loopVolume = 0.35f;
+    public AudioClip[] promptPressSfxClips;
+    [Range(0f, 1f)] public float promptPressSfxVolume = 0.65f;
+    public AudioClip promptSuccessSfx;
+    [Range(0f, 1f)] public float promptSuccessSfxVolume = 0.8f;
+    public AudioClip stageCompleteSfx;
+    [Range(0f, 1f)] public float stageCompleteSfxVolume = 0.9f;
+    public AudioClip successSfx;
+    [Range(0f, 1f)] public float successSfxVolume = 0.9f;
+    public AudioClip failSfx;
+    [Range(0f, 1f)] public float failSfxVolume = 0.8f;
+
     [Header("Config (Optional)")]
     public CroquisMinigameConfig config;
     public bool overrideStageGoals;
@@ -143,6 +158,7 @@ public class CroquisMinigameController : MonoBehaviour
     private Vector2 bubbleDefaultAnchoredPos;
     private bool stageTransitionPending;
     private RectTransform uiRootRect;
+    private int lastPromptPressSfxIndex = -1;
 
     private void Awake()
     {
@@ -160,6 +176,7 @@ public class CroquisMinigameController : MonoBehaviour
         mainCam = Camera.main;
         if (mainCam == null) mainCam = FindAnyObjectByType<Camera>();
 
+        EnsureAudioSource();
         EnsureUIFont();
         EnsureEventSystem();
         BuildPaperVisuals();
@@ -176,6 +193,7 @@ public class CroquisMinigameController : MonoBehaviour
         ResetBubbleTimer();
         RefreshStatus();
         ReloadTeacherConversationLines();
+        StartLoopIfNeeded();
 
         if (LocalizationManager.Instance != null)
             LocalizationManager.Instance.OnLanguageChanged += OnLanguageChanged;
@@ -225,7 +243,10 @@ public class CroquisMinigameController : MonoBehaviour
             {
                 var world = MouseWorld();
                 if (Vector2.Distance(world, currentPromptPos) <= maxGrabDistance)
+                {
+                    PlayPromptPressSfx();
                     OnPromptSuccess();
+                }
             }
             return;
         }
@@ -237,6 +258,7 @@ public class CroquisMinigameController : MonoBehaviour
             {
                 dragTracking = true;
                 dragStartWorld = world;
+                PlayPromptPressSfx();
             }
         }
 
@@ -258,12 +280,14 @@ public class CroquisMinigameController : MonoBehaviour
 
     private void OnPromptSuccess()
     {
+        PlayOneShot(promptSuccessSfx, promptSuccessSfxVolume);
         stageSuccessCount++;
         totalSuccessCount++;
 
         bool stageCompleted = stageSuccessCount >= CurrentStageGoal();
         if (stageCompleted)
         {
+            PlayOneShot(stageCompleteSfx, stageCompleteSfxVolume);
             ForceCurrentStageFullyRevealed();
             StartCoroutine(CoAdvanceStageAfterDelay());
             return;
@@ -887,6 +911,8 @@ public class CroquisMinigameController : MonoBehaviour
     {
         if (ended) return;
         ended = true;
+        StopLoopIfNeeded();
+        PlayOneShot(success ? successSfx : failSfx, success ? successSfxVolume : failSfxVolume);
 
         CleanupRuntimeOnly();
 
@@ -900,6 +926,79 @@ public class CroquisMinigameController : MonoBehaviour
         var gm = FindAnyObjectByType<GameManager>();
         if (gm != null)
             gm.MinigameFinished(success);
+    }
+
+    private void EnsureAudioSource()
+    {
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.spatialBlend = 0f;
+    }
+
+    private void StartLoopIfNeeded()
+    {
+        EnsureAudioSource();
+        if (loopClip == null)
+            return;
+
+        audioSource.clip = loopClip;
+        audioSource.loop = true;
+        audioSource.volume = AudioSettingsService.ScaleBgm(loopVolume);
+        if (!audioSource.isPlaying)
+            audioSource.Play();
+    }
+
+    private void StopLoopIfNeeded()
+    {
+        if (audioSource == null)
+            return;
+
+        if (audioSource.isPlaying && audioSource.clip == loopClip)
+            audioSource.Stop();
+        audioSource.loop = false;
+        audioSource.clip = null;
+    }
+
+    private void PlayOneShot(AudioClip clip, float volume)
+    {
+        EnsureAudioSource();
+        if (clip == null)
+            return;
+
+        audioSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(volume));
+    }
+
+    private void PlayPromptPressSfx()
+    {
+        AudioClip clip = PickRandomClip(promptPressSfxClips, ref lastPromptPressSfxIndex);
+        PlayOneShot(clip, promptPressSfxVolume);
+    }
+
+    private AudioClip PickRandomClip(AudioClip[] clips, ref int lastIndex)
+    {
+        if (clips == null || clips.Length == 0)
+            return null;
+
+        if (clips.Length == 1)
+        {
+            lastIndex = 0;
+            return clips[0];
+        }
+
+        int picked = lastIndex;
+        for (int safety = 0; safety < 8 && picked == lastIndex; safety++)
+            picked = rng.Next(0, clips.Length);
+
+        if (picked < 0 || picked >= clips.Length)
+            picked = 0;
+
+        lastIndex = picked;
+        return clips[picked];
     }
 
     private void CleanupRuntimeOnly()

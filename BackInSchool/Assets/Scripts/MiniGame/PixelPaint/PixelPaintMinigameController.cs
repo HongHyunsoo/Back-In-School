@@ -96,6 +96,22 @@ public class PixelPaintMinigameController : MonoBehaviour
     [Tooltip("Seconds to show solved picture before moving to next puzzle/end.")]
     public float solvedPreviewSeconds = 1.0f;
 
+    [Header("Audio")]
+    public AudioSource audioSource;
+    public AudioClip loopClip;
+    [Range(0f, 1f)] public float loopVolume = 0.3f;
+    public AudioClip paintSfx;
+    [Range(0f, 1f)] public float paintSfxVolume = 0.5f;
+    public AudioClip eraseSfx;
+    [Range(0f, 1f)] public float eraseSfxVolume = 0.5f;
+    public AudioClip puzzleSolvedSfx;
+    [Range(0f, 1f)] public float puzzleSolvedSfxVolume = 0.85f;
+    public AudioClip minigameSuccessSfx;
+    [Range(0f, 1f)] public float minigameSuccessSfxVolume = 0.9f;
+    public AudioClip minigameFailSfx;
+    [Range(0f, 1f)] public float minigameFailSfxVolume = 0.85f;
+    [Range(0.01f, 0.2f)] public float paintSfxCooldown = 0.04f;
+
     private static int sequentialCursor = 0;
 
     private int width;
@@ -130,6 +146,7 @@ public class PixelPaintMinigameController : MonoBehaviour
     private Vector3 lastMouseScreenPos;
     private float defaultOrthoSize = -1f;
     private Vector3 defaultCameraPosition;
+    private float lastPaintSfxTime = -999f;
 
     private class CellView
     {
@@ -161,6 +178,7 @@ public class PixelPaintMinigameController : MonoBehaviour
 
         defaultPalette = palette != null ? (Color[])palette.Clone() : Array.Empty<Color>();
         EnsureNumberFont();
+        EnsureAudioSource();
 
         EnsurePuzzlesOrFallback();
         BuildSessionPuzzleOrder();
@@ -175,6 +193,7 @@ public class PixelPaintMinigameController : MonoBehaviour
         BuildRuntimeUI();
         RefreshHeader();
         RefreshPaletteUI();
+        StartLoopIfNeeded();
 
         if (LocalizationManager.Instance != null)
             LocalizationManager.Instance.OnLanguageChanged += OnLanguageChanged;
@@ -999,6 +1018,7 @@ public class PixelPaintMinigameController : MonoBehaviour
 
         if (painted[x, y] == colorIndex) return;
         painted[x, y] = colorIndex;
+        PlayPaintSfx(colorIndex == 0 ? eraseSfx : paintSfx, colorIndex == 0 ? eraseSfxVolume : paintSfxVolume);
         RefreshCellVisual(x, y);
     }
 
@@ -1100,6 +1120,7 @@ public class PixelPaintMinigameController : MonoBehaviour
         if (solvedWaitForContinue || ended) return;
 
         solvedWaitForContinue = true;
+        PlayOneShot(puzzleSolvedSfx, puzzleSolvedSfxVolume);
         solvedContinueAtUnscaledTime = Time.unscaledTime + Mathf.Max(0.05f, solvedPreviewSeconds);
         FitCameraToBoardOverview();
         HideBoardOutlinesAndNumbers();
@@ -1217,6 +1238,8 @@ public class PixelPaintMinigameController : MonoBehaviour
     {
         if (ended) return;
         ended = true;
+        StopLoopIfNeeded();
+        PlayOneShot(success ? minigameSuccessSfx : minigameFailSfx, success ? minigameSuccessSfxVolume : minigameFailSfxVolume);
 
         CleanupRuntimeUI();
 
@@ -1232,6 +1255,60 @@ public class PixelPaintMinigameController : MonoBehaviour
         var gm = FindAnyObjectByType<GameManager>();
         if (gm != null)
             gm.MinigameFinished(success);
+    }
+
+    private void EnsureAudioSource()
+    {
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.spatialBlend = 0f;
+    }
+
+    private void StartLoopIfNeeded()
+    {
+        EnsureAudioSource();
+        if (loopClip == null)
+            return;
+
+        audioSource.clip = loopClip;
+        audioSource.loop = true;
+        audioSource.volume = AudioSettingsService.ScaleBgm(loopVolume);
+        if (!audioSource.isPlaying)
+            audioSource.Play();
+    }
+
+    private void StopLoopIfNeeded()
+    {
+        if (audioSource == null)
+            return;
+
+        if (audioSource.isPlaying && audioSource.clip == loopClip)
+            audioSource.Stop();
+        audioSource.loop = false;
+        audioSource.clip = null;
+    }
+
+    private void PlayPaintSfx(AudioClip clip, float volume)
+    {
+        if (Time.unscaledTime - lastPaintSfxTime < paintSfxCooldown)
+            return;
+
+        lastPaintSfxTime = Time.unscaledTime;
+        PlayOneShot(clip, volume);
+    }
+
+    private void PlayOneShot(AudioClip clip, float volume)
+    {
+        EnsureAudioSource();
+        if (clip == null)
+            return;
+
+        audioSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(volume));
     }
 
     private void CleanupRuntimeUI()

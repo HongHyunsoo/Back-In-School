@@ -24,6 +24,23 @@ public class TetrisMinigameController : MonoBehaviour
     [Header("Goal")]
     public int targetLockedPieces = 15;
 
+    [Header("Audio")]
+    public AudioSource audioSource;
+    public AudioClip loopClip;
+    [Range(0f, 1f)] public float loopVolume = 0.35f;
+    public AudioClip moveSfx;
+    [Range(0f, 1f)] public float moveSfxVolume = 0.6f;
+    public AudioClip rotateSfx;
+    [Range(0f, 1f)] public float rotateSfxVolume = 0.7f;
+    [Tooltip("Legacy single lock sound fallback. Used only when Lock Sfx Clips is empty.")]
+    public AudioClip lockSfx;
+    public AudioClip[] lockSfxClips;
+    [Range(0f, 1f)] public float lockSfxVolume = 0.85f;
+    public AudioClip successSfx;
+    [Range(0f, 1f)] public float successSfxVolume = 0.9f;
+    public AudioClip failSfx;
+    [Range(0f, 1f)] public float failSfxVolume = 0.9f;
+
     [Header("Difficulty")]
     public float fallInterval = 0.75f;
     public float softDropInterval = 0.06f;
@@ -112,6 +129,7 @@ public class TetrisMinigameController : MonoBehaviour
     private Transform activeVisualRoot;
     private Transform nextPreviewVisualRoot;
     private SpriteRenderer nextBlockImageRenderer;
+    private int lastLockSfxIndex = -1;
 
     private System.Random rng = new System.Random();
 
@@ -205,6 +223,7 @@ public class TetrisMinigameController : MonoBehaviour
         AutoBindFailCharacterAnimator();
         AutoBindFailCharacterClips();
         AutoBindSideHudReferences();
+        EnsureAudioSource();
     }
 
     private void Start()
@@ -213,6 +232,7 @@ public class TetrisMinigameController : MonoBehaviour
             failOverlayObject.SetActive(false);
 
         board.Init();
+        StartLoopIfNeeded();
         PlayFailCharacterLoop(failCharacterIdleClip);
         SpawnNewPiece();
         RefreshHud();
@@ -463,6 +483,8 @@ public class TetrisMinigameController : MonoBehaviour
                 lockPending = false;
                 lockPendingTimer = 0f;
             }
+            if (delta.x != 0)
+                PlayOneShot(moveSfx, moveSfxVolume);
             return true;
         }
         return false;
@@ -507,6 +529,7 @@ public class TetrisMinigameController : MonoBehaviour
                     lockPendingTimer = 0f;
                 }
                 TriggerRotateJelly();
+                PlayOneShot(rotateSfx, rotateSfxVolume);
                 return;
             }
         }
@@ -762,6 +785,7 @@ public class TetrisMinigameController : MonoBehaviour
             useCompositePieceVisuals,
             activeCompositeBaseRotationZ - (90f * activeRotationQuarterTurns),
             activeCompositeOffsetLocal);
+        PlayLockSfx();
         ClearActiveVisuals();
         lockedCount++;
         lockPending = false;
@@ -1042,6 +1066,8 @@ public class TetrisMinigameController : MonoBehaviour
         if (!success && showFailOverlay)
         {
             ended = true;
+            StopLoopIfNeeded();
+            PlayOneShot(failSfx, failSfxVolume);
             if (failSequenceRoutine != null)
                 StopCoroutine(failSequenceRoutine);
             failSequenceRoutine = StartCoroutine(CoFailThenAdvance());
@@ -1049,6 +1075,8 @@ public class TetrisMinigameController : MonoBehaviour
         }
 
         ended = true;
+        StopLoopIfNeeded();
+        PlayOneShot(success ? successSfx : failSfx, success ? successSfxVolume : failSfxVolume);
         Debug.Log($"[TetrisMinigame] End: {(success ? "SUCCESS" : "FAIL")} (locked={lockedCount}/{targetLockedPieces})");
 
         // Prefer FlowManager timeline
@@ -1066,6 +1094,82 @@ public class TetrisMinigameController : MonoBehaviour
         {
             gm.MinigameFinished(success);
         }
+    }
+
+    private void EnsureAudioSource()
+    {
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.spatialBlend = 0f;
+    }
+
+    private void StartLoopIfNeeded()
+    {
+        EnsureAudioSource();
+        if (loopClip == null)
+            return;
+
+        audioSource.clip = loopClip;
+        audioSource.loop = true;
+        audioSource.volume = AudioSettingsService.ScaleBgm(loopVolume);
+        if (!audioSource.isPlaying)
+            audioSource.Play();
+    }
+
+    private void StopLoopIfNeeded()
+    {
+        if (audioSource == null)
+            return;
+
+        if (audioSource.isPlaying && audioSource.clip == loopClip)
+            audioSource.Stop();
+        audioSource.loop = false;
+        audioSource.clip = null;
+    }
+
+    private void PlayOneShot(AudioClip clip, float volume)
+    {
+        EnsureAudioSource();
+        if (clip == null)
+            return;
+
+        audioSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(volume));
+    }
+
+    private void PlayLockSfx()
+    {
+        AudioClip clip = PickRandomClip(lockSfxClips, ref lastLockSfxIndex);
+        if (clip == null)
+            clip = lockSfx;
+
+        PlayOneShot(clip, lockSfxVolume);
+    }
+
+    private AudioClip PickRandomClip(AudioClip[] clips, ref int lastIndex)
+    {
+        if (clips == null || clips.Length == 0)
+            return null;
+
+        if (clips.Length == 1)
+        {
+            lastIndex = 0;
+            return clips[0];
+        }
+
+        int picked = lastIndex;
+        for (int safety = 0; safety < 8 && picked == lastIndex; safety++)
+            picked = rng.Next(0, clips.Length);
+
+        if (picked < 0 || picked >= clips.Length)
+            picked = 0;
+
+        lastIndex = picked;
+        return clips[picked];
     }
 
     private System.Collections.IEnumerator CoFailThenAdvance()

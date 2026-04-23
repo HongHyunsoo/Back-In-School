@@ -493,6 +493,22 @@ MonoBehaviour:
   overrideVisualValues: 0
   applyBoardLayoutFromConfig: 0
   targetLockedPieces: 12
+  audioSource: {fileID: 0}
+  loopClip: {fileID: 0}
+  loopVolume: 0.35
+  moveSfx: {fileID: 8300000, guid: 00d0a8954f48f2f49808fd24efba0162, type: 3}
+  moveSfxVolume: 0.6
+  rotateSfx: {fileID: 8300000, guid: 00d0a8954f48f2f49808fd24efba0162, type: 3}
+  rotateSfxVolume: 0.7
+  lockSfx: {fileID: 0}
+  lockSfxClips:
+  - {fileID: 8300000, guid: 3d79eb54933b7b442ab16cffaf4782b7, type: 3}
+  - {fileID: 8300000, guid: be074f3a92f870f4a934e7a39268e0ff, type: 3}
+  lockSfxVolume: 0.85
+  successSfx: {fileID: 0}
+  successSfxVolume: 0.9
+  failSfx: {fileID: 0}
+  failSfxVolume: 0.9
   fallInterval: 0.75
   softDropInterval: 0.06
   board: {fileID: 612400882}
@@ -1175,6 +1191,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e30eb17f2d737d4f91896d32e936a6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  audioSource: {fileID: 0}
+  loopClip: {fileID: 0}
+  loopVolume: 0.35
+  promptPressSfxClips:
+  - {fileID: 8300000, guid: fe79423b8e6a83045bc964c1828e698b, type: 3}
+  - {fileID: 8300000, guid: 2d78e3d694613e74bb827de31754fece, type: 3}
+  - {fileID: 8300000, guid: 7967b0beb75a18343829a00c97b3e2d0, type: 3}
+  - {fileID: 8300000, guid: b9ef90eeb8395c44a9df62c78720afde, type: 3}
+  - {fileID: 8300000, guid: 1f1748439790dc7459f2df14cfc7e3f7, type: 3}
+  - {fileID: 8300000, guid: 546b4ff4ed4c0124a85947e6704d1fa8, type: 3}
+  - {fileID: 8300000, guid: 5f3815a83051d164493c19599ad209c3, type: 3}
+  - {fileID: 8300000, guid: e839c1ed9924c5b40b9eceeeff41cc30, type: 3}
+  - {fileID: 8300000, guid: 55176335e1943634aa32073566685aef, type: 3}
+  promptPressSfxVolume: 0.65
+  promptSuccessSfx: {fileID: 0}
+  promptSuccessSfxVolume: 0.8
+  stageCompleteSfx: {fileID: 0}
+  stageCompleteSfxVolume: 0.9
+  successSfx: {fileID: 0}
+  successSfxVolume: 0.9
+  failSfx: {fileID: 0}
+  failSfxVolume: 0.8
   config: {fileID: 11400000, guid: f24dfb4ff038d7c4995411c07861d8d4, type: 2}
   overrideStageGoals: 1
   overridePaperArea: 1
@@ -2494,6 +2532,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e3aa9eab942054b48a1b49c947936974, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  audioSource: {fileID: 0}
+  loopClip: {fileID: 0}
+  loopVolume: 0.45
+  pressSfx: {fileID: 0}
+  pressSfxVolume: 0.7
+  finalPhasePressSfx: {fileID: 0}
+  finalPhasePressSfxVolume: 0.8
+  successSfx: {fileID: 0}
+  successSfxVolume: 0.9
+  failSfx: {fileID: 0}
+  failSfxVolume: 0.8
   supportedFlowPrefixes:
   - ARRIVAL_SPACE_
   penaltyOnGiveUp: 0
@@ -3256,6 +3305,20 @@ MonoBehaviour:
   penaltyOnGiveUp: 1
   playAllPuzzlesInOneRun: 1
   solvedPreviewSeconds: 1
+  audioSource: {fileID: 0}
+  loopClip: {fileID: 0}
+  loopVolume: 0.3
+  paintSfx: {fileID: 0}
+  paintSfxVolume: 0.5
+  eraseSfx: {fileID: 0}
+  eraseSfxVolume: 0.5
+  puzzleSolvedSfx: {fileID: 0}
+  puzzleSolvedSfxVolume: 0.85
+  minigameSuccessSfx: {fileID: 0}
+  minigameSuccessSfxVolume: 0.9
+  minigameFailSfx: {fileID: 0}
+  minigameFailSfxVolume: 0.85
+  paintSfxCooldown: 0.04
 --- !u!1 &1810832999
 GameObject:
   m_ObjectHideFlags: 0
