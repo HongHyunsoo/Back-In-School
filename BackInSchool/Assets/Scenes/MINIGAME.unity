@@ -2535,9 +2535,9 @@ MonoBehaviour:
   audioSource: {fileID: 0}
   loopClip: {fileID: 0}
   loopVolume: 0.45
-  pressSfx: {fileID: 0}
+  pressSfx: {fileID: 8300000, guid: 56b7062a1df324f41970c633072a4617, type: 3}
   pressSfxVolume: 0.7
-  finalPhasePressSfx: {fileID: 0}
+  finalPhasePressSfx: {fileID: 8300000, guid: ed050776f294ced48b8e9689a80668b1, type: 3}
   finalPhasePressSfxVolume: 0.8
   successSfx: {fileID: 0}
   successSfxVolume: 0.9

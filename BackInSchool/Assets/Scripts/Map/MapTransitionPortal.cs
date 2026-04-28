@@ -476,7 +476,7 @@ public class MapTransitionPortal : MonoBehaviour
         if (IsDoorPortal())
         {
             transitionSfx = AudioSettingsService.LoadResourceClip("SFX/FREEROAM_SFX/Transition_Door_01Sfx");
-            transitionSfxVolume = 0.4f;
+            transitionSfxVolume = 0.3f;
             return;
         }
 

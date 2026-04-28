@@ -144,7 +144,9 @@ public class DialogueCharacterPresentation : MonoBehaviour
             targetCharacterId = string.Empty,
             animationTrigger = defaultAnimationTrigger,
             animationClip = defaultAnimationClip,
+            animationClipName = string.Empty,
             sneakersAnimationClip = null,
+            sneakersAnimationClipName = string.Empty,
             soundEffectName = defaultSoundEffectName,
             beforeTextDelaySeconds = Mathf.Max(0f, defaultBeforeTextDelaySeconds)
         };

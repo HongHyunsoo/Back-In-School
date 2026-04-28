@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using UnityEngine;
 
 public enum Language
@@ -238,30 +239,186 @@ public class LocalizationManager : MonoBehaviour
             return;
         }
 
-        string[] lines = csvFile.text.Split('\n');
-        for (int i = 1; i < lines.Length; i++)
+        string normalizedText = csvFile.text.Replace("\r\n", "\n").Replace('\r', '\n');
+        List<string> records = BuildCsvRecords(normalizedText.Split('\n'));
+        if (records.Count == 0)
+            return;
+
+        string[] headers = ParseCSVLine(records[0]);
+        Dictionary<string, int> headerMap = BuildHeaderIndexMap(headers);
+
+        for (int i = 1; i < records.Count; i++)
         {
-            string row = lines[i].Trim();
-            if (string.IsNullOrEmpty(row)) continue;
+            string row = records[i].Trim();
+            if (string.IsNullOrEmpty(row))
+                continue;
 
             string[] columns = ParseCSVLine(row);
-            if (columns.Length >= 4)
+
+            string conversationID = GetCsvValue(columns, headerMap, "Conversation_ID");
+            string speakerID = GetCsvValue(columns, headerMap, "Speaker_ID");
+            string lineID = GetCsvValue(columns, headerMap, "Line_ID");
+
+            if (string.IsNullOrWhiteSpace(conversationID) || string.IsNullOrWhiteSpace(lineID))
+                continue;
+
+            if (!conversationScript.ContainsKey(conversationID))
+                conversationScript.Add(conversationID, new List<DialogueLine>());
+
+            DialogueLine dialogueLine = new DialogueLine
             {
-                string conversationID = columns[0].Trim();
-                string speakerID = columns[2].Trim();
-                string lineID = columns[3].Trim();
+                speakerID = speakerID,
+                lineID = lineID,
+                animationTrigger = GetCsvValue(columns, headerMap, "AnimationTrigger", "PresentationAnimationTrigger"),
+                targetCharacterId = GetCsvValue(columns, headerMap, "TargetCharacter_ID", "TargetCharacterId", "PresentationTargetCharacter_ID", "PresentationTargetCharacterId"),
+                animationClipName = GetCsvValue(columns, headerMap, "AnimationClip", "PresentationAnimationClip"),
+                sneakersAnimationClipName = GetCsvValue(columns, headerMap, "SneakersAnimationClip", "PresentationSneakersAnimationClip"),
+                soundEffectName = GetCsvValue(columns, headerMap, "SoundEffect", "PresentationSoundEffect"),
+                beforeTextDelaySeconds = ParseCsvFloat(GetCsvValue(columns, headerMap, "BeforeTextDelaySeconds", "BeforeTextDelay", "PresentationBeforeTextDelaySeconds"), 0f)
+            };
 
-                if (!conversationScript.ContainsKey(conversationID))
-                    conversationScript.Add(conversationID, new List<DialogueLine>());
+            dialogueLine.csvPresentations = BuildCsvPresentations(
+                lineID,
+                dialogueLine.animationTrigger,
+                dialogueLine.targetCharacterId,
+                dialogueLine.animationClipName,
+                dialogueLine.sneakersAnimationClipName,
+                dialogueLine.soundEffectName,
+                GetCsvValue(columns, headerMap, "BeforeTextDelaySeconds", "BeforeTextDelay", "PresentationBeforeTextDelaySeconds"));
 
-                DialogueLine dialogueLine = new DialogueLine
-                {
-                    speakerID = speakerID,
-                    lineID = lineID
-                };
-                conversationScript[conversationID].Add(dialogueLine);
-            }
+            conversationScript[conversationID].Add(dialogueLine);
         }
+    }
+
+    private static Dictionary<string, int> BuildHeaderIndexMap(string[] headers)
+    {
+        var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        if (headers == null)
+            return map;
+
+        for (int i = 0; i < headers.Length; i++)
+        {
+            string header = headers[i] != null ? headers[i].Trim() : string.Empty;
+            if (string.IsNullOrEmpty(header) || map.ContainsKey(header))
+                continue;
+
+            map[header] = i;
+        }
+
+        return map;
+    }
+
+    private static string GetCsvValue(string[] columns, Dictionary<string, int> headerMap, params string[] headerCandidates)
+    {
+        if (columns == null || headerMap == null || headerCandidates == null)
+            return string.Empty;
+
+        for (int i = 0; i < headerCandidates.Length; i++)
+        {
+            string candidate = headerCandidates[i];
+            if (string.IsNullOrWhiteSpace(candidate))
+                continue;
+
+            if (!headerMap.TryGetValue(candidate, out int index))
+                continue;
+
+            if (index < 0 || index >= columns.Length)
+                return string.Empty;
+
+            return columns[index].Trim();
+        }
+
+        return string.Empty;
+    }
+
+    private static float ParseCsvFloat(string raw, float fallback)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return fallback;
+
+        if (float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out float value))
+            return value;
+
+        if (float.TryParse(raw, NumberStyles.Float, CultureInfo.CurrentCulture, out value))
+            return value;
+
+        return fallback;
+    }
+
+    private static string[] SplitPresentationField(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return Array.Empty<string>();
+
+        return raw.Split('|').Select(part => part.Trim()).ToArray();
+    }
+
+    private static string GetPresentationPart(string[] parts, int index)
+    {
+        if (parts == null || index < 0 || index >= parts.Length)
+            return string.Empty;
+
+        return parts[index];
+    }
+
+    private static List<DialogueLinePresentation> BuildCsvPresentations(
+        string lineId,
+        string animationTriggerRaw,
+        string targetCharacterIdRaw,
+        string animationClipRaw,
+        string sneakersAnimationClipRaw,
+        string soundEffectRaw,
+        string delayRaw)
+    {
+        string[] animationTriggers = SplitPresentationField(animationTriggerRaw);
+        string[] targetCharacterIds = SplitPresentationField(targetCharacterIdRaw);
+        string[] animationClips = SplitPresentationField(animationClipRaw);
+        string[] sneakersAnimationClips = SplitPresentationField(sneakersAnimationClipRaw);
+        string[] soundEffects = SplitPresentationField(soundEffectRaw);
+        string[] delays = SplitPresentationField(delayRaw);
+
+        int count = Math.Max(
+            Math.Max(animationTriggers.Length, targetCharacterIds.Length),
+            Math.Max(
+                Math.Max(animationClips.Length, sneakersAnimationClips.Length),
+                Math.Max(soundEffects.Length, delays.Length)));
+
+        List<DialogueLinePresentation> presentations = new List<DialogueLinePresentation>();
+        for (int i = 0; i < count; i++)
+        {
+            string animationTrigger = GetPresentationPart(animationTriggers, i);
+            string targetCharacterId = GetPresentationPart(targetCharacterIds, i);
+            string animationClipName = GetPresentationPart(animationClips, i);
+            string sneakersAnimationClipName = GetPresentationPart(sneakersAnimationClips, i);
+            string soundEffectName = GetPresentationPart(soundEffects, i);
+            float beforeTextDelaySeconds = ParseCsvFloat(GetPresentationPart(delays, i), 0f);
+
+            bool hasPresentation =
+                !string.IsNullOrWhiteSpace(animationTrigger) ||
+                !string.IsNullOrWhiteSpace(targetCharacterId) ||
+                !string.IsNullOrWhiteSpace(animationClipName) ||
+                !string.IsNullOrWhiteSpace(sneakersAnimationClipName) ||
+                !string.IsNullOrWhiteSpace(soundEffectName) ||
+                beforeTextDelaySeconds > 0f;
+
+            if (!hasPresentation)
+                continue;
+
+            presentations.Add(new DialogueLinePresentation
+            {
+                lineID = lineId,
+                lineIndexStart = -1,
+                lineIndexEnd = -1,
+                targetCharacterId = targetCharacterId,
+                animationTrigger = animationTrigger,
+                animationClipName = animationClipName,
+                sneakersAnimationClipName = sneakersAnimationClipName,
+                soundEffectName = soundEffectName,
+                beforeTextDelaySeconds = beforeTextDelaySeconds
+            });
+        }
+
+        return presentations;
     }
 
     // --- 3. 'ChatSegments.csv' 로드 ---

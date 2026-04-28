@@ -234,6 +234,22 @@ public class LunchFreeTimeTimerController : MonoBehaviour
         return true;
     }
 
+    public bool DebugAddMinutes(int minutes)
+    {
+        if (minutes <= 0 || !IsLunchTimerActive())
+            return false;
+
+        EnsureTimerInitialized();
+
+        if (completionQueued)
+            return false;
+
+        float deltaSeconds = minutes * Mathf.Max(0.1f, realSecondsPerGameMinute);
+        remainingSeconds = Mathf.Min(durationSeconds, remainingSeconds + deltaSeconds);
+        UpdateUi(paused: pauseDuringDialogue && dialogueManager != null && dialogueManager.IsDialogueActive);
+        return true;
+    }
+
     public int GetCurrentClockMinuteComponent()
     {
         EnsureTimerInitialized();

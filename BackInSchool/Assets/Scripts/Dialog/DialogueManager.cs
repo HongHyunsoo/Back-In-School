@@ -7,6 +7,9 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.Playables;
 using UnityEngine.Animations;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 /*
  * ===================================================================================
@@ -789,41 +792,27 @@ public class DialogueManager : MonoBehaviour
         DialogueCharacterPresentation speakerPresentationSource = ResolveSpeakerPresentationComponent(currentSpeaker);
         DialogueLinePresentation speakerDefaults = speakerPresentationSource != null ? speakerPresentationSource.ToPresentation() : null;
         List<DialogueLinePresentation> matchingPresentations = ResolveLinePresentations(currentLine, currentLineIndex);
+        List<DialogueLinePresentation> csvLinePresentations = BuildCsvLinePresentations(currentLine);
+        DialogueLinePresentation csvSpeakerPresentation = ResolveSpeakerSpecificPresentation(csvLinePresentations, currentSpeakerID);
         DialogueLinePresentation speakerSpecificPresentation = ResolveSpeakerSpecificPresentation(matchingPresentations, currentSpeakerID);
-        DialogueLinePresentation speakerPresentation = MergePresentations(speakerDefaults, speakerSpecificPresentation);
+        DialogueLinePresentation speakerPresentation = MergePresentations(MergePresentations(speakerDefaults, csvSpeakerPresentation), speakerSpecificPresentation);
+        List<DialogueLinePresentation> combinedPresentations = new List<DialogueLinePresentation>(matchingPresentations);
+        if (csvLinePresentations != null && csvLinePresentations.Count > 0)
+            combinedPresentations.AddRange(csvLinePresentations);
 
         currentLinePresentationAnimators.Clear();
 
         // 애니메이션 재생
-        string animationTrigger = speakerPresentation != null && !string.IsNullOrEmpty(speakerPresentation.animationTrigger)
-            ? speakerPresentation.animationTrigger
-            : currentLine.animationTrigger;
+        string animationTrigger = speakerPresentation != null ? speakerPresentation.animationTrigger : string.Empty;
         AnimationClip presentationClip = ResolvePresentationAnimationClip(speakerPresentation, currentSpeaker);
         PlayPresentationVisuals(currentSpeaker, speakerPresentationSource, presentationClip, animationTrigger);
         PlayPresentationSound(speakerPresentation, presentationClip);
-        PlayAdditionalLinePresentations(matchingPresentations, speakerSpecificPresentation, currentSpeaker, currentSpeakerID);
+        PlayAdditionalLinePresentations(combinedPresentations, speakerSpecificPresentation, currentSpeaker, currentSpeakerID);
         RestoreInactivePresentationTargets();
-
-        // 소리 이펙트 재생
-        string soundEffectName = (speakerPresentation == null || string.IsNullOrEmpty(speakerPresentation.soundEffectName))
-            ? currentLine.soundEffectName
-            : string.Empty;
-        if (!string.IsNullOrEmpty(soundEffectName))
-        {
-            AudioClip clip = RuntimeAudioClipCatalog.Load(soundEffectName);
-            if (clip != null && audioSource != null)
-            {
-                audioSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(1f));
-            }
-            else
-            {
-                UnityEngine.Debug.LogWarning("소리 이펙트를 찾을 수 없습니다: " + soundEffectName);
-            }
-        }
 
         // 대사 표시
         string translatedSentence = LocalizationManager.Instance.GetLine(currentLine.lineID);
-        float beforeTextDelaySeconds = GetLinePresentationDelaySeconds(speakerPresentation, matchingPresentations, speakerSpecificPresentation);
+        float beforeTextDelaySeconds = GetLinePresentationDelaySeconds(speakerPresentation, combinedPresentations, speakerSpecificPresentation);
         StartCoroutine(RunCommandsThenType(translatedSentence, beforeTextDelaySeconds, currentSpeaker, currentSpeakerID));
 
     }
@@ -1097,7 +1086,9 @@ public class DialogueManager : MonoBehaviour
                 targetCharacterId = src.targetCharacterId,
                 animationTrigger = src.animationTrigger,
                 animationClip = src.animationClip,
+                animationClipName = src.animationClipName,
                 sneakersAnimationClip = src.sneakersAnimationClip,
+                sneakersAnimationClipName = src.sneakersAnimationClipName,
                 soundEffectName = src.soundEffectName,
                 beforeTextDelaySeconds = Mathf.Max(0f, src.beforeTextDelaySeconds)
             });
@@ -1192,7 +1183,9 @@ public class DialogueManager : MonoBehaviour
             targetCharacterId = !string.IsNullOrEmpty(specific.targetCharacterId) ? specific.targetCharacterId : defaults.targetCharacterId,
             animationTrigger = !string.IsNullOrEmpty(specific.animationTrigger) ? specific.animationTrigger : defaults.animationTrigger,
             animationClip = specific.animationClip != null ? specific.animationClip : defaults.animationClip,
+            animationClipName = !string.IsNullOrEmpty(specific.animationClipName) ? specific.animationClipName : defaults.animationClipName,
             sneakersAnimationClip = specific.sneakersAnimationClip != null ? specific.sneakersAnimationClip : defaults.sneakersAnimationClip,
+            sneakersAnimationClipName = !string.IsNullOrEmpty(specific.sneakersAnimationClipName) ? specific.sneakersAnimationClipName : defaults.sneakersAnimationClipName,
             soundEffectName = !string.IsNullOrEmpty(specific.soundEffectName) ? specific.soundEffectName : defaults.soundEffectName,
             beforeTextDelaySeconds = specific.beforeTextDelaySeconds > 0f ? specific.beforeTextDelaySeconds : defaults.beforeTextDelaySeconds
         };
@@ -1556,10 +1549,102 @@ public class DialogueManager : MonoBehaviour
             return null;
 
         bool usesSlippers = IsTargetUsingSlippers(target, presentation.targetCharacterId);
-        if (!usesSlippers && presentation.sneakersAnimationClip != null)
-            return presentation.sneakersAnimationClip;
+        if (!usesSlippers)
+        {
+            if (presentation.sneakersAnimationClip != null)
+                return presentation.sneakersAnimationClip;
 
-        return presentation.animationClip;
+            if (!string.IsNullOrWhiteSpace(presentation.sneakersAnimationClipName))
+            {
+                AnimationClip sneakersClip = RuntimeAnimationClipCatalog.Load(presentation.sneakersAnimationClipName);
+                if (sneakersClip == null)
+                {
+                    Debug.LogWarning($"[DialogueManager] Sneakers animation clip '{presentation.sneakersAnimationClipName}' not found. Conversation='{CurrentConversationId}', Line='{CurrentLineId}', Target='{presentation.targetCharacterId}'.");
+                }
+
+                return sneakersClip;
+            }
+        }
+
+        if (presentation.animationClip != null)
+            return presentation.animationClip;
+
+        if (!string.IsNullOrWhiteSpace(presentation.animationClipName))
+        {
+            AnimationClip clip = RuntimeAnimationClipCatalog.Load(presentation.animationClipName);
+            if (clip == null)
+            {
+                Debug.LogWarning($"[DialogueManager] Animation clip '{presentation.animationClipName}' not found. Conversation='{CurrentConversationId}', Line='{CurrentLineId}', Target='{presentation.targetCharacterId}'.");
+            }
+
+            return clip;
+        }
+
+        return null;
+    }
+
+    private List<DialogueLinePresentation> BuildCsvLinePresentations(DialogueLine line)
+    {
+        if (line == null)
+            return null;
+
+        if (line.csvPresentations != null && line.csvPresentations.Count > 0)
+        {
+            List<DialogueLinePresentation> cloned = new List<DialogueLinePresentation>(line.csvPresentations.Count);
+            for (int i = 0; i < line.csvPresentations.Count; i++)
+            {
+                DialogueLinePresentation src = line.csvPresentations[i];
+                if (src == null)
+                    continue;
+
+                cloned.Add(new DialogueLinePresentation
+                {
+                    lineID = line.lineID,
+                    lineIndexStart = -1,
+                    lineIndexEnd = -1,
+                    targetCharacterId = src.targetCharacterId,
+                    animationTrigger = src.animationTrigger,
+                    animationClip = src.animationClip,
+                    animationClipName = src.animationClipName,
+                    sneakersAnimationClip = src.sneakersAnimationClip,
+                    sneakersAnimationClipName = src.sneakersAnimationClipName,
+                    soundEffectName = src.soundEffectName,
+                    beforeTextDelaySeconds = Mathf.Max(0f, src.beforeTextDelaySeconds)
+                });
+            }
+
+            if (cloned.Count > 0)
+                return cloned;
+        }
+
+        bool hasPresentation =
+            !string.IsNullOrWhiteSpace(line.animationTrigger) ||
+            !string.IsNullOrWhiteSpace(line.targetCharacterId) ||
+            !string.IsNullOrWhiteSpace(line.animationClipName) ||
+            !string.IsNullOrWhiteSpace(line.sneakersAnimationClipName) ||
+            !string.IsNullOrWhiteSpace(line.soundEffectName) ||
+            line.beforeTextDelaySeconds > 0f;
+
+        if (!hasPresentation)
+            return null;
+
+        return new List<DialogueLinePresentation>
+        {
+            new DialogueLinePresentation
+            {
+                lineID = line.lineID,
+                lineIndexStart = -1,
+                lineIndexEnd = -1,
+                targetCharacterId = line.targetCharacterId,
+                animationTrigger = line.animationTrigger,
+                animationClip = null,
+                animationClipName = line.animationClipName,
+                sneakersAnimationClip = null,
+                sneakersAnimationClipName = line.sneakersAnimationClipName,
+                soundEffectName = line.soundEffectName,
+                beforeTextDelaySeconds = Mathf.Max(0f, line.beforeTextDelaySeconds)
+            }
+        };
     }
 
     private bool IsTargetUsingSlippers(Transform target, string targetCharacterId)
@@ -1646,4 +1731,137 @@ public static class RuntimeAudioClipCatalog
         int slashIndex = normalized.LastIndexOf('/');
         return slashIndex >= 0 ? normalized.Substring(slashIndex + 1) : normalized;
     }
+}
+
+public static class RuntimeAnimationClipCatalog
+{
+    private const string CatalogResourcePath = "DialogueAnimationClipCatalog";
+    private static Dictionary<string, AnimationClip> clipByKey;
+    private static bool initialized;
+
+    public static AnimationClip Load(string clipNameOrKey)
+    {
+        if (string.IsNullOrWhiteSpace(clipNameOrKey))
+            return null;
+
+        EnsureInitialized();
+
+        string normalizedInput = NormalizeKey(clipNameOrKey);
+        if (clipByKey.TryGetValue(normalizedInput, out var clip))
+            return clip;
+
+        string fileNameOnly = NormalizeKey(GetLastSegment(clipNameOrKey));
+        if (clipByKey.TryGetValue(fileNameOnly, out clip))
+            return clip;
+
+#if UNITY_EDITOR
+        clip = TryLoadFromAssetDatabase(fileNameOnly);
+        if (clip != null)
+        {
+            AddKey(normalizedInput, clip);
+            AddKey(fileNameOnly, clip);
+            return clip;
+        }
+#endif
+
+        return null;
+    }
+
+    private static void EnsureInitialized()
+    {
+        if (initialized)
+            return;
+
+        clipByKey = new Dictionary<string, AnimationClip>(StringComparer.OrdinalIgnoreCase);
+
+        DialogueAnimationClipCatalogAsset catalog = Resources.Load<DialogueAnimationClipCatalogAsset>(CatalogResourcePath);
+        if (catalog != null && catalog.Entries != null)
+        {
+            for (int i = 0; i < catalog.Entries.Count; i++)
+            {
+                DialogueAnimationClipCatalogAsset.Entry entry = catalog.Entries[i];
+                if (entry == null || entry.clip == null)
+                    continue;
+
+                AddKey(entry.key, entry.clip);
+                AddKey(entry.clip.name, entry.clip);
+            }
+        }
+
+        AnimationClip[] clips = Resources.FindObjectsOfTypeAll<AnimationClip>();
+        for (int i = 0; i < clips.Length; i++)
+        {
+            AnimationClip clip = clips[i];
+            if (clip == null)
+                continue;
+
+            AddKey(clip.name, clip);
+        }
+
+        RuntimeAnimatorController[] controllers = Resources.FindObjectsOfTypeAll<RuntimeAnimatorController>();
+        for (int i = 0; i < controllers.Length; i++)
+        {
+            RuntimeAnimatorController controller = controllers[i];
+            if (controller == null)
+                continue;
+
+            AnimationClip[] controllerClips = controller.animationClips;
+            for (int j = 0; j < controllerClips.Length; j++)
+            {
+                AnimationClip clip = controllerClips[j];
+                if (clip == null)
+                    continue;
+
+                AddKey(clip.name, clip);
+            }
+        }
+
+        initialized = true;
+    }
+
+    private static void AddKey(string key, AnimationClip clip)
+    {
+        string normalized = NormalizeKey(key);
+        if (string.IsNullOrEmpty(normalized) || clipByKey.ContainsKey(normalized))
+            return;
+
+        clipByKey[normalized] = clip;
+    }
+
+    private static string NormalizeKey(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return string.Empty;
+
+        return value.Trim().Replace("\\", "/");
+    }
+
+    private static string GetLastSegment(string value)
+    {
+        string normalized = NormalizeKey(value);
+        int slashIndex = normalized.LastIndexOf('/');
+        return slashIndex >= 0 ? normalized.Substring(slashIndex + 1) : normalized;
+    }
+
+#if UNITY_EDITOR
+    private static AnimationClip TryLoadFromAssetDatabase(string clipName)
+    {
+        if (string.IsNullOrWhiteSpace(clipName))
+            return null;
+
+        string[] guids = AssetDatabase.FindAssets($"t:AnimationClip {clipName}");
+        for (int i = 0; i < guids.Length; i++)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+            AnimationClip clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+            if (clip == null)
+                continue;
+
+            if (string.Equals(clip.name, clipName, StringComparison.OrdinalIgnoreCase))
+                return clip;
+        }
+
+        return null;
+    }
+#endif
 }

@@ -26,8 +26,10 @@ public class FlowDebugUIController : MonoBehaviour
     [Header("Buttons")]
     public Button skipButton;
     public Button jumpButton;
-    public Button lunchAdvance3MinButton;
-    public int lunchAdvanceMinutes = 3;
+    public Button lunchTimeSkipButton;
+    public Button lunchTimeAddButton;
+    public int lunchSkipMinutes = 3;
+    public int lunchAddMinutes = 10;
 
     [Header("Manual Input (Optional)")]
     public InputField dayInput;
@@ -129,17 +131,19 @@ public class FlowDebugUIController : MonoBehaviour
         if (jumpButton == null)
             jumpButton = FindButtonByName("Jump");
 
-        if (lunchAdvance3MinButton == null)
-            lunchAdvance3MinButton = FindButtonByName("LunchAdvance3Min");
+        if (lunchTimeAddButton == null)
+            lunchTimeAddButton = FindButtonByName("TimeAdd");
+        if (lunchTimeAddButton == null)
+            lunchTimeAddButton = FindButtonByName("Time Add");
+        if (lunchTimeAddButton == null)
+            lunchTimeAddButton = FindButtonByText("Time Add");
 
-        if (lunchAdvance3MinButton == null)
-            lunchAdvance3MinButton = FindButtonByName("Time Skip");
-
-        if (lunchAdvance3MinButton == null)
-            lunchAdvance3MinButton = FindButtonByText("Time Skip");
-
-        if (lunchAdvance3MinButton == null)
-            lunchAdvance3MinButton = FindButtonByText("점심 -3분");
+        if (lunchTimeSkipButton == null)
+            lunchTimeSkipButton = FindButtonByName("LunchAdvance3Min");
+        if (lunchTimeSkipButton == null)
+            lunchTimeSkipButton = FindButtonByName("Time Skip");
+        if (lunchTimeSkipButton == null)
+            lunchTimeSkipButton = FindButtonByText("Time Skip");
 
         if (skipButton != null)
         {
@@ -153,10 +157,16 @@ public class FlowDebugUIController : MonoBehaviour
             jumpButton.onClick.AddListener(OnClickJump);
         }
 
-        if (lunchAdvance3MinButton != null)
+        if (lunchTimeSkipButton != null)
         {
-            lunchAdvance3MinButton.onClick.RemoveListener(OnClickLunchAdvance3Min);
-            lunchAdvance3MinButton.onClick.AddListener(OnClickLunchAdvance3Min);
+            lunchTimeSkipButton.onClick.RemoveListener(OnClickLunchTimeSkip);
+            lunchTimeSkipButton.onClick.AddListener(OnClickLunchTimeSkip);
+        }
+
+        if (lunchTimeAddButton != null)
+        {
+            lunchTimeAddButton.onClick.RemoveListener(OnClickLunchTimeAdd);
+            lunchTimeAddButton.onClick.AddListener(OnClickLunchTimeAdd);
         }
     }
 
@@ -225,13 +235,22 @@ public class FlowDebugUIController : MonoBehaviour
         fm.PlayCurrent();
     }
 
-    public void OnClickLunchAdvance3Min()
+    public void OnClickLunchTimeSkip()
     {
         var timer = FindAnyObjectByType<LunchFreeTimeTimerController>();
         if (timer == null)
             return;
 
-        timer.DebugAdvanceMinutes(Mathf.Max(1, lunchAdvanceMinutes));
+        timer.DebugAdvanceMinutes(Mathf.Max(1, lunchSkipMinutes));
+    }
+
+    public void OnClickLunchTimeAdd()
+    {
+        var timer = FindAnyObjectByType<LunchFreeTimeTimerController>();
+        if (timer == null)
+            return;
+
+        timer.DebugAddMinutes(Mathf.Max(1, lunchAddMinutes));
     }
 
     private int ParseOr(InputField field, int fallback)

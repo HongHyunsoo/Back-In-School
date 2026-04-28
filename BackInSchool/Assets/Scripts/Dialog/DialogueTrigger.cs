@@ -437,7 +437,9 @@ public class DialogueTrigger : MonoBehaviour
                     targetCharacterId = src.targetCharacterId,
                     animationTrigger = src.animationTrigger,
                     animationClip = src.animationClip,
+                    animationClipName = src.animationClipName,
                     sneakersAnimationClip = src.sneakersAnimationClip,
+                    sneakersAnimationClipName = src.sneakersAnimationClipName,
                     soundEffectName = src.soundEffectName,
                     beforeTextDelaySeconds = Mathf.Max(0f, src.beforeTextDelaySeconds)
                 });

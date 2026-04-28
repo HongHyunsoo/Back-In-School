@@ -2339,52 +2339,7 @@ MonoBehaviour:
     customLineIndex: 0
     animationTrigger: 
     soundEffectName: 
-    linePresentations:
-    - lineID: DAY1_MOR_ADULT_02
-      lineIndexStart: 2
-      lineIndexEnd: 20
-      targetCharacterId: NAME_ADULT
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: ef757cd4159b7e54bae5b633656b9a06, type: 2}
-      sneakersAnimationClip: {fileID: 0}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
-    - lineID: DAY1_MOR_ADULT_12
-      lineIndexStart: 12
-      lineIndexEnd: 12
-      targetCharacterId: NAME_PLAYER
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: c6d59171dc056bf44bb02a5582624ef5, type: 2}
-      sneakersAnimationClip: {fileID: 7400000, guid: 892359cf4d0f064468b543ca216bacb4, type: 2}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
-    - lineID: DAY1_MOR_ADULT_13
-      lineIndexStart: 13
-      lineIndexEnd: 19
-      targetCharacterId: NAME_PLAYER
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: c95439fcb950160459f08d95080755bf, type: 2}
-      sneakersAnimationClip: {fileID: 7400000, guid: 971da5df3a2ceff4083d5363873dc7e4, type: 2}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
-    - lineID: DAY1_MOR_ADULT_03
-      lineIndexStart: 3
-      lineIndexEnd: 11
-      targetCharacterId: NAME_PLAYER
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: 51ac2ae5057fdb44383f25bce9eddfcd, type: 2}
-      sneakersAnimationClip: {fileID: 7400000, guid: e984e9edba4254b4781839f26807794d, type: 2}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
-    - lineID: DAY1_MOR_ADULT_03
-      lineIndexStart: 20
-      lineIndexEnd: 20
-      targetCharacterId: NAME_PLAYER
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: 08ce5d67702955f4998f5584c85565c6, type: 2}
-      sneakersAnimationClip: {fileID: 7400000, guid: d48b434c4b0ce4a44b037be325504e41, type: 2}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
+    linePresentations: []
     playInStoryScene: 0
     storyConversationID: 
     returnSceneName: FREEROAM
@@ -13547,25 +13502,7 @@ MonoBehaviour:
     customLineIndex: 0
     animationTrigger: 
     soundEffectName: 
-    linePresentations:
-    - lineID: 
-      lineIndexStart: 6
-      lineIndexEnd: 14
-      targetCharacterId: NAME_GONYONG
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: 6c2f7c807f7157549b9c5bd1ffb41dc3, type: 2}
-      sneakersAnimationClip: {fileID: 0}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
-    - lineID: 
-      lineIndexStart: 3
-      lineIndexEnd: 3
-      targetCharacterId: NAME_GONYONG
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: 6c2f7c807f7157549b9c5bd1ffb41dc3, type: 2}
-      sneakersAnimationClip: {fileID: 0}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
+    linePresentations: []
     playInStoryScene: 0
     storyConversationID: 
     returnSceneName: FREEROAM
@@ -113959,34 +113896,7 @@ MonoBehaviour:
     customLineIndex: -1
     animationTrigger: 
     soundEffectName: 
-    linePresentations:
-    - lineID: 
-      lineIndexStart: 5
-      lineIndexEnd: 5
-      targetCharacterId: NAME_PIGGY
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: 6989e530b9cceb648a2de69a0f9a5752, type: 2}
-      sneakersAnimationClip: {fileID: 0}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
-    - lineID: 
-      lineIndexStart: 10
-      lineIndexEnd: 13
-      targetCharacterId: NAME_PIGGY
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: 6989e530b9cceb648a2de69a0f9a5752, type: 2}
-      sneakersAnimationClip: {fileID: 0}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
-    - lineID: 
-      lineIndexStart: 16
-      lineIndexEnd: 16
-      targetCharacterId: NAME_PLAYER
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: b8d60668d6955924eb58281cb5c5772f, type: 2}
-      sneakersAnimationClip: {fileID: 0}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
+    linePresentations: []
     playInStoryScene: 0
     storyConversationID: 
     returnSceneName: FREEROAM
@@ -125613,61 +125523,7 @@ MonoBehaviour:
     customLineIndex: -1
     animationTrigger: 
     soundEffectName: 
-    linePresentations:
-    - lineID: 
-      lineIndexStart: 3
-      lineIndexEnd: 7
-      targetCharacterId: NAME_NUREONG
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: 44009ad8ad815304f93c20f1086a3077, type: 2}
-      sneakersAnimationClip: {fileID: 0}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
-    - lineID: 
-      lineIndexStart: 8
-      lineIndexEnd: 9
-      targetCharacterId: NAME_NUREONG
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: 0ac42099bcad37848b90aa3255aacbe7, type: 2}
-      sneakersAnimationClip: {fileID: 0}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
-    - lineID: 
-      lineIndexStart: 14
-      lineIndexEnd: 15
-      targetCharacterId: NAME_PURPLE
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: f5f56505be8e0364096154178424f5c5, type: 2}
-      sneakersAnimationClip: {fileID: 0}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
-    - lineID: 
-      lineIndexStart: 19
-      lineIndexEnd: 19
-      targetCharacterId: NAME_PURPLE
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: 290042981a4f412469ce843cd29fa3cb, type: 2}
-      sneakersAnimationClip: {fileID: 0}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
-    - lineID: 
-      lineIndexStart: 7
-      lineIndexEnd: 10
-      targetCharacterId: NAME_PLAYER
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: 08ce5d67702955f4998f5584c85565c6, type: 2}
-      sneakersAnimationClip: {fileID: 0}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
-    - lineID: 
-      lineIndexStart: 16
-      lineIndexEnd: 19
-      targetCharacterId: NAME_PLAYER
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: 8f0cd1b10050ce24ba8ee140d2791394, type: 2}
-      sneakersAnimationClip: {fileID: 0}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
+    linePresentations: []
     playInStoryScene: 0
     storyConversationID: 
     returnSceneName: FREEROAM
@@ -182596,25 +182452,7 @@ MonoBehaviour:
     customLineIndex: -1
     animationTrigger: 
     soundEffectName: 
-    linePresentations:
-    - lineID: 
-      lineIndexStart: 2
-      lineIndexEnd: 2
-      targetCharacterId: NAME_PLAYER
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: c6d59171dc056bf44bb02a5582624ef5, type: 2}
-      sneakersAnimationClip: {fileID: 0}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
-    - lineID: 
-      lineIndexStart: 3
-      lineIndexEnd: 4
-      targetCharacterId: NAME_PLAYER
-      animationTrigger: 
-      animationClip: {fileID: 7400000, guid: 8f0cd1b10050ce24ba8ee140d2791394, type: 2}
-      sneakersAnimationClip: {fileID: 0}
-      soundEffectName: 
-      beforeTextDelaySeconds: 0
+    linePresentations: []
     playInStoryScene: 0
     storyConversationID: 
     returnSceneName: FREEROAM

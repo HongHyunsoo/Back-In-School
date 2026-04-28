@@ -129,7 +129,7 @@ public class FlowManager : MonoBehaviour
     FlowEvent E(FlowEventType type, string id, string note = null)
         => new FlowEvent { type = type, id = id, note = note };
 
-    public void PlayCurrent()
+    public void PlayCurrent(bool useSceneFade = true)
     {
         if (stepIndex == 0)
             shoeStateDay = -1;
@@ -159,10 +159,10 @@ public class FlowManager : MonoBehaviour
         var ev = list[stepIndex];
         Debug.Log($"[FlowManager] Day {day} Step {stepIndex}: {ev.type} {ev.id} ({ev.note})");
 
-        LoadModeScene(ev);
+        LoadModeScene(ev, useSceneFade);
     }
 
-    void LoadModeScene(FlowEvent ev)
+    void LoadModeScene(FlowEvent ev, bool useSceneFade = true)
     {
         string resolvedId = ResolveFlowId(ev);
         FlowContext.Set(resolvedId, ev.type);
@@ -173,6 +173,18 @@ public class FlowManager : MonoBehaviour
         if (gm != null)
         {
             gm.currentDay = day;
+        }
+
+        if (!useSceneFade)
+        {
+            switch (ev.type)
+            {
+                case FlowEventType.CHAT: SceneManager.LoadScene("CHAT"); break;
+                case FlowEventType.FREEROAM: SceneManager.LoadScene("FREEROAM"); break;
+                case FlowEventType.STORY: SceneManager.LoadScene("STORY"); break;
+                case FlowEventType.MINIGAME: SceneManager.LoadScene("MINIGAME"); break;
+            }
+            return;
         }
 
         switch (ev.type)

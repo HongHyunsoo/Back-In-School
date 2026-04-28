@@ -6,6 +6,8 @@ public class PhoneSettingsAppController : MonoBehaviour
 {
     [Header("Optional References")]
     [SerializeField] private GameObject settingsPanel;
+    [SerializeField] private ScrollRect settingsScrollRect;
+    [SerializeField] private Button settingBackButton;
     [SerializeField] private Slider masterVolumeSlider;
     [SerializeField] private Slider bgmVolumeSlider;
     [SerializeField] private Slider sfxVolumeSlider;
@@ -33,6 +35,7 @@ public class PhoneSettingsAppController : MonoBehaviour
 
     private string waitingBindKey;
     private bool isWired;
+    private PhoneAppManager appManager;
 
     private void Start()
     {
@@ -79,6 +82,17 @@ public class PhoneSettingsAppController : MonoBehaviour
             settingsPanel = FindObjectByNameOrToken("App_Settings", "Settings");
 
         Transform root = settingsPanel != null ? settingsPanel.transform : transform;
+        if (appManager == null)
+            appManager = GetComponent<PhoneAppManager>();
+
+        if (settingsScrollRect == null)
+            settingsScrollRect = FindScrollRect(root, "Scroll View_Setting", "ScrollView_Setting", "Scroll View");
+        if (settingsScrollRect == null)
+            settingsScrollRect = FindScrollRect(transform, "Scroll View_Setting", "ScrollView_Setting", "Scroll View");
+        if (settingBackButton == null)
+            settingBackButton = FindButton(root, "Setting_Back");
+        if (settingBackButton == null)
+            settingBackButton = FindButton(transform, "Setting_Back");
 
         if (masterVolumeSlider == null)
             masterVolumeSlider = FindSlider(root, "Volume", "Sound");
@@ -145,6 +159,11 @@ public class PhoneSettingsAppController : MonoBehaviour
 
         if (languageButton != null)
             languageButton.onClick.AddListener(ToggleLanguage);
+        if (settingBackButton != null)
+        {
+            settingBackButton.onClick.RemoveListener(BackToHomeFromSettings);
+            settingBackButton.onClick.AddListener(BackToHomeFromSettings);
+        }
 
         if (bindLeftButton != null)
             bindLeftButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.LeftKey));
@@ -203,6 +222,7 @@ public class PhoneSettingsAppController : MonoBehaviour
         ResolveReferences();
         Wire();
         BringVolumeSlidersToFront();
+        ConfigureSettingsScrollRect();
         RefreshAll();
     }
 
@@ -222,6 +242,7 @@ public class PhoneSettingsAppController : MonoBehaviour
     {
         RefreshLanguageLabel();
         RefreshBindingLabels();
+        ConfigureSettingsScrollRect();
         if (masterVolumeSlider != null)
             masterVolumeSlider.SetValueWithoutNotify(AudioSettingsService.MasterVolume);
         if (bgmVolumeSlider != null)
@@ -237,6 +258,7 @@ public class PhoneSettingsAppController : MonoBehaviour
             LocalizationManager.Instance.ToggleLanguage();
 
         RefreshLanguageLabel();
+        ConfigureSettingsScrollRect();
     }
 
     private void StartRebind(string keyId)
@@ -265,6 +287,100 @@ public class PhoneSettingsAppController : MonoBehaviour
         UpdateBindingVisual(bindStairUpButton, bindStairUpLabel, KeyBindingConfig.StairUpKey, KeyCode.W);
         UpdateBindingVisual(bindInteractButton, bindInteractLabel, KeyBindingConfig.InteractKey, KeyCode.E);
         UpdateBindingVisual(bindPhoneButton, bindPhoneLabel, KeyBindingConfig.PhoneKey, KeyCode.Tab);
+    }
+
+    private void ConfigureSettingsScrollRect()
+    {
+        if (settingsScrollRect == null)
+            return;
+
+        settingsScrollRect.horizontal = false;
+        settingsScrollRect.vertical = true;
+        settingsScrollRect.movementType = ScrollRect.MovementType.Clamped;
+        settingsScrollRect.inertia = true;
+        settingsScrollRect.decelerationRate = 0.25f;
+        settingsScrollRect.scrollSensitivity = 160f;
+
+        RectTransform viewport = settingsScrollRect.viewport;
+        RectTransform content = settingsScrollRect.content;
+        if (viewport == null || content == null)
+            return;
+
+        NormalizeViewportRect(viewport);
+        Canvas.ForceUpdateCanvases();
+
+        float minY = 0f;
+        float maxY = 0f;
+        bool hasBounds = false;
+        RectTransform[] descendants = content.GetComponentsInChildren<RectTransform>(true);
+        Vector3[] corners = new Vector3[4];
+        for (int i = 0; i < descendants.Length; i++)
+        {
+            RectTransform child = descendants[i];
+            if (child == null || child == content || !child.gameObject.activeInHierarchy)
+                continue;
+
+            child.GetWorldCorners(corners);
+            float top = float.MinValue;
+            float bottom = float.MaxValue;
+            for (int c = 0; c < 4; c++)
+            {
+                Vector3 local = content.InverseTransformPoint(corners[c]);
+                if (local.y > top) top = local.y;
+                if (local.y < bottom) bottom = local.y;
+            }
+
+            if (!hasBounds)
+            {
+                minY = bottom;
+                maxY = top;
+                hasBounds = true;
+            }
+            else
+            {
+                if (bottom < minY) minY = bottom;
+                if (top > maxY) maxY = top;
+            }
+        }
+
+        if (!hasBounds)
+            return;
+
+        float padding = 220f;
+        float requiredHeight = (maxY - minY) + padding;
+        float minHeight = viewport.rect.height + 220f;
+
+        Vector2 contentSize = content.sizeDelta;
+        contentSize.y = Mathf.Max(contentSize.y, minHeight, requiredHeight);
+        content.sizeDelta = contentSize;
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+        settingsScrollRect.StopMovement();
+        Canvas.ForceUpdateCanvases();
+        settingsScrollRect.verticalNormalizedPosition = 1f;
+    }
+
+    private static void NormalizeViewportRect(RectTransform viewport)
+    {
+        if (viewport == null)
+            return;
+
+        viewport.anchorMin = Vector2.zero;
+        viewport.anchorMax = Vector2.one;
+        viewport.anchoredPosition = Vector2.zero;
+        viewport.sizeDelta = Vector2.zero;
+        viewport.offsetMin = Vector2.zero;
+        viewport.offsetMax = Vector2.zero;
+        viewport.pivot = new Vector2(0.5f, 0.5f);
+    }
+
+    private void BackToHomeFromSettings()
+    {
+        if (appManager == null)
+            appManager = GetComponent<PhoneAppManager>();
+
+        if (appManager != null)
+            appManager.BackToHome();
     }
 
     private void UpdateBindingVisual(Button button, TextMeshProUGUI label, string keyId, KeyCode fallback)
@@ -366,6 +482,21 @@ public class PhoneSettingsAppController : MonoBehaviour
         }
 
         return sliders.Length > 0 ? sliders[0] : null;
+    }
+
+    private static ScrollRect FindScrollRect(Transform root, params string[] tokens)
+    {
+        if (root == null)
+            return null;
+
+        var scrollRects = root.GetComponentsInChildren<ScrollRect>(true);
+        for (int i = 0; i < scrollRects.Length; i++)
+        {
+            if (HasAnyToken(scrollRects[i].name, tokens))
+                return scrollRects[i];
+        }
+
+        return scrollRects.Length > 0 ? scrollRects[0] : null;
     }
 
     private static TextMeshProUGUI FindLabelUnder(Button button)

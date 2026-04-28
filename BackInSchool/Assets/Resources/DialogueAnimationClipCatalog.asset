@@ -1,0 +1,125 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36213d8ebc2f8ca4983e167b87b3d6d5, type: 3}
+  m_Name: DialogueAnimationClipCatalog
+  m_EditorClassIdentifier: 
+  entries:
+  - key: ADULT_Back
+    clip: {fileID: 7400000, guid: 092602ee1f844904a96017a254afd8a1, type: 2}
+  - key: ADULT_Earbuds
+    clip: {fileID: 7400000, guid: ef757cd4159b7e54bae5b633656b9a06, type: 2}
+  - key: Adult_Face_Evil
+    clip: {fileID: 7400000, guid: 031e86f7f195e944db3f9fcbdfcccdf5, type: 2}
+  - key: ADULT_Idle
+    clip: {fileID: 7400000, guid: a0d0b077475c7d342859ac95b0102798, type: 2}
+  - key: CharAmin_Angry
+    clip: {fileID: 7400000, guid: 8f242f24da476a54b933185b08248ec8, type: 2}
+  - key: CharAmin_Angry_Shoes
+    clip: {fileID: 7400000, guid: 998d2d3bf0f672448b35c9dc7134d645, type: 2}
+  - key: CharAmin_Boring
+    clip: {fileID: 7400000, guid: 08ce5d67702955f4998f5584c85565c6, type: 2}
+  - key: CharAmin_Boring_Shoes
+    clip: {fileID: 7400000, guid: d48b434c4b0ce4a44b037be325504e41, type: 2}
+  - key: CharAmin_Neutral
+    clip: {fileID: 7400000, guid: b8d60668d6955924eb58281cb5c5772f, type: 2}
+  - key: CharAmin_Neutral_Shoes
+    clip: {fileID: 7400000, guid: 74e1c5180617335468cf8a8061c9bf2b, type: 2}
+  - key: CharAmin_Photo
+    clip: {fileID: 7400000, guid: c6d59171dc056bf44bb02a5582624ef5, type: 2}
+  - key: CharAmin_Photo_Shoes
+    clip: {fileID: 7400000, guid: 892359cf4d0f064468b543ca216bacb4, type: 2}
+  - key: CharAmin_Shocked
+    clip: {fileID: 7400000, guid: 51ac2ae5057fdb44383f25bce9eddfcd, type: 2}
+  - key: CharAmin_Shocked_Shoes
+    clip: {fileID: 7400000, guid: e984e9edba4254b4781839f26807794d, type: 2}
+  - key: CharAmin_Smile
+    clip: {fileID: 7400000, guid: 8f0cd1b10050ce24ba8ee140d2791394, type: 2}
+  - key: CharAmin_Smile_Shoes
+    clip: {fileID: 7400000, guid: d045489ff62de1c44992ca2963dd6cee, type: 2}
+  - key: GONYONG_Idie
+    clip: {fileID: 7400000, guid: dd07fb61dd69fbe4a8bee7fd565a7a3e, type: 2}
+  - key: GONYONG_Smile
+    clip: {fileID: 7400000, guid: 6c2f7c807f7157549b9c5bd1ffb41dc3, type: 2}
+  - key: HWAN_Idle
+    clip: {fileID: 7400000, guid: 20d0234460567ba4aad15aa6e2968951, type: 2}
+  - key: HWAN_Seat
+    clip: {fileID: 7400000, guid: 7156eb975269f3c459218a41d9d2df2d, type: 2}
+  - key: HWAN_Typing
+    clip: {fileID: 7400000, guid: bedbb90611c90d9438d02f10474ab5c8, type: 2}
+  - key: MainMenuANim
+    clip: {fileID: 7400000, guid: 3c1603b23b7e33c40b05cb4422cc0aa8, type: 2}
+  - key: MING_Idle
+    clip: {fileID: 7400000, guid: f3d288bb313838c4cbc0ffab45b5e3b6, type: 2}
+  - key: MING_Seating
+    clip: {fileID: 7400000, guid: 4139ae24a2429aa40a7baf915c4fb345, type: 2}
+  - key: MINUM_idle
+    clip: {fileID: 7400000, guid: 15aa010f08b390d4d9ec532288e811fa, type: 2}
+  - key: MINUM_seat
+    clip: {fileID: 7400000, guid: fb827ff448ea02f4d9e73297e9c20092, type: 2}
+  - key: MINUM_Sleep
+    clip: {fileID: 7400000, guid: d302eb162427fc447b03bcf6f710d222, type: 2}
+  - key: NUREONG_Happy
+    clip: {fileID: 7400000, guid: 44009ad8ad815304f93c20f1086a3077, type: 2}
+  - key: NUREONG_Idle
+    clip: {fileID: 7400000, guid: 8f40c1bd92d3d8546a1d7bf91ff684d3, type: 2}
+  - key: NUREONG_Seat
+    clip: {fileID: 7400000, guid: a7520277292a19a4998b25694a2006c0, type: 2}
+  - key: NUREONG_Shocked
+    clip: {fileID: 7400000, guid: 0ac42099bcad37848b90aa3255aacbe7, type: 2}
+  - key: PIGGY_Boring
+    clip: {fileID: 7400000, guid: 6989e530b9cceb648a2de69a0f9a5752, type: 2}
+  - key: PIGGY_Idle
+    clip: {fileID: 7400000, guid: 26e45abf86274f244a206f7c97401706, type: 2}
+  - key: PIGGY_Seat
+    clip: {fileID: 7400000, guid: 26614033158dd1a4b86e3e4a4ea2590b, type: 2}
+  - key: Player_D1_MING_01
+    clip: {fileID: 7400000, guid: bea85460d30f9f645a55c01ae28e5341, type: 2}
+  - key: Player_D1_MING_02
+    clip: {fileID: 7400000, guid: 324a151647580494e8d8f01efa33648d, type: 2}
+  - key: Player_D1_MING_03
+    clip: {fileID: 7400000, guid: 3cf8e905cff433046a8816775171d4ac, type: 2}
+  - key: Player_Fall
+    clip: {fileID: 7400000, guid: 02a18cd14a7ca8547b73d8f8c526db35, type: 2}
+  - key: Player_Fall_Shoes
+    clip: {fileID: 7400000, guid: 7990e356e5f560848a04a9ad1d770979, type: 2}
+  - key: Player_Idle
+    clip: {fileID: 7400000, guid: c95439fcb950160459f08d95080755bf, type: 2}
+  - key: Player_Idle_Shoes
+    clip: {fileID: 7400000, guid: 971da5df3a2ceff4083d5363873dc7e4, type: 2}
+  - key: Player_Jump
+    clip: {fileID: 7400000, guid: ff648438bd941fa46942c798cc782c14, type: 2}
+  - key: Player_Jump_Shoes
+    clip: {fileID: 7400000, guid: 28b9ba1d77aa5a544b011962722d9c52, type: 2}
+  - key: Player_Land
+    clip: {fileID: 7400000, guid: 12fc866742123f54783144ff3123958a, type: 2}
+  - key: Player_Land_Shoes
+    clip: {fileID: 7400000, guid: 54da9c6f1e9b7344f92cdc398ddbdfc4, type: 2}
+  - key: Player_Seat
+    clip: {fileID: 7400000, guid: e0285b7a66f89554d95fdd05e8a80ecc, type: 2}
+  - key: Player_Vomit
+    clip: {fileID: 7400000, guid: cfd7003c86ce82442925a960b113160e, type: 2}
+  - key: Player_Walk
+    clip: {fileID: 7400000, guid: 5b829f0974694424fb14f01817d11b89, type: 2}
+  - key: Player_Walk_Shoes
+    clip: {fileID: 7400000, guid: b4bb5e4f31c1b6b44b100c83e8adfd6b, type: 2}
+  - key: PUEPLE_Exited
+    clip: {fileID: 7400000, guid: 290042981a4f412469ce843cd29fa3cb, type: 2}
+  - key: PUEPLE_Idle
+    clip: {fileID: 7400000, guid: 8e1dd69e4df11d149bea1a02da0ec233, type: 2}
+  - key: PURPLE_Smile
+    clip: {fileID: 7400000, guid: f5f56505be8e0364096154178424f5c5, type: 2}
+  - key: SOWRD_Idle
+    clip: {fileID: 7400000, guid: 77deee4b1a47b8d4aa7095ae1ae4345c, type: 2}
+  - key: SYONG_Idle
+    clip: {fileID: 7400000, guid: 7ce974727e5250b40966dc3105b10c9b, type: 2}
+  - key: SYONG_Seat
+    clip: {fileID: 7400000, guid: 2d19fb2d63d1fc849aabae256ec4f8a6, type: 2}

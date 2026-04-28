@@ -30,6 +30,7 @@ public class MainMenuController : MonoBehaviour
     public Button languageButton;
 
     [Header("Settings Controls")]
+    public ScrollRect settingsScrollRect;
     public Slider masterVolumeSlider;
     public Slider bgmVolumeSlider;
     public Slider sfxVolumeSlider;
@@ -146,6 +147,7 @@ public class MainMenuController : MonoBehaviour
         RefreshLocalizedStaticLabels();
         RefreshLanguageLabel();
         RefreshBindingLabels();
+        ConfigureSettingsScrollRect();
         SetInfo("");
     }
 
@@ -163,8 +165,14 @@ public class MainMenuController : MonoBehaviour
         SetMainButtonsInteractable(false);
 
         var fader = SceneTransitionFader.EnsureInstance();
+        float appliedFadeOut = Mathf.Max(0.38f, fadeOutDuration);
         fader.PrepareFadeInOnNextScene(fadeInDuration);
-        yield return fader.FadeOut(fadeOutDuration);
+
+        Coroutine zoomRoutine = StartCoroutine(CoPlaySubtleStartZoom(appliedFadeOut));
+        yield return fader.FadeOut(appliedFadeOut);
+
+        if (zoomRoutine != null)
+            StopCoroutine(zoomRoutine);
 
         var fm = FlowManager.Instance;
         if (fm == null)
@@ -182,7 +190,41 @@ public class MainMenuController : MonoBehaviour
         PenaltyReasonLog.Clear();
         ChatService.ResetPersistedDataForNewGame();
         PhoneGalleryService.ResetPersistedDataForNewGame();
-        fm.PlayCurrent();
+        fm.PlayCurrent(false);
+    }
+
+    private IEnumerator CoPlaySubtleStartZoom(float duration)
+    {
+        Transform zoomTarget = transitionZoomTarget != null ? transitionZoomTarget : transform;
+        Camera cam = transitionCamera != null ? transitionCamera : Camera.main;
+
+        Vector3 startScale = zoomTarget != null ? zoomTarget.localScale : Vector3.one;
+        Vector3 endScale = startScale * Mathf.Clamp(targetZoomScale, 1f, 1.06f);
+
+        bool canZoomCamera = cam != null && cam.orthographic;
+        float startSize = canZoomCamera ? cam.orthographicSize : 0f;
+        float desiredSize = startSize;
+        if (canZoomCamera)
+        {
+            float candidate = targetCameraOrthoSize > 0f ? targetCameraOrthoSize : startSize * 0.96f;
+            desiredSize = Mathf.Lerp(startSize, candidate, 0.2f);
+        }
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += useUnscaledTimeForTransition ? Time.unscaledDeltaTime : Time.deltaTime;
+            float t = duration <= 0.0001f ? 1f : Mathf.Clamp01(elapsed / duration);
+            float eased = 1f - Mathf.Pow(1f - t, 3f);
+
+            if (zoomTarget != null)
+                zoomTarget.localScale = Vector3.LerpUnclamped(startScale, endScale, eased);
+
+            if (canZoomCamera)
+                cam.orthographicSize = Mathf.LerpUnclamped(startSize, desiredSize, eased);
+
+            yield return null;
+        }
     }
 
     private void SetMainButtonsInteractable(bool interactable)
@@ -198,6 +240,7 @@ public class MainMenuController : MonoBehaviour
         if (settingsPanel != null) settingsPanel.SetActive(true);
         if (ShouldToggleMainPanelForSettings() && mainPanel != null)
             mainPanel.SetActive(false);
+        ConfigureSettingsScrollRect();
         SetInfo("");
     }
 
@@ -384,6 +427,9 @@ public class MainMenuController : MonoBehaviour
         if (settingsPanel == null)
             return;
 
+        if (settingsScrollRect == null)
+            settingsScrollRect = FindSettingsScrollRectByName("Scroll View_Setting", "ScrollView_Setting", "Scroll View");
+
         if (masterVolumeSlider == null)
             masterVolumeSlider = FindSettingsSliderByName("Volume", "MasterVolumeSlider", "Sound");
 
@@ -392,6 +438,48 @@ public class MainMenuController : MonoBehaviour
 
         if (sfxVolumeSlider == null)
             sfxVolumeSlider = FindSettingsSliderByName("SFXSlider", "SFX", "SE", "Effect");
+    }
+
+    private void ConfigureSettingsScrollRect()
+    {
+        ResolveVolumeSliders();
+
+        if (settingsScrollRect == null)
+            return;
+
+        settingsScrollRect.horizontal = false;
+        settingsScrollRect.vertical = true;
+        settingsScrollRect.movementType = ScrollRect.MovementType.Clamped;
+        settingsScrollRect.inertia = true;
+        settingsScrollRect.decelerationRate = 0.2f;
+        settingsScrollRect.scrollSensitivity = 120f;
+
+        RectTransform viewport = settingsScrollRect.viewport;
+        RectTransform content = settingsScrollRect.content;
+        if (viewport == null || content == null)
+            return;
+
+        NormalizeViewportRect(viewport);
+        Canvas.ForceUpdateCanvases();
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+        settingsScrollRect.StopMovement();
+        Canvas.ForceUpdateCanvases();
+        settingsScrollRect.verticalNormalizedPosition = 1f;
+    }
+
+    private static void NormalizeViewportRect(RectTransform viewport)
+    {
+        if (viewport == null)
+            return;
+
+        viewport.anchorMin = Vector2.zero;
+        viewport.anchorMax = Vector2.one;
+        viewport.anchoredPosition = Vector2.zero;
+        viewport.sizeDelta = Vector2.zero;
+        viewport.offsetMin = Vector2.zero;
+        viewport.offsetMax = Vector2.zero;
+        viewport.pivot = new Vector2(0.5f, 0.5f);
     }
 
     private Button FindSettingsButtonByNameOrText(params string[] tokens)
@@ -426,6 +514,21 @@ public class MainMenuController : MonoBehaviour
         }
 
         return null;
+    }
+
+    private ScrollRect FindSettingsScrollRectByName(params string[] tokens)
+    {
+        if (settingsPanel == null || tokens == null || tokens.Length == 0)
+            return null;
+
+        var scrollRects = settingsPanel.GetComponentsInChildren<ScrollRect>(true);
+        for (int i = 0; i < scrollRects.Length; i++)
+        {
+            if (HasAnyToken(scrollRects[i].name, tokens))
+                return scrollRects[i];
+        }
+
+        return scrollRects.Length > 0 ? scrollRects[0] : null;
     }
 
     private GameObject FindObjectByNameOrToken(params string[] tokens)

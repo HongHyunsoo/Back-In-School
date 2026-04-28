@@ -109,11 +109,23 @@ public class SceneTransitionFader : MonoBehaviour
 
     public IEnumerator FadeOut(float duration)
     {
+        if (running != null)
+        {
+            StopCoroutine(running);
+            running = null;
+        }
+
         yield return Fade(0f, 1f, duration);
     }
 
     public IEnumerator FadeIn(float duration)
     {
+        if (running != null)
+        {
+            StopCoroutine(running);
+            running = null;
+        }
+
         yield return Fade(1f, 0f, duration);
     }
 
@@ -121,9 +133,6 @@ public class SceneTransitionFader : MonoBehaviour
     {
         if (fadeImage == null)
             yield break;
-
-        if (running != null)
-            StopCoroutine(running);
 
         if (canvas != null)
             canvas.enabled = true;

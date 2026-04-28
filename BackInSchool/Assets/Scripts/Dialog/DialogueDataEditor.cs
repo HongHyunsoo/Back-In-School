@@ -28,7 +28,11 @@ public class DialogueDataEditor : MonoBehaviour
         public string speakerID;
         public string lineID;
         public string animationTrigger;
+        public string targetCharacterId;
+        public string animationClipName;
+        public string sneakersAnimationClipName;
         public string soundEffectName;
+        public float beforeTextDelaySeconds;
         public bool hasChoices;
         public List<DialogueChoiceData> choices = new List<DialogueChoiceData>();
     }
@@ -64,7 +68,11 @@ public class DialogueDataEditor : MonoBehaviour
                     speakerID = lineData.speakerID,
                     lineID = lineData.lineID,
                     animationTrigger = lineData.animationTrigger,
+                    targetCharacterId = lineData.targetCharacterId,
+                    animationClipName = lineData.animationClipName,
+                    sneakersAnimationClipName = lineData.sneakersAnimationClipName,
                     soundEffectName = lineData.soundEffectName,
+                    beforeTextDelaySeconds = lineData.beforeTextDelaySeconds,
                     hasChoices = lineData.hasChoices,
                     choices = new List<DialogueChoice>()
                 };
@@ -99,7 +107,7 @@ public class DialogueDataEditor : MonoBehaviour
     public void SaveToCSV()
     {
         List<string> csvLines = new List<string>();
-        csvLines.Add("Conversation_ID,Order,Speaker_ID,Line_ID,AnimationTrigger,SoundEffect,HasChoices,Choices");
+        csvLines.Add("Conversation_ID,Order,Speaker_ID,Line_ID,Text,AnimationTrigger,TargetCharacter_ID,AnimationClip,SneakersAnimationClip,SoundEffect,BeforeTextDelaySeconds,HasChoices,Choices");
 
         foreach (var conv in conversations)
         {
@@ -118,8 +126,8 @@ public class DialogueDataEditor : MonoBehaviour
                     choicesStr = string.Join(";", choiceStrs);
                 }
 
-                csvLines.Add($"{conv.conversationID},{i + 1},{line.speakerID},{line.lineID}," +
-                            $"{line.animationTrigger},{line.soundEffectName},{line.hasChoices},{choicesStr}");
+                csvLines.Add($"{conv.conversationID},{i + 1},{line.speakerID},{line.lineID},," +
+                            $"{line.animationTrigger},{line.targetCharacterId},{line.animationClipName},{line.sneakersAnimationClipName},{line.soundEffectName},{line.beforeTextDelaySeconds},{line.hasChoices},{choicesStr}");
             }
         }
 
@@ -141,6 +149,9 @@ public class DialogueDataEditor : MonoBehaviour
         string[] lines = File.ReadAllLines(conversationsCSVPath);
 
         Dictionary<string, ConversationData> convDict = new Dictionary<string, ConversationData>();
+
+        bool hasTextColumn = lines.Length > 0 && lines[0].Contains(",Text,");
+        int offset = hasTextColumn ? 1 : 0;
 
         for (int i = 1; i < lines.Length; i++)
         {
@@ -166,12 +177,16 @@ public class DialogueDataEditor : MonoBehaviour
             };
 
             // 추가 필드 파싱 (있으면)
-            if (columns.Length > 4) lineData.animationTrigger = columns[4].Trim();
-            if (columns.Length > 5) lineData.soundEffectName = columns[5].Trim();
-            if (columns.Length > 6) bool.TryParse(columns[6].Trim(), out lineData.hasChoices);
-            if (columns.Length > 7 && !string.IsNullOrEmpty(columns[7]))
+            if (columns.Length > 4 + offset) lineData.animationTrigger = columns[4 + offset].Trim();
+            if (columns.Length > 5 + offset) lineData.targetCharacterId = columns[5 + offset].Trim();
+            if (columns.Length > 6 + offset) lineData.animationClipName = columns[6 + offset].Trim();
+            if (columns.Length > 7 + offset) lineData.sneakersAnimationClipName = columns[7 + offset].Trim();
+            if (columns.Length > 8 + offset) lineData.soundEffectName = columns[8 + offset].Trim();
+            if (columns.Length > 9 + offset) float.TryParse(columns[9 + offset].Trim(), out lineData.beforeTextDelaySeconds);
+            if (columns.Length > 10 + offset) bool.TryParse(columns[10 + offset].Trim(), out lineData.hasChoices);
+            if (columns.Length > 11 + offset && !string.IsNullOrEmpty(columns[11 + offset]))
             {
-                string[] choices = columns[7].Split(';');
+                string[] choices = columns[11 + offset].Split(';');
                 foreach (var choiceStr in choices)
                 {
                     string[] choiceParts = choiceStr.Split('|');
