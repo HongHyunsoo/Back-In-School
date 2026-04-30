@@ -92,6 +92,9 @@ public class FlowStepInteractionTrigger : MonoBehaviour
 
     private bool IsFlowAllowed()
     {
+        if (!Day1TutorialController.IsMorningSeatInteractionAllowed())
+            return false;
+
         if (!restrictByFlowType)
             return true;
 

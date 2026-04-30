@@ -186,6 +186,7 @@ public class MainMenuController : MonoBehaviour
         fm.stepIndex = 0;
         fm.penaltyPoints = 0;
         fm.ResetSchoolRuleRuntimeState();
+        Day1TutorialController.ResetProgress();
         DialogueProgressState.ClearAllCompletedConversations();
         PenaltyReasonLog.Clear();
         ChatService.ResetPersistedDataForNewGame();

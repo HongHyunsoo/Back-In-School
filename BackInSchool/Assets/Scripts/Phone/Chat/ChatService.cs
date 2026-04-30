@@ -125,6 +125,18 @@ public class ChatService : MonoBehaviour
     public ChatSessionState GetSession(string sessionId)
         => Data.sessions.Find(s => s.sessionId == sessionId);
 
+    public int GetCompletedSessionCount()
+    {
+        int count = 0;
+        for (int i = 0; i < Data.sessions.Count; i++)
+        {
+            if (Data.sessions[i] != null && Data.sessions[i].completed)
+                count++;
+        }
+
+        return count;
+    }
+
     /// <summary>
     /// roomId에 대해 아직 완료되지 않은(또는 아직 시작 안 한) 세션 중 첫 번째를 반환.
     /// UI가 room -> conversationId를 Inspector에서 매핑하기 싫으면 이걸 쓰면 됨.

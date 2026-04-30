@@ -97,6 +97,9 @@ public class PhoneAppManager : MonoBehaviour
     {
         if (IsLocked) return;
 
+        if (!Day1TutorialController.IsPhoneAppAllowed(appId))
+            return;
+
         if (appId == PhoneAppId.Health && !FlowContext.IsHealthCheckAllowed())
             return;
 

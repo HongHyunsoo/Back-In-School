@@ -68,7 +68,8 @@ public class SchoolLockerInteraction : MonoBehaviour
         if (!onlyMorningBeforeAssembly)
             return true;
 
-        return FlowContext.IsMorningBeforeAssemblyFreeRoam();
+        return FlowContext.IsMorningBeforeAssemblyFreeRoam() &&
+               Day1TutorialController.IsLockerInteractionAllowed();
     }
 
     private void OnTriggerEnter2D(Collider2D other)

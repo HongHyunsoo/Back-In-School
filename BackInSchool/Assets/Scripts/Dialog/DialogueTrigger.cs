@@ -114,11 +114,14 @@ public class DialogueTrigger : MonoBehaviour
         if (isPlayerInRange)
         {
             ContextualDialogue currentDialogue = FindCurrentDialogue();
+            string currentConversationId = ResolveConversationId(currentDialogue);
             bool playOnceAlreadyCompleted = currentDialogue != null &&
                                            currentDialogue.behavior == DialogueBehavior.PlayOnce &&
                                            DialogueProgressState.HasCompletedConversation(currentDialogue.conversationID);
+            bool tutorialAllowsDialogue = Day1TutorialController.IsDialogueConversationAllowed(currentConversationId);
 
             if (!manager.IsDialogueActive &&
+                tutorialAllowsDialogue &&
                 (currentDialogue == null || currentDialogue.behavior != DialogueBehavior.PlayOnce || !playOnceAlreadyCompleted))
             {
                 if (interactPrompt != null) interactPrompt.SetActive(true);
@@ -137,6 +140,25 @@ public class DialogueTrigger : MonoBehaviour
         {
             if (interactPrompt != null) interactPrompt.SetActive(false);
         }
+    }
+
+    private string ResolveConversationId(ContextualDialogue dialogue)
+    {
+        if (dialogue != null)
+        {
+            switch (dialogue.behavior)
+            {
+                case DialogueBehavior.Repeatable:
+                case DialogueBehavior.PlayOnce:
+                    return dialogue.conversationID;
+                case DialogueBehavior.Random:
+                    if (dialogue.randomConversationIDs != null && dialogue.randomConversationIDs.Count > 0)
+                        return dialogue.randomConversationIDs[0];
+                    break;
+            }
+        }
+
+        return defaultConversationID;
     }
 
     private void RefreshInteractPromptText(KeyCode key)
