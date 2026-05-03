@@ -181163,11 +181163,11 @@ MonoBehaviour:
   hallwayExtraZones:
   - {fileID: 354456851}
   - {fileID: 758721147}
-  hallwayAmbientClip: {fileID: 8300000, guid: 3ae79a35739df404f94c50dbf7751c6c, type: 3}
-  hallwayAmbientVolume: 0.5
+  hallwayAmbientClip: {fileID: 8300000, guid: b5e84539d9563c64ba7dedcbf3d6194a, type: 3}
+  hallwayAmbientVolume: 1
   playgroundZone: {fileID: 1777972360}
   playgroundExtraZones: []
-  playgroundAmbientClip: {fileID: 8300000, guid: 91f9008050ec84149b670cc95367ba1c, type: 3}
+  playgroundAmbientClip: {fileID: 8300000, guid: 516047937cf77c24d96eed891d011b17, type: 3}
   playgroundAmbientVolume: 0.62
   ambientFadeSpeed: 3.25
   phoneNotificationClip: {fileID: 8300000, guid: 8b5566429ad6cc24392758586de04b48, type: 3}

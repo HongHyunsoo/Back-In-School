@@ -1561,6 +1561,7 @@ MonoBehaviour:
   fadeInDuration: 0.35
   backButton: {fileID: 0}
   languageButton: {fileID: 0}
+  settingsScrollRect: {fileID: 0}
   masterVolumeSlider: {fileID: 0}
   bgmVolumeSlider: {fileID: 0}
   sfxVolumeSlider: {fileID: 0}
@@ -1748,9 +1749,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ambientClip: {fileID: 0}
   ambientClips:
-  - {fileID: 8300000, guid: 2d4019e3f73b7624a94c0913751c2a8d, type: 3}
-  - {fileID: 8300000, guid: 191e98947fbb4e146aee9397570d920a, type: 3}
-  ambientVolume: 0.6
+  - {fileID: 8300000, guid: 1fe21bd708fcba747b2c4c71a2c60842, type: 3}
+  ambientVolume: 1
   requireChatScene: 1
   requireSubwayState: 1
 --- !u!1660057539 &9223372036854775807

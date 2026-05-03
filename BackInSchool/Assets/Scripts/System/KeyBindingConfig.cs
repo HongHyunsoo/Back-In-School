@@ -17,13 +17,40 @@ public static class KeyBindingConfig
     {
         string raw = PlayerPrefs.GetString(key, fallback.ToString());
         if (System.Enum.TryParse(raw, out KeyCode parsed))
-            return parsed;
+        {
+            if (IsAllowedBindingKey(parsed))
+                return parsed;
+
+            Set(key, fallback);
+            return fallback;
+        }
         return fallback;
     }
 
     public static void Set(string key, KeyCode code)
     {
+        if (!IsAllowedBindingKey(code))
+            return;
+
         PlayerPrefs.SetString(key, code.ToString());
         PlayerPrefs.Save();
+    }
+
+    public static bool IsAllowedBindingKey(KeyCode code)
+    {
+        switch (code)
+        {
+            case KeyCode.None:
+            case KeyCode.Mouse0:
+            case KeyCode.Mouse1:
+            case KeyCode.Mouse2:
+            case KeyCode.Mouse3:
+            case KeyCode.Mouse4:
+            case KeyCode.Mouse5:
+            case KeyCode.Mouse6:
+                return false;
+            default:
+                return true;
+        }
     }
 }

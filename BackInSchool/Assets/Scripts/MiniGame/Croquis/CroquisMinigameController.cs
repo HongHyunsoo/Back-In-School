@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class CroquisMinigameController : MonoBehaviour
 {
+    private const string TutorialCompletedPrefKey = "DAY1_MINIGAME_TUTORIAL_CROQUIS_DONE";
+
     [Header("Audio")]
     public AudioSource audioSource;
     public AudioClip loopClip;
@@ -159,6 +161,9 @@ public class CroquisMinigameController : MonoBehaviour
     private bool stageTransitionPending;
     private RectTransform uiRootRect;
     private int lastPromptPressSfxIndex = -1;
+    private MinigameTutorialOverlay tutorialOverlay;
+    private bool tutorialActive;
+    private int tutorialStep;
 
     private void Awake()
     {
@@ -194,6 +199,7 @@ public class CroquisMinigameController : MonoBehaviour
         RefreshStatus();
         ReloadTeacherConversationLines();
         StartLoopIfNeeded();
+        BeginTutorialIfNeeded();
 
         if (LocalizationManager.Instance != null)
             LocalizationManager.Instance.OnLanguageChanged += OnLanguageChanged;
@@ -280,6 +286,12 @@ public class CroquisMinigameController : MonoBehaviour
 
     private void OnPromptSuccess()
     {
+        if (tutorialActive)
+        {
+            AdvanceTutorial();
+            return;
+        }
+
         PlayOneShot(promptSuccessSfx, promptSuccessSfxVolume);
         stageSuccessCount++;
         totalSuccessCount++;
@@ -355,6 +367,86 @@ public class CroquisMinigameController : MonoBehaviour
         }
 
         ApplyPromptVisual();
+    }
+
+    private void BeginTutorialIfNeeded()
+    {
+        tutorialOverlay = MinigameTutorialOverlay.Ensure(transform);
+        if (!ShouldShowTutorial())
+        {
+            if (tutorialOverlay != null)
+                tutorialOverlay.Hide();
+            return;
+        }
+
+        tutorialActive = true;
+        tutorialStep = 0;
+        ApplyTutorialStep();
+    }
+
+    private bool ShouldShowTutorial()
+    {
+        if (PlayerPrefs.GetInt(TutorialCompletedPrefKey, 0) == 1)
+            return false;
+
+        if (FlowManager.Instance != null)
+            return FlowManager.Instance.day == 1;
+
+        return true;
+    }
+
+    private void ApplyTutorialStep()
+    {
+        if (!tutorialActive)
+            return;
+
+        switch (tutorialStep)
+        {
+            case 0:
+                if (tutorialOverlay != null)
+                    tutorialOverlay.Show("튜토리얼", "표시를 한 번 클릭해보자.", "1 / 2 크로키");
+                currentPromptType = PromptType.Click;
+                currentPromptPos = RandomPointInsidePaper();
+                currentDragDir = Vector2.right;
+                ApplyPromptVisual();
+                break;
+
+            case 1:
+                if (tutorialOverlay != null)
+                    tutorialOverlay.Show("튜토리얼", "이번엔 화살표 방향으로 드래그해보자.", "2 / 2 크로키");
+                currentPromptPos = RandomPointInsidePaper();
+                if (!TryPickValidDragDirection(currentPromptPos, out currentDragDir))
+                    currentDragDir = Vector2.right;
+                currentPromptType = PromptType.Drag;
+                ApplyPromptVisual();
+                break;
+        }
+    }
+
+    private void AdvanceTutorial()
+    {
+        if (tutorialStep == 0)
+        {
+            PlayOneShot(promptSuccessSfx, promptSuccessSfxVolume);
+            tutorialStep = 1;
+            ApplyTutorialStep();
+            return;
+        }
+
+        CompleteTutorial();
+    }
+
+    private void CompleteTutorial()
+    {
+        tutorialActive = false;
+        PlayerPrefs.SetInt(TutorialCompletedPrefKey, 1);
+        PlayerPrefs.Save();
+
+        if (tutorialOverlay != null)
+            tutorialOverlay.Hide();
+
+        SpawnNextPrompt();
+        RefreshStatus();
     }
 
     private bool TryPickValidDragDirection(Vector2 point, out Vector2 dir)

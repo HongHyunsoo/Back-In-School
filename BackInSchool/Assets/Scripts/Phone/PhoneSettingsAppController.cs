@@ -34,6 +34,7 @@ public class PhoneSettingsAppController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI bindPhoneLabel;
 
     private string waitingBindKey;
+    private int rebindStartFrame = -1;
     private bool isWired;
     private PhoneAppManager appManager;
 
@@ -63,13 +64,20 @@ public class PhoneSettingsAppController : MonoBehaviour
         if (string.IsNullOrEmpty(waitingBindKey))
             return;
 
+        if (Time.frameCount <= rebindStartFrame)
+            return;
+
         foreach (KeyCode code in System.Enum.GetValues(typeof(KeyCode)))
         {
             if (!Input.GetKeyDown(code))
                 continue;
 
+            if (!KeyBindingConfig.IsAllowedBindingKey(code))
+                continue;
+
             KeyBindingConfig.Set(waitingBindKey, code);
             waitingBindKey = null;
+            rebindStartFrame = -1;
             SetInfo(L("키가 변경되었습니다.", "Key binding updated."));
             RefreshBindingLabels();
             break;
@@ -79,7 +87,7 @@ public class PhoneSettingsAppController : MonoBehaviour
     private void ResolveReferences()
     {
         if (settingsPanel == null)
-            settingsPanel = FindObjectByNameOrToken("App_Settings", "Settings");
+            settingsPanel = FindObjectByNameOrToken("App_Setting", "App_Settings", "Settings");
 
         Transform root = settingsPanel != null ? settingsPanel.transform : transform;
         if (appManager == null)
@@ -132,21 +140,21 @@ public class PhoneSettingsAppController : MonoBehaviour
         if (languageButtonLabel == null)
             languageButtonLabel = FindLabelUnder(languageButton);
         if (bindLeftLabel == null)
-            bindLeftLabel = FindLabelUnder(bindLeftButton);
+            bindLeftLabel = FindLabelUnder(bindLeftButton) ?? FindLabelByName(root, "Text_Left");
         if (bindRightLabel == null)
-            bindRightLabel = FindLabelUnder(bindRightButton);
+            bindRightLabel = FindLabelUnder(bindRightButton) ?? FindLabelByName(root, "Text_Right");
         if (bindJumpLabel == null)
-            bindJumpLabel = FindLabelUnder(bindJumpButton);
+            bindJumpLabel = FindLabelUnder(bindJumpButton) ?? FindLabelByName(root, "Text_Jump");
         if (bindSprintLabel == null)
-            bindSprintLabel = FindLabelUnder(bindSprintButton);
+            bindSprintLabel = FindLabelUnder(bindSprintButton) ?? FindLabelByName(root, "Text_Sprint");
         if (bindStairDownLabel == null)
-            bindStairDownLabel = FindLabelUnder(bindStairDownButton);
+            bindStairDownLabel = FindLabelUnder(bindStairDownButton) ?? FindLabelByName(root, "Text_Down");
         if (bindStairUpLabel == null)
-            bindStairUpLabel = FindLabelUnder(bindStairUpButton);
+            bindStairUpLabel = FindLabelUnder(bindStairUpButton) ?? FindLabelByName(root, "Text_Up");
         if (bindInteractLabel == null)
-            bindInteractLabel = FindLabelUnder(bindInteractButton);
+            bindInteractLabel = FindLabelUnder(bindInteractButton) ?? FindLabelByName(root, "Text_Interact");
         if (bindPhoneLabel == null)
-            bindPhoneLabel = FindLabelUnder(bindPhoneButton);
+            bindPhoneLabel = FindLabelUnder(bindPhoneButton) ?? FindLabelByName(root, "Text_PhoneUI");
     }
 
     private void Wire()
@@ -264,6 +272,7 @@ public class PhoneSettingsAppController : MonoBehaviour
     private void StartRebind(string keyId)
     {
         waitingBindKey = keyId;
+        rebindStartFrame = Time.frameCount;
         SetInfo(L("변경할 키를 눌러주세요...", "Press any key..."));
     }
 
@@ -505,6 +514,21 @@ public class PhoneSettingsAppController : MonoBehaviour
             return null;
 
         return button.GetComponentInChildren<TextMeshProUGUI>(true);
+    }
+
+    private static TextMeshProUGUI FindLabelByName(Transform root, string name)
+    {
+        if (root == null || string.IsNullOrEmpty(name))
+            return null;
+
+        var labels = root.GetComponentsInChildren<TextMeshProUGUI>(true);
+        for (int i = 0; i < labels.Length; i++)
+        {
+            if (labels[i] != null && labels[i].name == name)
+                return labels[i];
+        }
+
+        return null;
     }
 
     private static bool HasAnyToken(string source, params string[] tokens)

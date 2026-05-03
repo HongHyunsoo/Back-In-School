@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -78,6 +78,7 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
     private const string GonyongConversationId = "DAY1_MOR_GONYONG";
     private const string AdultConversationId = "DAY1_MOR_ADULT";
     private const string GonyongEventConversationId = "DAY1_MOR_GONYONG_EVENT";
+    private const string AdultMorningPhotoEntryId = "DAY1_MOR_ADULT_PHOTO";
 
     private static TMP_FontAsset cachedTutorialFont;
 
@@ -94,6 +95,7 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
     private int stage;
     private bool completed;
     private bool visitedRulesApp;
+    private bool visitedGalleryApp;
     private int chatCompletedSessionBaseline = -1;
 
     private Transform trackedPlayer;
@@ -101,6 +103,8 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
     private bool playerMoveAnchorValid;
 
     private readonly Vector3 worldStarOffset = new Vector3(0f, 1.35f, 0f);
+    private const float WorldStarEdgePadding = 72f;
+    private const float MorningDoorFallbackDistance = 3.25f;
 
     private enum TutorialStage
     {
@@ -111,8 +115,10 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
         MorningMove = 4,
         MorningLocker = 5,
         MorningConversationChain = 6,
-        MorningSeat = 7,
-        Done = 8,
+        MorningPhotoCheck = 7,
+        MorningGonyongReturn = 8,
+        MorningSeat = 9,
+        Done = 10,
     }
 
     private void Awake()
@@ -166,6 +172,7 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
         stage = 0;
         completed = false;
         visitedRulesApp = false;
+        visitedGalleryApp = false;
         chatCompletedSessionBaseline = -1;
         trackedPlayer = null;
         playerMoveAnchorValid = false;
@@ -209,6 +216,9 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
         if (!FlowContext.IsMorningBeforeAssemblyFreeRoam())
             return true;
 
+        if ((TutorialStage)stage >= TutorialStage.MorningConversationChain)
+            return true;
+
         if (string.IsNullOrEmpty(conversationId))
             return false;
 
@@ -225,6 +235,20 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
             return true;
 
         return (TutorialStage)stage == TutorialStage.MorningSeat;
+    }
+
+    private bool HasCheckedMorningAdultPhoto()
+    {
+        if (!FlowContext.IsMorningBeforeAssemblyFreeRoam())
+            return false;
+
+        if (visitedGalleryApp)
+            return true;
+
+        PhoneAppManager appManager = FindAnyObjectByType<PhoneAppManager>();
+        return appManager != null &&
+               appManager.CurrentApp == PhoneAppId.Gallery &&
+               PhoneGalleryService.EnsureExists().IsUnlocked(AdultMorningPhotoEntryId);
     }
 
     private void EnsureRuntimeUi()
@@ -346,6 +370,10 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
 
     private static Sprite ResolveStarSprite()
     {
+        Sprite resourceSprite = Resources.Load<Sprite>("UI/Star");
+        if (resourceSprite != null)
+            return resourceSprite;
+
         Sprite[] sprites = Resources.FindObjectsOfTypeAll<Sprite>();
         for (int i = 0; i < sprites.Length; i++)
         {
@@ -375,6 +403,8 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
 
         if (appManager.CurrentApp == PhoneAppId.Rules)
             visitedRulesApp = true;
+        if (appManager.CurrentApp == PhoneAppId.Gallery)
+            visitedGalleryApp = true;
     }
 
     private void EvaluateAutoProgress()
@@ -407,6 +437,12 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
                     advance = FlowManager.Instance.IsWearingSlippers;
                     break;
                 case TutorialStage.MorningConversationChain:
+                    advance = DialogueProgressState.HasCompletedConversation(AdultConversationId);
+                    break;
+                case TutorialStage.MorningPhotoCheck:
+                    advance = HasCheckedMorningAdultPhoto();
+                    break;
+                case TutorialStage.MorningGonyongReturn:
                     advance = DialogueProgressState.HasCompletedConversation(GonyongEventConversationId);
                     break;
                 case TutorialStage.MorningSeat:
@@ -487,6 +523,9 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
         if (stage != (int)TutorialStage.SubwayChat)
             chatCompletedSessionBaseline = -1;
 
+        if (stage != (int)TutorialStage.MorningPhotoCheck)
+            visitedGalleryApp = false;
+
         PlayerPrefs.Save();
     }
 
@@ -546,6 +585,15 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
 
     private void UpdateTargetStar()
     {
+        if (IsAnyDialogueActive())
+        {
+            if (phoneTargetStarImage != null)
+                phoneTargetStarImage.gameObject.SetActive(false);
+            if (worldTargetStarImage != null)
+                worldTargetStarImage.gameObject.SetActive(false);
+            return;
+        }
+
         bool phoneStarShown = TryAttachPhoneTargetStar();
         bool worldStarShown = !phoneStarShown && TryPlaceWorldTargetStar();
 
@@ -597,6 +645,9 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
         if (!TryGetWorldTargetScreenPosition(out Vector2 screenPosition))
             return false;
 
+        screenPosition.x = Mathf.Clamp(screenPosition.x, WorldStarEdgePadding, Screen.width - WorldStarEdgePadding);
+        screenPosition.y = Mathf.Clamp(screenPosition.y, WorldStarEdgePadding, Screen.height - WorldStarEdgePadding);
+
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(tutorialCanvasRect, screenPosition, null, out Vector2 localPoint))
             return false;
 
@@ -620,6 +671,7 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
             TutorialStage.SubwayChat => "Btn_AppChat",
             TutorialStage.SubwayRules => "Btn_AppRules",
             TutorialStage.SubwayClosePhone => "Btn_ClosePhone",
+            TutorialStage.MorningPhotoCheck => "Btn_AppGallery",
             _ => null,
         };
     }
@@ -628,10 +680,13 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
     {
         screenPosition = default;
 
+        TutorialStage currentStage = (TutorialStage)stage;
         Transform target = (TutorialStage)stage switch
         {
+            TutorialStage.MorningMove => FindMorningLockerTarget(),
             TutorialStage.MorningLocker => FindMorningLockerTarget(),
             TutorialStage.MorningConversationChain => FindMorningConversationTarget(),
+            TutorialStage.MorningGonyongReturn => FindConversationTarget(GonyongEventConversationId),
             TutorialStage.MorningSeat => FindMorningSeatTarget(),
             _ => null,
         };
@@ -648,8 +703,222 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
         if (sp.z <= 0f)
             return false;
 
+        if (sp.x < 0f || sp.x > Screen.width || sp.y < 0f || sp.y > Screen.height)
+        {
+            Transform fallbackPortal = ShouldUseMorningDoorFallback(currentStage)
+                ? TryGetMorningDoorGuideTarget()
+                : null;
+            if (fallbackPortal != null && fallbackPortal != target)
+            {
+                Vector3 fallbackPoint = fallbackPortal.position + worldStarOffset;
+                Vector3 fallbackScreen = cam.WorldToScreenPoint(fallbackPoint);
+                if (fallbackScreen.z > 0f)
+                {
+                    screenPosition = new Vector2(fallbackScreen.x, fallbackScreen.y);
+                    return true;
+                }
+            }
+
+            Vector3 viewport = cam.WorldToViewportPoint(worldPoint);
+            Vector2 centered = new Vector2(viewport.x - 0.5f, viewport.y - 0.5f);
+            if (centered.sqrMagnitude < 0.0001f)
+                centered = Vector2.up;
+
+            Vector2 direction = centered.normalized;
+            Vector2 half = new Vector2((Screen.width * 0.5f) - WorldStarEdgePadding, (Screen.height * 0.5f) - WorldStarEdgePadding);
+
+            float scaleX = Mathf.Approximately(direction.x, 0f) ? float.PositiveInfinity : Mathf.Abs(half.x / direction.x);
+            float scaleY = Mathf.Approximately(direction.y, 0f) ? float.PositiveInfinity : Mathf.Abs(half.y / direction.y);
+            float scale = Mathf.Min(scaleX, scaleY);
+
+            Vector2 edge = direction * scale;
+            screenPosition = new Vector2((Screen.width * 0.5f) + edge.x, (Screen.height * 0.5f) + edge.y);
+            return true;
+        }
+
         screenPosition = new Vector2(sp.x, sp.y);
         return true;
+    }
+
+    private bool ShouldUseMorningDoorFallback(TutorialStage currentStage)
+    {
+        if (currentStage == TutorialStage.MorningSeat)
+            return true;
+
+        if (currentStage != TutorialStage.MorningConversationChain && currentStage != TutorialStage.MorningGonyongReturn)
+            return false;
+
+        string expectedConversationId = currentStage == TutorialStage.MorningGonyongReturn
+            ? GonyongEventConversationId
+            : GetExpectedMorningConversationId();
+        if (string.Equals(expectedConversationId, AdultConversationId, StringComparison.OrdinalIgnoreCase) &&
+            IsPlayerCloseEnoughToAdultTarget())
+        {
+            return false;
+        }
+
+        if (string.Equals(expectedConversationId, GonyongEventConversationId, StringComparison.OrdinalIgnoreCase))
+        {
+            if (IsPlayerCloseEnoughToConversationTarget())
+                return false;
+
+            Transform exitDoor = FindMorningDoorGuideTargetForConversation(GonyongEventConversationId);
+            if (exitDoor == null || trackedPlayer == null)
+                return false;
+
+            return Vector2.Distance(trackedPlayer.position, exitDoor.position) <= MorningDoorFallbackDistance;
+        }
+
+        return string.Equals(expectedConversationId, AdultConversationId, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsPlayerCloseEnoughToAdultTarget()
+    {
+        return IsPlayerCloseEnoughToConversationTarget(AdultConversationId, 12f);
+    }
+
+    private bool IsPlayerCloseEnoughToConversationTarget()
+    {
+        return IsPlayerCloseEnoughToConversationTarget(GetExpectedMorningConversationId(), 12f);
+    }
+
+    private bool IsPlayerCloseEnoughToConversationTarget(string conversationId, float threshold)
+    {
+        Transform player = trackedPlayer != null ? trackedPlayer : FindPlayerTransform();
+        Transform target = FindConversationTarget(conversationId);
+        if (player == null || target == null)
+            return false;
+
+        return Vector2.Distance(player.position, target.position) <= threshold;
+    }
+
+    private Transform TryGetMorningDoorGuideTarget()
+    {
+        TutorialStage currentStage = (TutorialStage)stage;
+        if (currentStage != TutorialStage.MorningSeat &&
+            currentStage != TutorialStage.MorningConversationChain &&
+            currentStage != TutorialStage.MorningGonyongReturn)
+            return null;
+
+        Transform player = trackedPlayer != null ? trackedPlayer : FindPlayerTransform();
+        if (player == null)
+            return null;
+
+        if (currentStage == TutorialStage.MorningConversationChain || currentStage == TutorialStage.MorningGonyongReturn)
+        {
+            string conversationId = currentStage == TutorialStage.MorningGonyongReturn
+                ? GonyongEventConversationId
+                : GetExpectedMorningConversationId();
+            Transform specificDoor = FindMorningDoorGuideTargetForConversation(conversationId);
+            if (specificDoor != null)
+                return specificDoor;
+        }
+
+        MapTransitionPortal[] portals = FindObjectsByType<MapTransitionPortal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        Transform bestPortal301 = null;
+        float bestPortal301Distance = float.MaxValue;
+        Transform bestPreferred = null;
+        float bestPreferredDistance = float.MaxValue;
+        Transform bestVisibleDoor = null;
+        float bestVisibleDoorDistance = float.MaxValue;
+
+        Camera cam = Camera.main;
+
+        for (int i = 0; i < portals.Length; i++)
+        {
+            MapTransitionPortal portal = portals[i];
+            if (portal == null || !portal.gameObject.activeInHierarchy)
+                continue;
+
+            string portalName = portal.gameObject.name ?? string.Empty;
+            string destinationId = portal.sameSceneDestinationId ?? string.Empty;
+            bool looksLikeDoor =
+                portalName.IndexOf("Door", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                destinationId.IndexOf("Door", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                portalName.IndexOf("Portal_301", StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (!looksLikeDoor)
+                continue;
+
+            float distance = Vector2.Distance(player.position, portal.transform.position);
+            bool isPortal301 =
+                portalName.Equals("Portal_301", StringComparison.OrdinalIgnoreCase) ||
+                portalName.IndexOf("Portal_301", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool isPreferred301 =
+                portalName.IndexOf("301", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                destinationId.IndexOf("301", StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (isPortal301 && distance < bestPortal301Distance)
+            {
+                bestPortal301Distance = distance;
+                bestPortal301 = portal.transform;
+            }
+
+            if (isPreferred301 && distance < bestPreferredDistance)
+            {
+                bestPreferredDistance = distance;
+                bestPreferred = portal.transform;
+            }
+
+            if (cam != null)
+            {
+                Vector3 sp = cam.WorldToScreenPoint(portal.transform.position + worldStarOffset);
+                bool visible =
+                    sp.z > 0f &&
+                    sp.x >= 0f && sp.x <= Screen.width &&
+                    sp.y >= 0f && sp.y <= Screen.height;
+
+                if (visible && distance < bestVisibleDoorDistance)
+                {
+                    bestVisibleDoorDistance = distance;
+                    bestVisibleDoor = portal.transform;
+                }
+            }
+        }
+
+        if (bestPortal301 != null)
+            return bestPortal301;
+
+        if (bestPreferred != null)
+            return bestPreferred;
+
+        return bestVisibleDoor;
+    }
+
+    private Transform FindMorningDoorGuideTargetForConversation(string conversationId)
+    {
+        MapTransitionPortal[] portals = FindObjectsByType<MapTransitionPortal>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        Transform best = null;
+        float bestDistance = float.MaxValue;
+        Transform player = trackedPlayer != null ? trackedPlayer : FindPlayerTransform();
+
+        for (int i = 0; i < portals.Length; i++)
+        {
+            MapTransitionPortal portal = portals[i];
+            if (portal == null || !portal.gameObject.activeInHierarchy)
+                continue;
+
+            string portalName = portal.gameObject.name ?? string.Empty;
+            string destinationId = portal.sameSceneDestinationId ?? string.Empty;
+
+            bool matches = false;
+            if (string.Equals(conversationId, AdultConversationId, StringComparison.OrdinalIgnoreCase))
+                matches = destinationId.Equals("301 Door", StringComparison.OrdinalIgnoreCase);
+            else if (string.Equals(conversationId, GonyongEventConversationId, StringComparison.OrdinalIgnoreCase))
+                matches = destinationId.IndexOf("F3A Spawn 301", StringComparison.OrdinalIgnoreCase) >= 0;
+
+            if (!matches)
+                continue;
+
+            float distance = player != null ? Vector2.Distance(player.position, portal.transform.position) : 0f;
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                best = portal.transform;
+            }
+        }
+
+        return best;
     }
 
     private RectTransform FindPhoneUiRectTransformByName(string targetName)
@@ -689,7 +958,18 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
     private Transform FindMorningConversationTarget()
     {
         string expectedConversationId = GetExpectedMorningConversationId();
-        if (string.IsNullOrEmpty(expectedConversationId))
+        return FindConversationTarget(expectedConversationId);
+    }
+
+    private static bool IsAnyDialogueActive()
+    {
+        DialogueManager manager = FindAnyObjectByType<DialogueManager>();
+        return manager != null && manager.IsDialogueActive;
+    }
+
+    private Transform FindConversationTarget(string conversationId)
+    {
+        if (string.IsNullOrEmpty(conversationId))
             return null;
 
         DialogueTrigger[] triggers = FindObjectsByType<DialogueTrigger>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
@@ -699,7 +979,7 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
             if (trigger == null || !trigger.gameObject.activeInHierarchy)
                 continue;
 
-            if (MatchesConversation(trigger, expectedConversationId))
+            if (MatchesConversation(trigger, conversationId))
                 return trigger.transform;
         }
 
@@ -759,113 +1039,107 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
         title = string.Empty;
         body = string.Empty;
         progress = string.Empty;
-
         switch ((TutorialStage)stage)
         {
             case TutorialStage.SubwayHealth:
                 if (!FlowContext.IsChat())
                     return false;
                 title = L("튜토리얼", "Tutorial");
-                body = L("폰에서 건강 자가진단을 먼저 끝내자.", "Finish the health survey on your phone first.");
-                progress = L("1 / 8 지하철", "1 / 8 Subway");
+                body = L("먼저 폰에서 건강 자가진단을 끝내자.", "Finish the health survey on your phone first.");
+                progress = L("1 / 10 지하철", "1 / 10 Subway");
                 return true;
-
             case TutorialStage.SubwayChat:
                 if (!FlowContext.IsChat())
                     return false;
                 title = L("튜토리얼", "Tutorial");
-                body = L("이제 채팅을 열고 대화를 끝까지 확인하자.", "Open the chat app and finish one chat session.");
-                progress = L("2 / 8 지하철", "2 / 8 Subway");
+                body = L("채팅 앱을 열고 대화를 끝까지 확인하자.", "Open the chat app and finish one chat session.");
+                progress = L("2 / 10 지하철", "2 / 10 Subway");
                 return true;
-
             case TutorialStage.SubwayRules:
                 if (!FlowContext.IsChat())
                     return false;
                 title = L("튜토리얼", "Tutorial");
-                body = L("룰 북을 열어 학교 규칙도 확인하자.", "Open the rule book and check the school rules.");
-                progress = L("3 / 8 지하철", "3 / 8 Subway");
+                body = L("룰 북을 열어 학교 규칙을 확인하자.", "Open the rule book and check the school rules.");
+                progress = L("3 / 10 지하철", "3 / 10 Subway");
                 return true;
-
             case TutorialStage.SubwayClosePhone:
                 if (!FlowContext.IsChat())
                     return false;
                 title = L("튜토리얼", "Tutorial");
                 body = L("이제 닫기 버튼을 눌러 폰을 내리자.", "Press the close button and put the phone away.");
-                progress = L("4 / 8 지하철", "4 / 8 Subway");
+                progress = L("4 / 10 지하철", "4 / 10 Subway");
                 return true;
-
             case TutorialStage.MorningMove:
                 if (!FlowContext.IsMorningBeforeAssemblyFreeRoam())
                     return false;
                 title = L("튜토리얼", "Tutorial");
-                body = L("이동 키로 교실 안을 조금 걸어보자.", "Use the movement keys and walk around a little.");
-                progress = L("5 / 8 아침 자유시간", "5 / 8 Morning Free Time");
+                body = L("이동 키로 교실 쪽을 향해 조금 걸어보자.", "Use the movement keys and walk toward the classroom.");
+                progress = L("5 / 10 아침 자유시간", "5 / 10 Morning Free Time");
                 return true;
-
             case TutorialStage.MorningLocker:
                 if (!FlowContext.IsMorningBeforeAssemblyFreeRoam())
                     return false;
                 title = L("튜토리얼", "Tutorial");
                 body = L("사물함과 상호작용해서 실내화로 갈아신자.", "Interact with the locker and change into slippers.");
-                progress = L("6 / 8 아침 자유시간", "6 / 8 Morning Free Time");
+                progress = L("6 / 10 아침 자유시간", "6 / 10 Morning Free Time");
                 return true;
-
             case TutorialStage.MorningConversationChain:
                 if (!FlowContext.IsMorningBeforeAssemblyFreeRoam())
                     return false;
                 title = L("튜토리얼", "Tutorial");
                 body = BuildMorningConversationBody();
-                progress = L("7 / 8 아침 자유시간", "7 / 8 Morning Free Time");
+                progress = L("7 / 10 아침 자유시간", "7 / 10 Morning Free Time");
                 return true;
-
+            case TutorialStage.MorningPhotoCheck:
+                if (!FlowContext.IsMorningBeforeAssemblyFreeRoam())
+                    return false;
+                title = L("튜토리얼", "Tutorial");
+                body = L(
+                    $"사진이 저장되었다. [{GetPhoneKeyDisplay()}] 키로 폰을 열고 갤러리에서 방금 찍은 사진을 확인하자.",
+                    $"The photo has been saved. Press [{GetPhoneKeyDisplay()}] to open the phone, then check the gallery.");
+                progress = L("8 / 10 아침 자유시간", "8 / 10 Morning Free Time");
+                return true;
+            case TutorialStage.MorningGonyongReturn:
+                if (!FlowContext.IsMorningBeforeAssemblyFreeRoam())
+                    return false;
+                title = L("튜토리얼", "Tutorial");
+                body = L("이제 고뇽이에게 다시 가서 사진 이야기를 해보자.", "Now go back to Gonyong and talk about the photo.");
+                progress = L("9 / 10 아침 자유시간", "9 / 10 Morning Free Time");
+                return true;
             case TutorialStage.MorningSeat:
                 if (!FlowContext.IsMorningBeforeAssemblyFreeRoam())
                     return false;
                 title = L("튜토리얼", "Tutorial");
-                body = L("이제 자리에 상호작용해서 다음 흐름으로 넘어가자.", "Interact with your seat to move on to the next flow.");
-                progress = L("8 / 8 아침 자유시간", "8 / 8 Morning Free Time");
+                body = L("이제 자리에 앉아 다음 시간으로 넘어가자.", "Sit down at your seat and move on to the next period.");
+                progress = L("10 / 10 아침 자유시간", "10 / 10 Morning Free Time");
                 return true;
         }
-
         return false;
     }
-
     private string BuildMorningConversationBody()
     {
         bool talkedGonyong = DialogueProgressState.HasCompletedConversation(GonyongConversationId);
-        bool talkedAdult = DialogueProgressState.HasCompletedConversation(AdultConversationId);
-        bool didPhotoEvent = DialogueProgressState.HasCompletedConversation(GonyongEventConversationId);
-
-        if (didPhotoEvent)
-            return L("사진까지 확인했어. 이제 자리로 돌아가자.", "You finished the photo event. Head back to your seat.");
-
-        if (talkedAdult)
-            return L("이제 고뇽이에게 다시 가서 사진 얘기를 해보자.", "Go back to Gonyong and show the photo.");
-
         if (talkedGonyong)
-            return L("이번에는 엉인이와 대화해보자.", "Next, talk to Adult.");
-
+            return L("이제 엉인이와 대화해보자.", "Next, talk to Adult.");
         return L("먼저 고뇽이와 대화해보자.", "First, talk to Gonyong.");
     }
-
     private string GetExpectedMorningConversationId()
     {
         bool talkedGonyong = DialogueProgressState.HasCompletedConversation(GonyongConversationId);
-        bool talkedAdult = DialogueProgressState.HasCompletedConversation(AdultConversationId);
-        bool didPhotoEvent = DialogueProgressState.HasCompletedConversation(GonyongEventConversationId);
-
-        if (didPhotoEvent)
-            return string.Empty;
-
-        if (talkedAdult)
-            return GonyongEventConversationId;
-
         if (talkedGonyong)
             return AdultConversationId;
-
         return GonyongConversationId;
     }
 
+    private static string GetPhoneKeyDisplay()
+    {
+        PhoneInputOpener opener = FindAnyObjectByType<PhoneInputOpener>();
+        if (opener != null)
+            return opener.ToggleKey.ToString();
+
+        KeyCode code = KeyBindingConfig.Get(KeyBindingConfig.PhoneKey, KeyCode.Tab);
+        return code.ToString();
+    }
     private static string L(string ko, string en)
     {
         if (LocalizationManager.Instance == null)
@@ -874,3 +1148,4 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
         return LocalizationManager.Instance.GetCurrentLanguage() == Language.Korean ? ko : en;
     }
 }
+

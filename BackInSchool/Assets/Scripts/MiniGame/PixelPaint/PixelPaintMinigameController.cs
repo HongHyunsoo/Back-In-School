@@ -13,6 +13,8 @@ using UnityEditor;
 /// </summary>
 public class PixelPaintMinigameController : MonoBehaviour
 {
+    private const string TutorialCompletedPrefKey = "DAY1_MINIGAME_TUTORIAL_PIXELPAINT_DONE";
+
     public enum PuzzleSelectMode
     {
         FixedIndex,
@@ -147,6 +149,9 @@ public class PixelPaintMinigameController : MonoBehaviour
     private float defaultOrthoSize = -1f;
     private Vector3 defaultCameraPosition;
     private float lastPaintSfxTime = -999f;
+    private MinigameTutorialOverlay tutorialOverlay;
+    private bool tutorialActive;
+    private int tutorialStep;
 
     private class CellView
     {
@@ -194,6 +199,7 @@ public class PixelPaintMinigameController : MonoBehaviour
         RefreshHeader();
         RefreshPaletteUI();
         StartLoopIfNeeded();
+        BeginTutorialIfNeeded();
 
         if (LocalizationManager.Instance != null)
             LocalizationManager.Instance.OnLanguageChanged += OnLanguageChanged;
@@ -954,7 +960,7 @@ public class PixelPaintMinigameController : MonoBehaviour
             lastRightPaintedY = -1;
         }
 
-        if (IsSolved())
+        if (!tutorialActive && IsSolved())
             OnSolved();
     }
 
@@ -1020,6 +1026,96 @@ public class PixelPaintMinigameController : MonoBehaviour
         painted[x, y] = colorIndex;
         PlayPaintSfx(colorIndex == 0 ? eraseSfx : paintSfx, colorIndex == 0 ? eraseSfxVolume : paintSfxVolume);
         RefreshCellVisual(x, y);
+        HandleTutorialPaintProgress(colorIndex);
+    }
+
+    private void BeginTutorialIfNeeded()
+    {
+        tutorialOverlay = MinigameTutorialOverlay.Ensure(transform);
+        if (!ShouldShowTutorial())
+        {
+            if (tutorialOverlay != null)
+                tutorialOverlay.Hide();
+            return;
+        }
+
+        tutorialActive = true;
+        tutorialStep = 0;
+        ShowTutorialStep();
+    }
+
+    private bool ShouldShowTutorial()
+    {
+        if (PlayerPrefs.GetInt(TutorialCompletedPrefKey, 0) == 1)
+            return false;
+
+        if (FlowManager.Instance != null)
+            return FlowManager.Instance.day == 1;
+
+        return true;
+    }
+
+    private void ShowTutorialStep()
+    {
+        if (tutorialOverlay == null)
+            return;
+
+        if (tutorialStep == 0)
+        {
+            tutorialOverlay.Show("튜토리얼", "숫자가 있는 칸을 한 번 칠해보자.", "1 / 2 픽셀 페인트");
+            return;
+        }
+
+        tutorialOverlay.Show("튜토리얼", "이번엔 오른쪽 클릭으로 한 칸 지워보자.", "2 / 2 픽셀 페인트");
+    }
+
+    private void HandleTutorialPaintProgress(int colorIndex)
+    {
+        if (!tutorialActive)
+            return;
+
+        if (tutorialStep == 0 && colorIndex != 0)
+        {
+            tutorialStep = 1;
+            ShowTutorialStep();
+            return;
+        }
+
+        if (tutorialStep == 1 && colorIndex == 0)
+            CompleteTutorial();
+    }
+
+    private void CompleteTutorial()
+    {
+        tutorialActive = false;
+        PlayerPrefs.SetInt(TutorialCompletedPrefKey, 1);
+        PlayerPrefs.Save();
+
+        if (tutorialOverlay != null)
+            tutorialOverlay.Hide();
+
+        ClearPaintedBoard();
+        RefreshHeader();
+    }
+
+    private void ClearPaintedBoard()
+    {
+        if (painted == null)
+            return;
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                painted[x, y] = 0;
+                RefreshCellVisual(x, y);
+            }
+        }
+
+        lastLeftPaintedX = -1;
+        lastLeftPaintedY = -1;
+        lastRightPaintedX = -1;
+        lastRightPaintedY = -1;
     }
 
     private void RefreshHeader(string suffix = null)

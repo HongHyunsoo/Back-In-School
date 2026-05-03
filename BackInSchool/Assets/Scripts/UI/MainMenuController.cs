@@ -56,6 +56,7 @@ public class MainMenuController : MonoBehaviour
     public TextMeshProUGUI bindPhoneLabel;
 
     private string waitingBindKey;
+    private int rebindStartFrame = -1;
     private bool isStarting;
     private Button resolvedJumpBindButton;
     private Button resolvedPhoneBindButton;
@@ -84,13 +85,20 @@ public class MainMenuController : MonoBehaviour
         if (string.IsNullOrEmpty(waitingBindKey))
             return;
 
+        if (Time.frameCount <= rebindStartFrame)
+            return;
+
         foreach (KeyCode code in System.Enum.GetValues(typeof(KeyCode)))
         {
             if (!Input.GetKeyDown(code))
                 continue;
 
+            if (!KeyBindingConfig.IsAllowedBindingKey(code))
+                continue;
+
             KeyBindingConfig.Set(waitingBindKey, code);
             waitingBindKey = null;
+            rebindStartFrame = -1;
             SetInfo(L("키가 변경되었습니다.", "Key binding updated."));
             RefreshBindingLabels();
             break;
@@ -277,6 +285,7 @@ public class MainMenuController : MonoBehaviour
     private void StartRebind(string key)
     {
         waitingBindKey = key;
+        rebindStartFrame = Time.frameCount;
         SetInfo(L("변경할 키를 눌러주세요...", "Press any key..."));
     }
 

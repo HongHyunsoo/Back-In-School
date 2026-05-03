@@ -13,6 +13,8 @@ using UnityEngine.Animations;
 /// </summary>
 public class TetrisMinigameController : MonoBehaviour
 {
+    private const string TutorialCompletedPrefKey = "DAY1_MINIGAME_TUTORIAL_TETRIS_DONE";
+
     [Header("Config (Optional)")]
     public TetrisMinigameConfig config;
     public bool overrideCoreValues;
@@ -148,6 +150,9 @@ public class TetrisMinigameController : MonoBehaviour
     private Vector2 jellyTargetScale = Vector2.one;
     private bool lockPending = false;
     private float lockPendingTimer = 0f;
+    private MinigameTutorialOverlay tutorialOverlay;
+    private bool tutorialActive;
+    private int tutorialStep;
 
     private static readonly Vector2Int[][] SHAPES = new Vector2Int[][]
     {
@@ -236,6 +241,7 @@ public class TetrisMinigameController : MonoBehaviour
         PlayFailCharacterLoop(failCharacterIdleClip);
         SpawnNewPiece();
         RefreshHud();
+        BeginTutorialIfNeeded();
     }
 
     private void OnDestroy()
@@ -287,6 +293,13 @@ public class TetrisMinigameController : MonoBehaviour
         if (ended) return;
 
         TickJelly();
+        if (tutorialActive)
+        {
+            HandleTutorialInput();
+            UpdateActiveVisuals();
+            return;
+        }
+
         HandleInput();
 
         if (lockPending)
@@ -316,6 +329,36 @@ public class TetrisMinigameController : MonoBehaviour
 
         // Optional: manual down step on key down.
         if (KeyDownDown()) StepDown();
+    }
+
+    private void HandleTutorialInput()
+    {
+        switch (tutorialStep)
+        {
+            case 0:
+                if (KeyDownLeft() && TryMove(new Vector2Int(-1, 0)))
+                {
+                    tutorialStep = 1;
+                    ShowTutorialStep();
+                    return;
+                }
+
+                if (KeyDownRight() && TryMove(new Vector2Int(1, 0)))
+                {
+                    tutorialStep = 1;
+                    ShowTutorialStep();
+                    return;
+                }
+                break;
+
+            case 1:
+                if (KeyDownRotate() && TryRotateCW())
+                {
+                    CompleteTutorial();
+                    return;
+                }
+                break;
+        }
     }
 
     private void StepDown()
@@ -490,12 +533,12 @@ public class TetrisMinigameController : MonoBehaviour
         return false;
     }
 
-    private void TryRotateCW()
+    private bool TryRotateCW()
     {
-        if (active == null) return;
+        if (active == null) return false;
         // O piece does not meaningfully rotate in grid logic.
         if (activeShapeIndex == 1)
-            return;
+            return false;
 
         var rotated = active.RotatedCW();
 
@@ -530,9 +573,71 @@ public class TetrisMinigameController : MonoBehaviour
                 }
                 TriggerRotateJelly();
                 PlayOneShot(rotateSfx, rotateSfxVolume);
-                return;
+                return true;
             }
         }
+
+        return false;
+    }
+
+    private void BeginTutorialIfNeeded()
+    {
+        tutorialOverlay = MinigameTutorialOverlay.Ensure(transform);
+        if (!ShouldShowTutorial())
+        {
+            if (tutorialOverlay != null)
+                tutorialOverlay.Hide();
+            return;
+        }
+
+        tutorialActive = true;
+        tutorialStep = 0;
+        ShowTutorialStep();
+    }
+
+    private bool ShouldShowTutorial()
+    {
+        if (PlayerPrefs.GetInt(TutorialCompletedPrefKey, 0) == 1)
+            return false;
+
+        if (FlowManager.Instance != null)
+            return FlowManager.Instance.day == 1;
+
+        return true;
+    }
+
+    private void ShowTutorialStep()
+    {
+        if (tutorialOverlay == null)
+            return;
+
+        if (tutorialStep == 0)
+        {
+            tutorialOverlay.Show("튜토리얼", "좌우 방향키로 블럭을 한 번 움직여보자.", "1 / 2 점심 테트리스");
+            return;
+        }
+
+        tutorialOverlay.Show("튜토리얼", "이번엔 위 방향키로 한 번 회전해보자.", "2 / 2 점심 테트리스");
+    }
+
+    private void CompleteTutorial()
+    {
+        tutorialActive = false;
+        PlayerPrefs.SetInt(TutorialCompletedPrefKey, 1);
+        PlayerPrefs.Save();
+
+        if (tutorialOverlay != null)
+            tutorialOverlay.Hide();
+
+        fallTimer = 0f;
+        lockPending = false;
+        lockPendingTimer = 0f;
+        jellyScale = Vector2.one;
+        jellyTargetScale = Vector2.one;
+
+        ClearActiveVisuals();
+        SpawnNewPiece();
+        RefreshHud();
     }
 
     private bool LocksAboveTop(Vector2Int[] cells, Vector2Int pos)

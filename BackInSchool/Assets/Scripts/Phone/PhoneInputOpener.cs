@@ -6,6 +6,8 @@ public class PhoneInputOpener : MonoBehaviour
     [SerializeField] private bool allowClose = true;
     [SerializeField] private bool forceCloseOnSceneStart = true;
 
+    public KeyCode ToggleKey => KeyBindingConfig.Get(KeyBindingConfig.PhoneKey, toggleKey);
+
     private void Start()
     {
         if (forceCloseOnSceneStart && PhoneSystem.Instance != null)
@@ -16,7 +18,8 @@ public class PhoneInputOpener : MonoBehaviour
     {
         if (PhoneSystem.Instance == null) return;
 
-        if (Input.GetKeyDown(toggleKey))
+        KeyCode runtimeToggleKey = ToggleKey;
+        if (Input.GetKeyDown(runtimeToggleKey))
         {
             if (PhoneSystem.Instance.IsOpen)
             {
