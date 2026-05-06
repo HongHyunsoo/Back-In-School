@@ -25,6 +25,14 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
     public int penaltyOnGiveUp = 0;
     public float completeDelaySeconds = 0.35f;
 
+    [Header("Press Shake")]
+    [Tooltip("Root transform to shake on each Space press. Defaults to sceneLayoutRoot or this transform.")]
+    public Transform pressShakeRoot;
+    [Range(0.01f, 0.3f)] public float pressShakeDuration = 0.08f;
+    [Range(0f, 0.5f)] public float pressShakeDistance = 0.07f;
+    [Range(0.1f, 1f)] public float earlyPhaseShakeMultiplier = 0.3f;
+    [Range(1f, 2.5f)] public float finalPhaseShakeMultiplier = 1.25f;
+
     [Header("Progress")]
     [Range(0.4f, 0.95f)] public float easyPhaseCap = 0.7f;
     [Range(0.01f, 0.25f)] public float easyPhaseGainPerPress = 0.045f;
@@ -81,6 +89,7 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
     private bool advancing;
     private Coroutine completeRoutine;
     private Coroutine preloadRoutine;
+    private Coroutine pressShakeRoutine;
     private AsyncOperation pendingFreeroamLoad;
     private bool useAsFreeroamLoadingScreen;
 
@@ -101,6 +110,8 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
     private float gaugeFillOriginalHeight;
     private readonly System.Collections.Generic.Dictionary<int, Sprite> gaugeFillSpriteCache = new System.Collections.Generic.Dictionary<int, Sprite>();
     private int lastGaugeFillPixelWidth = -1;
+    private Vector3 pressShakeOriginLocalPosition;
+    private bool pressShakeOriginCached;
 
     private void Awake()
     {
@@ -114,6 +125,7 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
         EnsureEventSystem();
         EnsureAudioSource();
         usingSceneLayout = TryInitializeSceneLayout();
+        InitializePressShakeRoot();
         if (!usingSceneLayout)
             BuildRuntimeUI();
 
@@ -124,6 +136,7 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
 
     private void OnDisable()
     {
+        StopPressShake();
         CleanupRuntimeObjects();
     }
 
@@ -250,8 +263,9 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
             return;
 
         float now = Time.unscaledTime;
+        bool inFinalPhase = progress >= easyPhaseCap - 0.0001f;
 
-        if (progress < easyPhaseCap - 0.0001f)
+        if (!inFinalPhase)
         {
             progress = Mathf.Min(easyPhaseCap, progress + easyPhaseGainPerPress);
             PlayOneShot(pressSfx, pressSfxVolume);
@@ -268,6 +282,7 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
         }
 
         lastSpacePressedTime = now;
+        TriggerPressShake(inFinalPhase ? finalPhaseShakeMultiplier : earlyPhaseShakeMultiplier);
         RefreshUI();
 
         if (progress >= 1f)
@@ -595,6 +610,69 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
             Destroy(uiCanvas.gameObject);
             uiCanvas = null;
         }
+    }
+
+    private void InitializePressShakeRoot()
+    {
+        if (pressShakeRoot == null)
+            pressShakeRoot = sceneLayoutRoot != null ? sceneLayoutRoot : transform;
+
+        if (pressShakeRoot == null)
+            return;
+
+        pressShakeOriginLocalPosition = pressShakeRoot.localPosition;
+        pressShakeOriginCached = true;
+    }
+
+    private void TriggerPressShake(float intensityMultiplier)
+    {
+        if (pressShakeRoot == null)
+            return;
+
+        if (!pressShakeOriginCached)
+        {
+            pressShakeOriginLocalPosition = pressShakeRoot.localPosition;
+            pressShakeOriginCached = true;
+        }
+
+        if (pressShakeRoutine != null)
+            StopCoroutine(pressShakeRoutine);
+
+        pressShakeRoutine = StartCoroutine(CoPressShake(Mathf.Max(0f, pressShakeDistance) * Mathf.Max(0f, intensityMultiplier)));
+    }
+
+    private IEnumerator CoPressShake(float distance)
+    {
+        if (pressShakeRoot == null)
+            yield break;
+
+        float duration = Mathf.Max(0.01f, pressShakeDuration);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            float normalized = elapsed / duration;
+            float falloff = 1f - normalized;
+            Vector2 offset2D = Random.insideUnitCircle * distance * falloff;
+            pressShakeRoot.localPosition = pressShakeOriginLocalPosition + new Vector3(offset2D.x, offset2D.y, 0f);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        pressShakeRoot.localPosition = pressShakeOriginLocalPosition;
+        pressShakeRoutine = null;
+    }
+
+    private void StopPressShake()
+    {
+        if (pressShakeRoutine != null)
+        {
+            StopCoroutine(pressShakeRoutine);
+            pressShakeRoutine = null;
+        }
+
+        if (pressShakeRoot != null && pressShakeOriginCached)
+            pressShakeRoot.localPosition = pressShakeOriginLocalPosition;
     }
 
     private void EnsureEventSystem()
