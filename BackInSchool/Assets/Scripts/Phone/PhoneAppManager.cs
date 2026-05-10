@@ -47,10 +47,17 @@ public class PhoneAppManager : MonoBehaviour
     [SerializeField] private Button btnBack;       // app -> home
     [SerializeField] private Button btnClosePhone; // close phone (school)
     [SerializeField] private Button btnPower;      // power (context-specific)
+    [SerializeField] private Button btnRuleTab;
+    [SerializeField] private Button btnSchoolMealTab;
+    [SerializeField] private Button btnPenaltyTab;
+    [SerializeField] private GameObject rulesScreenRule;
+    [SerializeField] private GameObject rulesScreenSchoolMeal;
+    [SerializeField] private GameObject rulesScreenPenalty;
 
     private readonly Dictionary<PhoneAppId, GameObject> appPanels = new();
     private readonly Dictionary<PhoneAppId, AppSplashEntry> splashByApp = new();
     private Coroutine openRoutine;
+    private bool ruleTabsWired;
 
     public PhoneAppId CurrentApp { get; private set; } = PhoneAppId.Home;
     public bool IsLocked { get; private set; }
@@ -66,6 +73,8 @@ public class PhoneAppManager : MonoBehaviour
         appPanels[PhoneAppId.Gallery] = galleryPanel;
         appPanels[PhoneAppId.Settings] = settingsPanel;
         BuildSplashLookup();
+        ResolveRuleTabReferences();
+        WireRuleTabs();
 
         if (btnRules) btnRules.onClick.AddListener(() => OpenApp(PhoneAppId.Rules));
         if (btnHealth) btnHealth.onClick.AddListener(() => OpenApp(PhoneAppId.Health));
@@ -195,6 +204,9 @@ public class PhoneAppManager : MonoBehaviour
         if (appPanels.TryGetValue(appId, out var panel) && panel != null)
             panel.SetActive(true);
 
+        if (appId == PhoneAppId.Rules)
+            ShowRulePage();
+
         if (appId == PhoneAppId.Settings)
         {
             var settingsController = GetComponent<PhoneSettingsAppController>();
@@ -291,5 +303,95 @@ public class PhoneAppManager : MonoBehaviour
         }
 
         group.alpha = to;
+    }
+
+    private void ResolveRuleTabReferences()
+    {
+        if (rulesPanel == null)
+            return;
+
+        if (btnRuleTab == null)
+            btnRuleTab = FindButtonUnder(rulesPanel.transform, "Btn_Rule");
+
+        if (btnSchoolMealTab == null)
+            btnSchoolMealTab = FindButtonUnder(rulesPanel.transform, "Btn_SchoolMeal");
+
+        if (btnPenaltyTab == null)
+            btnPenaltyTab = FindButtonUnder(rulesPanel.transform, "Btn_Penalty");
+
+        if (rulesScreenRule == null)
+            rulesScreenRule = FindChildObject(rulesPanel.transform, "Screen_Rule");
+
+        if (rulesScreenSchoolMeal == null)
+            rulesScreenSchoolMeal = FindChildObject(rulesPanel.transform, "Screen_SchoolMeal");
+
+        if (rulesScreenPenalty == null)
+            rulesScreenPenalty = FindChildObject(rulesPanel.transform, "Screen_Penalty");
+    }
+
+    private void WireRuleTabs()
+    {
+        if (ruleTabsWired)
+            return;
+
+        if (btnRuleTab != null)
+            btnRuleTab.onClick.AddListener(() => ShowRulePage());
+
+        if (btnSchoolMealTab != null)
+            btnSchoolMealTab.onClick.AddListener(() => ShowSchoolMealPage());
+
+        if (btnPenaltyTab != null)
+            btnPenaltyTab.onClick.AddListener(() => ShowPenaltyPage());
+
+        ruleTabsWired = true;
+    }
+
+    private void ShowRulePage()
+    {
+        SetRuleScreens(rule: true, schoolMeal: false, penalty: false);
+    }
+
+    private void ShowSchoolMealPage()
+    {
+        SetRuleScreens(rule: false, schoolMeal: true, penalty: false);
+    }
+
+    private void ShowPenaltyPage()
+    {
+        SetRuleScreens(rule: false, schoolMeal: false, penalty: true);
+    }
+
+    private void SetRuleScreens(bool rule, bool schoolMeal, bool penalty)
+    {
+        if (rulesScreenRule != null)
+            rulesScreenRule.SetActive(rule);
+
+        if (rulesScreenSchoolMeal != null)
+            rulesScreenSchoolMeal.SetActive(schoolMeal);
+
+        if (rulesScreenPenalty != null)
+            rulesScreenPenalty.SetActive(penalty);
+    }
+
+    private static Button FindButtonUnder(Transform root, string name)
+    {
+        GameObject go = FindChildObject(root, name);
+        return go != null ? go.GetComponent<Button>() : null;
+    }
+
+    private static GameObject FindChildObject(Transform root, string name)
+    {
+        if (root == null || string.IsNullOrEmpty(name))
+            return null;
+
+        Transform[] children = root.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < children.Length; i++)
+        {
+            Transform child = children[i];
+            if (child != null && child.name == name)
+                return child.gameObject;
+        }
+
+        return null;
     }
 }
