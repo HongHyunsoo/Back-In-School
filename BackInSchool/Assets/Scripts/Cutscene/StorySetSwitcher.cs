@@ -170,4 +170,5 @@ public class StorySetSwitcher : MonoBehaviour
                 setById.Add(tag.SetId, tag.gameObject);
         }
     }
+
 }

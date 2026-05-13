@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -20,6 +21,8 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
     [SerializeField] private string alternateDoorCloseObjectName = "Door_Close";
     [SerializeField] private AnimationClip doorOpenClip;
     [SerializeField] private AnimationClip doorCloseClip;
+    [SerializeField] private string doorSpriteResourcePath = "Object/DoorClose";
+    [SerializeField] private float manualDoorFrameSeconds = 0.08f;
 
     [Header("Audio")]
     [SerializeField] private AudioClip keySound;
@@ -33,6 +36,9 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
     private bool handledKeySequence;
     private bool handledDoorClose;
     private bool initializedDoorOpen;
+    private Sprite[] cachedDoorSprites;
+    private Animator cachedDoorAnimator;
+    private bool cachedDoorAnimatorState;
 
     private void Awake()
     {
@@ -120,8 +126,13 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
 
         Transform target = ResolveDoorCloseTarget();
         PlayOneShot(doorCloseSound, doorCloseSoundVolume);
-        if (target != null && doorCloseClip != null)
-            yield return StartCoroutine(CoSampleClip(target, doorCloseClip));
+        if (target != null)
+        {
+            if (HasManualDoorSprites())
+                yield return StartCoroutine(CoPlayDoorSprites(target));
+            else if (doorCloseClip != null)
+                yield return StartCoroutine(CoSampleClip(target, doorCloseClip));
+        }
 
         doorCloseCoroutine = null;
     }
@@ -158,11 +169,17 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         if (initializedDoorOpen)
             return;
 
-        if (doorOpenClip == null)
-            return;
-
         Transform target = ResolveDoorCloseTarget();
         if (target == null)
+            return;
+
+        if (ApplyOpenDoorSprite(target))
+        {
+            initializedDoorOpen = true;
+            return;
+        }
+
+        if (doorOpenClip == null)
             return;
 
         Animator animator = FindAnimatorOwner(target);
@@ -177,6 +194,64 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
             animator.enabled = previousAnimatorEnabled;
 
         initializedDoorOpen = true;
+    }
+
+    private bool ApplyOpenDoorSprite(Transform target)
+    {
+        if (target == null || !HasManualDoorSprites())
+            return false;
+
+        SpriteRenderer spriteRenderer = target.GetComponent<SpriteRenderer>();
+        if (spriteRenderer == null)
+            spriteRenderer = target.GetComponentInChildren<SpriteRenderer>(true);
+        if (spriteRenderer == null)
+            return false;
+
+        spriteRenderer.sprite = cachedDoorSprites[0];
+        return true;
+    }
+
+    private bool HasManualDoorSprites()
+    {
+        if (cachedDoorSprites != null)
+            return cachedDoorSprites.Length > 0;
+
+        cachedDoorSprites = Resources.LoadAll<Sprite>(doorSpriteResourcePath)
+            .OrderBy(sprite => sprite.name)
+            .ToArray();
+        return cachedDoorSprites.Length > 0;
+    }
+
+    private IEnumerator CoPlayDoorSprites(Transform target)
+    {
+        if (target == null || !HasManualDoorSprites())
+            yield break;
+
+        SpriteRenderer spriteRenderer = target.GetComponent<SpriteRenderer>();
+        if (spriteRenderer == null)
+            spriteRenderer = target.GetComponentInChildren<SpriteRenderer>(true);
+        if (spriteRenderer == null)
+            yield break;
+
+        CacheAndDisableDoorAnimator(target);
+
+        for (int i = 0; i < cachedDoorSprites.Length; i++)
+        {
+            spriteRenderer.sprite = cachedDoorSprites[i];
+            if (i < cachedDoorSprites.Length - 1)
+                yield return new WaitForSecondsRealtime(Mathf.Max(0.01f, manualDoorFrameSeconds));
+        }
+    }
+
+    private void CacheAndDisableDoorAnimator(Transform target)
+    {
+        Animator animator = FindAnimatorOwner(target);
+        if (animator == null)
+            return;
+
+        cachedDoorAnimator = animator;
+        cachedDoorAnimatorState = animator.enabled;
+        animator.enabled = false;
     }
 
     private Transform ResolveDoorCloseTarget()
