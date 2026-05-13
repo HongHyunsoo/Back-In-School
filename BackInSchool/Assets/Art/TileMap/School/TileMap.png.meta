@@ -1672,7 +1672,7 @@ TextureImporter:
         width: 32
         height: 32
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -1680,6 +1680,27 @@ TextureImporter:
       bones: []
       spriteID: 27ac082773511cb4cbfe3c51810d5786
       internalID: 1940148025
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TileMap_75
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 0
+        width: 32
+        height: 96
+      alignment: 9
+      pivot: {x: 0.5, y: 0.16666667}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 4f46d88038c39d048995c8b11c3e121b
+      internalID: 1455976966
       vertices: []
       indices: 
       edges: []
@@ -1768,6 +1789,7 @@ TextureImporter:
       TileMap_72: 593091407
       TileMap_73: -691827973
       TileMap_74: 1940148025
+      TileMap_75: 1455976966
       TileMap_8: -1419133281
       TileMap_9: -176149269
   mipmapLimitGroupName: 

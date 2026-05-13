@@ -1399,7 +1399,7 @@ TextureImporter:
         width: 28
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -1407,6 +1407,300 @@ TextureImporter:
       bones: []
       spriteID: 84f27775d51824943b44c58ab0634d20
       internalID: -1438920111
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TileObjects_Rooms_62
+      rect:
+        serializedVersion: 2
+        x: 352
+        y: 192
+        width: 17
+        height: 144
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e8c727017989c3c459db5df4d216af60
+      internalID: -695337995
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TileObjects_Rooms_63
+      rect:
+        serializedVersion: 2
+        x: 337
+        y: 368
+        width: 46
+        height: 30
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f14dfe80aa8e99a45b1e780da853d2e7
+      internalID: -1764860262
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TileObjects_Rooms_64
+      rect:
+        serializedVersion: 2
+        x: 336
+        y: 336
+        width: 48
+        height: 32
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 3fc1ab3e2fd36424c8216bed1ff3a8ad
+      internalID: -1216867208
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TileObjects_Rooms_65
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 152
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 8cafdce0ba7c7c44faeb3372362bac15
+      internalID: 1205538955
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TileObjects_Rooms_66
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 27
+        width: 152
+        height: 165
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 90c41b9d6f0a31143bbf1c3d7cab8444
+      internalID: -67681341
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TileObjects_Rooms_67
+      rect:
+        serializedVersion: 2
+        x: 385
+        y: 192
+        width: 121
+        height: 43
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 12ba7966965a3834daa547c38d39af66
+      internalID: -846363299
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TileObjects_Rooms_68
+      rect:
+        serializedVersion: 2
+        x: 153
+        y: 0
+        width: 141
+        height: 192
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f2dc3844dcaf40b40950ffcac362cd30
+      internalID: 181767218
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TileObjects_Rooms_69
+      rect:
+        serializedVersion: 2
+        x: 178
+        y: 348
+        width: 20
+        height: 14
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c6e33373a07fef040b9c5e683daa567a
+      internalID: -2032316635
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TileObjects_Rooms_70
+      rect:
+        serializedVersion: 2
+        x: 199
+        y: 344
+        width: 39
+        height: 23
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 95bab48116759da4b8ced11c4ebedb34
+      internalID: 1487258743
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TileObjects_Rooms_71
+      rect:
+        serializedVersion: 2
+        x: 381
+        y: 240
+        width: 126
+        height: 49
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 72545061092d79d408bdee3087defa5a
+      internalID: -194192421
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TileObjects_Rooms_72
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 460
+        width: 16
+        height: 19
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: b54762de055f99e42ad7d7d76a4210f7
+      internalID: -327364981
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TileObjects_Rooms_73
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 480
+        width: 23
+        height: 32
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 0c9cd92d955e79348990109b0156a939
+      internalID: 1316393641
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TileObjects_Rooms_74
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 303
+        width: 32
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 40057fc1dadd8544c8ffb54205cf10cf
+      internalID: -1438915867
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TileObjects_Rooms_75
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 303
+        width: 32
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 13dec305b6c848b48a6aa165af8af6b6
+      internalID: -1131493052
       vertices: []
       indices: 
       edges: []
@@ -1481,7 +1775,21 @@ TextureImporter:
       TileObjects_Rooms_6: 700701859
       TileObjects_Rooms_60: -1993317774
       TileObjects_Rooms_61: -1438920111
+      TileObjects_Rooms_62: -695337995
+      TileObjects_Rooms_63: -1764860262
+      TileObjects_Rooms_64: -1216867208
+      TileObjects_Rooms_65: 1205538955
+      TileObjects_Rooms_66: -67681341
+      TileObjects_Rooms_67: -846363299
+      TileObjects_Rooms_68: 181767218
+      TileObjects_Rooms_69: -2032316635
       TileObjects_Rooms_7: 1886951604
+      TileObjects_Rooms_70: 1487258743
+      TileObjects_Rooms_71: -194192421
+      TileObjects_Rooms_72: -327364981
+      TileObjects_Rooms_73: 1316393641
+      TileObjects_Rooms_74: -1438915867
+      TileObjects_Rooms_75: -1131493052
       TileObjects_Rooms_8: 755328552
       TileObjects_Rooms_9: -323938860
   mipmapLimitGroupName: 

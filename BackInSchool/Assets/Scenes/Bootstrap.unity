@@ -790,8 +790,10 @@ MonoBehaviour:
   presets: []
   skipButton: {fileID: 0}
   jumpButton: {fileID: 0}
-  lunchAdvance3MinButton: {fileID: 0}
-  lunchAdvanceMinutes: 3
+  lunchTimeSkipButton: {fileID: 0}
+  lunchTimeAddButton: {fileID: 0}
+  lunchSkipMinutes: 3
+  lunchAddMinutes: 10
   dayInput: {fileID: 1547315987}
   stepInput: {fileID: 1915303212}
   penaltyInput: {fileID: 1146847477}

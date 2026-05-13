@@ -77,6 +77,7 @@ public class DialogueManager : MonoBehaviour
     private readonly Dictionary<Animator, string> activePresentationTriggers = new Dictionary<Animator, string>();
     private readonly Dictionary<Animator, DialogueCharacterPresentation> suspendedDefaultSources = new Dictionary<Animator, DialogueCharacterPresentation>();
     private readonly HashSet<Animator> currentLinePresentationAnimators = new HashSet<Animator>();
+    private float advanceBlockedUntilUnscaledTime = 0f;
 
     private void StopPlayerMotionImmediate()
     {
@@ -171,6 +172,7 @@ public class DialogueManager : MonoBehaviour
         nextSentenceKey = KeyBindingConfig.Get(KeyBindingConfig.InteractKey, KeyCode.E);
 
         if (blockAdvanceInputThisFrame) return;
+        if (Time.unscaledTime < advanceBlockedUntilUnscaledTime) return;
 
         if (isBusy) return;
 
@@ -189,7 +191,7 @@ public class DialogueManager : MonoBehaviour
             var cam = Camera.main;
             if (cam == null) return;
 
-            // 말풍선은 항상 전용 Overlay Canvas 기준으로 배치
+            // 말풍선은 씬별 런타임 Canvas 기준으로 배치
             var canvas = speechBubbleParent != null
                 ? speechBubbleParent.GetComponentInParent<Canvas>()
                 : null;
@@ -218,6 +220,9 @@ public class DialogueManager : MonoBehaviour
                 RectTransform canvasRect = canvas.transform as RectTransform;
                 RectTransform bubbleRect = speechBubble.transform as RectTransform;
 
+                if (canvas.renderMode == RenderMode.ScreenSpaceCamera && canvas.worldCamera == null)
+                    canvas.worldCamera = cam;
+
                 // Overlay면 uiCam = null, Camera/World면 worldCamera 필요
                 Camera uiCam = (canvas.renderMode == RenderMode.ScreenSpaceOverlay) ? null : canvas.worldCamera;
 
@@ -245,7 +250,7 @@ public class DialogueManager : MonoBehaviour
         playerController = FindAnyObjectByType<PlayerController>();
         gameManager = FindAnyObjectByType<GameManager>();
 
-        // 2) 말풍선은 씬별 Canvas 설정 영향 안 받게 항상 전용 Overlay Canvas 사용
+        // 2) 말풍선은 씬별 런타임 Canvas 사용
         var runtimeCanvas = EnsureRuntimeDialogueCanvas();
         if (runtimeCanvas != null)
             speechBubbleParent = runtimeCanvas.transform;
@@ -455,21 +460,45 @@ public class DialogueManager : MonoBehaviour
         return best;
     }
 
+    private bool IsStoryScene()
+    {
+        var activeScene = SceneManager.GetActiveScene();
+        return string.Equals(activeScene.name, "STORY", StringComparison.OrdinalIgnoreCase);
+    }
+
     private Canvas EnsureRuntimeDialogueCanvas()
     {
-        const string canvasName = "__RuntimeDialogueCanvas";
+        string canvasName = IsStoryScene()
+            ? "__RuntimeDialogueCanvas_Story"
+            : "__RuntimeDialogueCanvas";
         var existing = GameObject.Find(canvasName);
         if (existing != null)
         {
             var existingCanvas = existing.GetComponent<Canvas>();
             if (existingCanvas != null)
+            {
+                if (IsStoryScene() && existingCanvas.renderMode == RenderMode.ScreenSpaceCamera && existingCanvas.worldCamera == null)
+                    existingCanvas.worldCamera = Camera.main;
                 return existingCanvas;
+            }
         }
 
         var go = new GameObject(canvasName, typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         var canvas = go.GetComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 5000;
+        bool isStoryScene = IsStoryScene();
+        if (isStoryScene)
+        {
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.worldCamera = Camera.main;
+            canvas.planeDistance = 10f;
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = 4;
+        }
+        else
+        {
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 5000;
+        }
 
         var scaler = go.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -705,6 +734,16 @@ public class DialogueManager : MonoBehaviour
         blockAdvanceInputThisFrame = false;
     }
 
+    public void BlockAdvanceForSeconds(float seconds)
+    {
+        if (seconds <= 0f)
+            return;
+
+        float target = Time.unscaledTime + seconds;
+        if (target > advanceBlockedUntilUnscaledTime)
+            advanceBlockedUntilUnscaledTime = target;
+    }
+
 
     /*  public void DisplayNextLine()
       {
@@ -775,13 +814,24 @@ public class DialogueManager : MonoBehaviour
             }
         }
 
-        // 캐시에서 캐릭터 찾기 (CharacterIdentifier + CharacterActor 모두 지원)
-        currentSpeaker = ResolveSpeakerTransform(currentSpeakerID);
+        // 현재 대화 중인 NPC가 지금 화자 ID와 맞으면 그 오브젝트를 최우선 사용한다.
+        if (MatchesCharacterId(currentNpcSpeaker, currentSpeakerID))
+        {
+            currentSpeaker = currentNpcSpeaker;
+        }
+        else
+        {
+            // 캐시에서 캐릭터 찾기 (CharacterIdentifier + CharacterActor 모두 지원)
+            currentSpeaker = ResolveSpeakerTransform(currentSpeakerID);
+        }
         if (currentSpeaker == null)
         {
             // 캐시 새로고침 후 다시 시도
             RefreshCharacterCache();
-            currentSpeaker = ResolveSpeakerTransform(currentSpeakerID);
+            if (MatchesCharacterId(currentNpcSpeaker, currentSpeakerID))
+                currentSpeaker = currentNpcSpeaker;
+            else
+                currentSpeaker = ResolveSpeakerTransform(currentSpeakerID);
         }
         if (currentSpeaker == null)
         {
@@ -1182,9 +1232,13 @@ public class DialogueManager : MonoBehaviour
             lineIndexEnd = specific.lineIndexEnd >= 0 ? specific.lineIndexEnd : defaults.lineIndexEnd,
             targetCharacterId = !string.IsNullOrEmpty(specific.targetCharacterId) ? specific.targetCharacterId : defaults.targetCharacterId,
             animationTrigger = !string.IsNullOrEmpty(specific.animationTrigger) ? specific.animationTrigger : defaults.animationTrigger,
-            animationClip = specific.animationClip != null ? specific.animationClip : defaults.animationClip,
+            animationClip = specific.animationClip != null
+                ? specific.animationClip
+                : (!string.IsNullOrEmpty(specific.animationClipName) ? null : defaults.animationClip),
             animationClipName = !string.IsNullOrEmpty(specific.animationClipName) ? specific.animationClipName : defaults.animationClipName,
-            sneakersAnimationClip = specific.sneakersAnimationClip != null ? specific.sneakersAnimationClip : defaults.sneakersAnimationClip,
+            sneakersAnimationClip = specific.sneakersAnimationClip != null
+                ? specific.sneakersAnimationClip
+                : (!string.IsNullOrEmpty(specific.sneakersAnimationClipName) ? null : defaults.sneakersAnimationClip),
             sneakersAnimationClipName = !string.IsNullOrEmpty(specific.sneakersAnimationClipName) ? specific.sneakersAnimationClipName : defaults.sneakersAnimationClipName,
             soundEffectName = !string.IsNullOrEmpty(specific.soundEffectName) ? specific.soundEffectName : defaults.soundEffectName,
             beforeTextDelaySeconds = specific.beforeTextDelaySeconds > 0f ? specific.beforeTextDelaySeconds : defaults.beforeTextDelaySeconds
@@ -1199,12 +1253,49 @@ public class DialogueManager : MonoBehaviour
         if (string.IsNullOrEmpty(presentation.targetCharacterId))
             return fallbackTarget;
 
+        if (MatchesCharacterId(currentNpcSpeaker, presentation.targetCharacterId))
+            return currentNpcSpeaker;
+
+        if (MatchesCharacterId(currentSpeaker, presentation.targetCharacterId))
+            return currentSpeaker;
+
+        if (MatchesCharacterId(fallbackTarget, presentation.targetCharacterId))
+            return fallbackTarget;
+
         Transform resolved = ResolveSpeakerTransform(presentation.targetCharacterId);
         if (resolved != null)
             return resolved;
 
         Debug.LogWarning($"[DialogueManager] Presentation target not found for character ID '{presentation.targetCharacterId}'. Conversation='{CurrentConversationId}', Line='{CurrentLineId}'.");
         return null;
+    }
+
+    private static bool MatchesCharacterId(Transform target, string characterId)
+    {
+        if (target == null || string.IsNullOrEmpty(characterId))
+            return false;
+
+        CharacterIdentifier identifier = target.GetComponent<CharacterIdentifier>();
+        if (identifier == null)
+            identifier = target.GetComponentInParent<CharacterIdentifier>();
+        if (identifier == null)
+            identifier = target.GetComponentInChildren<CharacterIdentifier>(true);
+
+        if (identifier != null && !string.IsNullOrEmpty(identifier.characterID) &&
+            string.Equals(identifier.characterID, characterId, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        CharacterActor actor = target.GetComponent<CharacterActor>();
+        if (actor == null)
+            actor = target.GetComponentInParent<CharacterActor>();
+        if (actor == null)
+            actor = target.GetComponentInChildren<CharacterActor>(true);
+
+        return actor != null &&
+               !string.IsNullOrEmpty(actor.characterId) &&
+               string.Equals(actor.characterId, characterId, StringComparison.OrdinalIgnoreCase);
     }
 
     private DialogueLinePresentation ResolveSpeakerSpecificPresentation(List<DialogueLinePresentation> matches, string speakerId)
@@ -1320,8 +1411,7 @@ public class DialogueManager : MonoBehaviour
         if (presentationClip != null)
         {
             if (activePresentationClips.TryGetValue(animator, out AnimationClip activeClip) &&
-                activeClip == presentationClip &&
-                IsPresentationClipStillPlaying(animator))
+                activeClip == presentationClip)
             {
                 return;
             }

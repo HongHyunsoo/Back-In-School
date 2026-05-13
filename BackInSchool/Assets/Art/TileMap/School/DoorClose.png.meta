@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 78701185c27ef1644a689c5b3a6e7f62
+guid: 6d9f4c8c9aa442e4a8d6f2af0fbec001
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -110,190 +110,81 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: CharcterAnim_Express_0
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 128
-        width: 32
-        height: 32
+      name: DoorClose_0
+      rect: {serializedVersion: 2, x: 0, y: 0, width: 32, height: 96}
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: db8b5e95669ccd54e8ba19d5cffe3aee
-      internalID: 1887979301
+      spriteID: 10000000000000000000000000000001
+      internalID: 101000001
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: CharcterAnim_Express_1
-      rect:
-        serializedVersion: 2
-        x: 32
-        y: 128
-        width: 32
-        height: 32
+      name: DoorClose_1
+      rect: {serializedVersion: 2, x: 32, y: 0, width: 32, height: 96}
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 01969dca859fd0a45b49beb96d9bb851
-      internalID: -1232907281
+      spriteID: 10000000000000000000000000000002
+      internalID: 101000002
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: CharcterAnim_Express_2
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 96
-        width: 32
-        height: 32
+      name: DoorClose_2
+      rect: {serializedVersion: 2, x: 64, y: 0, width: 32, height: 96}
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 09b8d3b6ec368ce4cb9ad6f7dbf46cf9
-      internalID: -947804977
+      spriteID: 10000000000000000000000000000003
+      internalID: 101000003
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: CharcterAnim_Express_3
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 64
-        width: 32
-        height: 32
+      name: DoorClose_3
+      rect: {serializedVersion: 2, x: 96, y: 0, width: 32, height: 96}
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: f13e509e1665ace4293b344dd7ed428c
-      internalID: 153845765
+      spriteID: 10000000000000000000000000000004
+      internalID: 101000004
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: CharcterAnim_Express_4
-      rect:
-        serializedVersion: 2
-        x: 32
-        y: 64
-        width: 32
-        height: 32
+      name: DoorClose_4
+      rect: {serializedVersion: 2, x: 128, y: 0, width: 32, height: 96}
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 4fe6bfe4b69fe2849819b9bde77bbfc4
-      internalID: 1446847804
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: CharcterAnim_Express_5
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 32
-        width: 32
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 1fb4e69f5551f2745b24b59c56a4dba6
-      internalID: -634354244
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: CharcterAnim_Express_6
-      rect:
-        serializedVersion: 2
-        x: 32
-        y: 32
-        width: 32
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 05d4585b2f5f0fe418da3f98106e66f0
-      internalID: 1655654974
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: CharcterAnim_Express_7
-      rect:
-        serializedVersion: 2
-        x: 0
-        y: 0
-        width: 32
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 78543d6cd78dcc14f91ebf9db03d7031
-      internalID: 240204598
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: CharcterAnim_Express_8
-      rect:
-        serializedVersion: 2
-        x: 32
-        y: 0
-        width: 32
-        height: 32
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: 7c46031a8596afb49b2a49d3e40f9295
-      internalID: -2007462648
+      spriteID: 10000000000000000000000000000005
+      internalID: 101000005
       vertices: []
       indices: 
       edges: []
@@ -309,15 +200,11 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      CharcterAnim_Express_0: 1887979301
-      CharcterAnim_Express_1: -1232907281
-      CharcterAnim_Express_2: -947804977
-      CharcterAnim_Express_3: 153845765
-      CharcterAnim_Express_4: 1446847804
-      CharcterAnim_Express_5: -634354244
-      CharcterAnim_Express_6: 1655654974
-      CharcterAnim_Express_7: 240204598
-      CharcterAnim_Express_8: -2007462648
+      DoorClose_0: 101000001
+      DoorClose_1: 101000002
+      DoorClose_2: 101000003
+      DoorClose_3: 101000004
+      DoorClose_4: 101000005
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

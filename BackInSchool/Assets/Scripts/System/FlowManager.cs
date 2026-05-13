@@ -70,8 +70,39 @@ public class FlowManager : MonoBehaviour
     {
         timeline = new Dictionary<int, List<FlowEvent>>();
 
-        // ========== Day 1~4 怨듯넻 ==========
-        for (int d = 1; d <= 4; d++)
+        // ========== Day 1 ==========
+        {
+            var list = new List<FlowEvent>();
+
+            list.Add(E(FlowEventType.CHAT, "D1_CHAT_TO_SCHOOL", "Chat To School"));
+            list.Add(E(FlowEventType.MINIGAME, "ARRIVAL_SPACE_D1", "Arrival Space Mash"));
+            list.Add(E(FlowEventType.FREEROAM, "D1_BEFORE_ASSEMBLY", "Before Assembly"));
+            list.Add(E(FlowEventType.STORY, "DAY1_CLASSOPEN", "Class Open"));
+
+            list.Add(E(FlowEventType.STORY, "D1_CLASS1_START", "Class1 Start"));
+            list.Add(E(FlowEventType.MINIGAME, "CLASS1_D1", "Class1 Minigame"));
+            list.Add(E(FlowEventType.STORY, "D1_CLASS1_END", "Class1 End"));
+
+            list.Add(E(FlowEventType.MINIGAME, "LUNCH_Tetris1", "Lunch Tetris"));
+            list.Add(E(FlowEventType.FREEROAM, "D1_LUNCH_FREEROAM", "Lunch FreeRoam"));
+
+            list.Add(E(FlowEventType.STORY, "D1_CLASS2_START", "Class2 Start"));
+            list.Add(E(FlowEventType.MINIGAME, "CLASS2_D1", "Class2 Minigame"));
+            list.Add(E(FlowEventType.STORY, "D1_CLASS2_END", "Class2 End"));
+
+            list.Add(E(FlowEventType.STORY, "DAY1_CLASSEND", "Class End"));
+            list.Add(E(FlowEventType.STORY, "D1_AfterSchool_A", "AfterSchool A"));
+            list.Add(E(FlowEventType.STORY, "D1_AfterSchool_B", "AfterSchool B"));
+            list.Add(E(FlowEventType.STORY, "D1_AfterSchool_C", "AfterSchool C"));
+            list.Add(E(FlowEventType.STORY, "D1_AfterSchool_D", "AfterSchool D"));
+            list.Add(E(FlowEventType.STORY, "D1_AfterSchool_E", "AfterSchool E"));
+            list.Add(E(FlowEventType.CHAT, "D1_CHAT_TO_HOME", "Chat To Home"));
+
+            timeline[1] = list;
+        }
+
+        // ========== Day 2~4 怨듯넻 ==========
+        for (int d = 2; d <= 4; d++)
         {
             var list = new List<FlowEvent>();
 
