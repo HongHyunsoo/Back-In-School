@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using Cinemachine;
+using System;
+using System.Linq;
 
 public class PlayerController : MonoBehaviour
 {
@@ -34,9 +36,20 @@ public class PlayerController : MonoBehaviour
     public float cameraXDamping = 0.35f;
     public float cameraYDamping = 0.85f;
 
+    [Header("Locomotion Clips")]
+    [SerializeField] private AnimationClip defaultWalkAnimationClip;
+    [SerializeField] private AnimationClip defaultSprintAnimationClip;
+    [SerializeField] private AnimationClip shoesWalkAnimationClip;
+    [SerializeField] private AnimationClip shoesSprintAnimationClip;
+
     private Rigidbody2D rb;
     private Animator anim;
     private CinemachineFramingTransposer framingTransposer;
+    private RuntimeAnimatorController locomotionBaseController;
+    private AnimatorOverrideController locomotionOverrideController;
+    private AnimationClip locomotionWalkClip;
+    private AnimationClip locomotionSprintClip;
+    private bool? currentAppliedSprintMode;
 
     private float currentStamina;
     private float moveInput;
@@ -119,6 +132,7 @@ public class PlayerController : MonoBehaviour
 
         HandleStamina();
         FlipSprite();
+        ApplyLocomotionClipOverride();
         UpdateAnimations();
         HandleCameraPosition();
     }
@@ -177,6 +191,62 @@ public class PlayerController : MonoBehaviour
             anim.SetBool(HashIsGrounded, animGrounded);
         if (HasAnimatorParam(HashYVelocity, AnimatorControllerParameterType.Float))
             anim.SetFloat(HashYVelocity, rb.velocity.y);
+    }
+
+    private void ApplyLocomotionClipOverride()
+    {
+        if (anim == null || anim.runtimeAnimatorController == null)
+            return;
+
+        RuntimeAnimatorController activeController = anim.runtimeAnimatorController;
+        RuntimeAnimatorController baseController =
+            activeController is AnimatorOverrideController overrideController
+                ? overrideController.runtimeAnimatorController
+                : activeController;
+
+        if (baseController == null)
+            return;
+
+        if (locomotionBaseController != baseController || locomotionOverrideController == null)
+        {
+            locomotionBaseController = baseController;
+            locomotionOverrideController = new AnimatorOverrideController(baseController);
+            locomotionWalkClip = baseController.animationClips.FirstOrDefault(clip =>
+                clip != null &&
+                (clip.name == "Player_Walk" || clip.name == "Player_Walk_Shoes"));
+
+            bool useShoesSet =
+                baseController.name.IndexOf("Sneakers", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                baseController.name.IndexOf("Shoes", StringComparison.OrdinalIgnoreCase) >= 0;
+
+            locomotionSprintClip = useShoesSet ? shoesSprintAnimationClip : defaultSprintAnimationClip;
+
+            if (locomotionWalkClip == null)
+                locomotionWalkClip = useShoesSet ? shoesWalkAnimationClip : defaultWalkAnimationClip;
+
+            if (locomotionWalkClip == null || locomotionSprintClip == null)
+            {
+                locomotionOverrideController = null;
+                locomotionBaseController = null;
+                locomotionWalkClip = null;
+                locomotionSprintClip = null;
+                currentAppliedSprintMode = null;
+                return;
+            }
+
+            anim.runtimeAnimatorController = locomotionOverrideController;
+            currentAppliedSprintMode = null;
+        }
+
+        if (locomotionOverrideController == null || locomotionWalkClip == null || locomotionSprintClip == null)
+            return;
+
+        bool useSprint = IsActivelyRunning;
+        if (currentAppliedSprintMode.HasValue && currentAppliedSprintMode.Value == useSprint)
+            return;
+
+        locomotionOverrideController[locomotionWalkClip] = useSprint ? locomotionSprintClip : locomotionWalkClip;
+        currentAppliedSprintMode = useSprint;
     }
 
     private bool HasAnimatorParam(int hash, AnimatorControllerParameterType type)

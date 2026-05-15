@@ -5,15 +5,32 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class StoryAfterSchoolDDoorSequence : MonoBehaviour
 {
+    [System.Serializable]
+    private class MoveInstruction
+    {
+        public Transform actor = null;
+        public Vector2 targetLocalPosition = Vector2.zero;
+        public bool instant = false;
+        [Min(0.01f)] public float durationSeconds = 0.6f;
+    }
+
     [Header("Target Conversation")]
     [SerializeField] private string conversationId = "D1_AfterSchool_D";
+    [SerializeField] private string appearanceCueLineId = "D1_AfterSchool_D_03";
+    [SerializeField] private string moveCue07LineId = "D1_AfterSchool_D_07";
     [SerializeField] private string keyCueLineId = "D1_AfterSchool_D_28";
     [SerializeField] private string doorCloseCueLineId = "D1_AfterSchool_D_32";
+    [SerializeField] private string moveCue31LineId = "D1_AfterSchool_D_31";
+    [SerializeField] private string moveCue35LineId = "D1_AfterSchool_D_35";
+    [SerializeField] private string flipCue37LineId = "D1_AfterSchool_D_37";
 
     [Header("Timing")]
     [SerializeField] private float keySoundDelaySeconds = 1f;
     [SerializeField] private float autoAdvanceDelayAfterKeySeconds = 1f;
     [SerializeField] private float doorCloseDelaySeconds = 0.8f;
+    [SerializeField] private float line31SilenceSeconds = 4f;
+    [SerializeField] private float line35SilenceSeconds = 2f;
+    [SerializeField] private float keyFadeOutSeconds = 1f;
 
     [Header("Door Target")]
     [SerializeField] private Transform doorCloseTarget;
@@ -30,12 +47,34 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
     [SerializeField] private AudioClip doorCloseSound;
     [SerializeField] [Range(0f, 1f)] private float doorCloseSoundVolume = 0.4f;
 
+    [Header("Appearance")]
+    [SerializeField] private Transform appearanceActor;
+
+    [Header("Moves")]
+    [SerializeField] private MoveInstruction[] movesAfterLine31;
+    [SerializeField] private MoveInstruction[] movesAfterLine35;
+    [SerializeField] private MoveInstruction[] movesAfterLine07;
+    [SerializeField] private AnimationClip playerWalkClip;
+    [SerializeField] private RuntimeAnimatorController playerWalkController;
+    [SerializeField] private Sprite[] playerWalkSprites;
+
     private AudioSource audioSource;
+    private AudioSource keyLoopSource;
     private Coroutine keySequenceCoroutine;
     private Coroutine doorCloseCoroutine;
+    private Coroutine line31MoveCoroutine;
+    private Coroutine line35MoveCoroutine;
+    private Coroutine line07MoveCoroutine;
+    private Coroutine keyFadeCoroutine;
     private bool handledKeySequence;
     private bool handledDoorClose;
+    private bool handledMove31;
+    private bool handledMove35;
+    private bool handledMove07;
+    private bool handledAppearance;
+    private bool handledFlip37;
     private bool initializedDoorOpen;
+    private bool conversationPrepared;
     private Sprite[] cachedDoorSprites;
     private Animator cachedDoorAnimator;
     private bool cachedDoorAnimatorState;
@@ -50,7 +89,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
     {
         DialogueManager.DialogueLineShown += HandleDialogueLineShown;
         ResetIfConversationChanged();
-        EnsureDoorStartsOpen();
+        PrepareConversationStateIfNeeded();
     }
 
     private void OnDisable()
@@ -61,21 +100,47 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
             StopCoroutine(keySequenceCoroutine);
         if (doorCloseCoroutine != null)
             StopCoroutine(doorCloseCoroutine);
+        if (line31MoveCoroutine != null)
+            StopCoroutine(line31MoveCoroutine);
+        if (line35MoveCoroutine != null)
+            StopCoroutine(line35MoveCoroutine);
+        if (line07MoveCoroutine != null)
+            StopCoroutine(line07MoveCoroutine);
+        if (keyFadeCoroutine != null)
+            StopCoroutine(keyFadeCoroutine);
 
         keySequenceCoroutine = null;
         doorCloseCoroutine = null;
+        line31MoveCoroutine = null;
+        line35MoveCoroutine = null;
+        line07MoveCoroutine = null;
+        keyFadeCoroutine = null;
     }
 
     private void Update()
     {
         ResetIfConversationChanged();
-        EnsureDoorStartsOpen();
+        PrepareConversationStateIfNeeded();
     }
 
     private void HandleDialogueLineShown(string shownConversationId, string lineId)
     {
         if (!string.Equals(shownConversationId, conversationId, System.StringComparison.OrdinalIgnoreCase))
             return;
+
+        PrepareConversationStateIfNeeded();
+
+        if (string.Equals(lineId, appearanceCueLineId, System.StringComparison.OrdinalIgnoreCase) && !handledAppearance)
+        {
+            handledAppearance = true;
+            SetAppearanceActorVisible(true);
+        }
+
+        if (string.Equals(lineId, moveCue07LineId, System.StringComparison.OrdinalIgnoreCase) && !handledMove07)
+        {
+            handledMove07 = true;
+            StartMoves(movesAfterLine07);
+        }
 
         if (string.Equals(lineId, keyCueLineId, System.StringComparison.OrdinalIgnoreCase) && !handledKeySequence)
         {
@@ -86,15 +151,41 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
             return;
         }
 
+        if (string.Equals(lineId, moveCue31LineId, System.StringComparison.OrdinalIgnoreCase) && !handledMove31)
+        {
+            handledMove31 = true;
+            if (line31MoveCoroutine != null)
+                StopCoroutine(line31MoveCoroutine);
+            line31MoveCoroutine = StartCoroutine(CoMoveThenAdvance(line31SilenceSeconds, movesAfterLine31, moveCue31LineId, false));
+            return;
+        }
+
         if (string.Equals(lineId, doorCloseCueLineId, System.StringComparison.OrdinalIgnoreCase) && !handledDoorClose)
         {
             handledDoorClose = true;
             var dialogueManager = FindAnyObjectByType<DialogueManager>();
             if (dialogueManager != null)
                 dialogueManager.BlockAdvanceForSeconds(doorCloseDelaySeconds + 0.1f);
+            StartKeyFadeOut();
             if (doorCloseCoroutine != null)
                 StopCoroutine(doorCloseCoroutine);
             doorCloseCoroutine = StartCoroutine(CoPlayDoorClose());
+            return;
+        }
+
+        if (string.Equals(lineId, moveCue35LineId, System.StringComparison.OrdinalIgnoreCase) && !handledMove35)
+        {
+            handledMove35 = true;
+            if (line35MoveCoroutine != null)
+                StopCoroutine(line35MoveCoroutine);
+            line35MoveCoroutine = StartCoroutine(CoMoveThenAdvance(line35SilenceSeconds, movesAfterLine35, moveCue35LineId, true));
+            return;
+        }
+
+        if (string.Equals(lineId, flipCue37LineId, System.StringComparison.OrdinalIgnoreCase) && !handledFlip37)
+        {
+            handledFlip37 = true;
+            FlipAppearanceActor();
         }
     }
 
@@ -105,7 +196,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
             dialogueManager.BlockAdvanceForSeconds(keySoundDelaySeconds + autoAdvanceDelayAfterKeySeconds + 0.1f);
 
         yield return new WaitForSecondsRealtime(Mathf.Max(0f, keySoundDelaySeconds));
-        PlayOneShot(keySound, keySoundVolume);
+        StartKeyLoop();
 
         yield return new WaitForSecondsRealtime(Mathf.Max(0f, autoAdvanceDelayAfterKeySeconds));
 
@@ -118,6 +209,33 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         }
 
         keySequenceCoroutine = null;
+    }
+
+    private IEnumerator CoMoveThenAdvance(float silenceSeconds, MoveInstruction[] moves, string expectedLineId, bool stopKeyLoopBeforeAdvance)
+    {
+        var dialogueManager = FindAnyObjectByType<DialogueManager>();
+        if (dialogueManager != null)
+            dialogueManager.BlockAdvanceForSeconds(silenceSeconds + 0.1f);
+
+        StartMoves(moves);
+
+        yield return new WaitForSecondsRealtime(Mathf.Max(0f, silenceSeconds));
+
+        if (stopKeyLoopBeforeAdvance)
+            StopKeyLoopImmediate();
+
+        if (dialogueManager != null &&
+            dialogueManager.IsDialogueActive &&
+            string.Equals(dialogueManager.CurrentConversationId, conversationId, System.StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(dialogueManager.CurrentLineId, expectedLineId, System.StringComparison.OrdinalIgnoreCase))
+        {
+            dialogueManager.DisplayNextSentence();
+        }
+
+        if (string.Equals(expectedLineId, moveCue31LineId, System.StringComparison.OrdinalIgnoreCase))
+            line31MoveCoroutine = null;
+        else if (string.Equals(expectedLineId, moveCue35LineId, System.StringComparison.OrdinalIgnoreCase))
+            line35MoveCoroutine = null;
     }
 
     private IEnumerator CoPlayDoorClose()
@@ -368,9 +486,13 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
     private void EnsureAudioSource()
     {
         if (audioSource != null)
+        {
+            EnsureKeyLoopSource();
             return;
+        }
 
-        audioSource = GetComponent<AudioSource>();
+        AudioSource[] sources = GetComponents<AudioSource>();
+        audioSource = sources.FirstOrDefault();
         if (audioSource == null)
             audioSource = gameObject.AddComponent<AudioSource>();
 
@@ -378,6 +500,280 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         audioSource.loop = false;
         audioSource.spatialBlend = 0f;
         audioSource.ignoreListenerPause = true;
+
+        EnsureKeyLoopSource();
+    }
+
+    private void EnsureKeyLoopSource()
+    {
+        if (keyLoopSource != null)
+            return;
+
+        AudioSource[] sources = GetComponents<AudioSource>();
+        keyLoopSource = sources.FirstOrDefault(source => source != audioSource);
+        if (keyLoopSource == null)
+            keyLoopSource = gameObject.AddComponent<AudioSource>();
+
+        keyLoopSource.playOnAwake = false;
+        keyLoopSource.loop = true;
+        keyLoopSource.spatialBlend = 0f;
+        keyLoopSource.ignoreListenerPause = true;
+    }
+
+    private void StartKeyLoop()
+    {
+        EnsureAudioSource();
+        if (keyLoopSource == null || keySound == null)
+            return;
+
+        if (keyFadeCoroutine != null)
+        {
+            StopCoroutine(keyFadeCoroutine);
+            keyFadeCoroutine = null;
+        }
+
+        keyLoopSource.clip = keySound;
+        keyLoopSource.volume = AudioSettingsService.ScaleSfx(Mathf.Clamp01(keySoundVolume));
+        if (!keyLoopSource.isPlaying)
+            keyLoopSource.Play();
+    }
+
+    private void StartKeyFadeOut()
+    {
+        EnsureAudioSource();
+        if (keyLoopSource == null || !keyLoopSource.isPlaying)
+            return;
+
+        if (keyFadeCoroutine != null)
+            StopCoroutine(keyFadeCoroutine);
+        keyFadeCoroutine = StartCoroutine(CoFadeOutKeyLoop());
+    }
+
+    private IEnumerator CoFadeOutKeyLoop()
+    {
+        if (keyLoopSource == null)
+            yield break;
+
+        float startVolume = keyLoopSource.volume;
+        float duration = Mathf.Max(0.01f, keyFadeOutSeconds);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            keyLoopSource.volume = Mathf.Lerp(startVolume, 0f, Mathf.Clamp01(elapsed / duration));
+            yield return null;
+        }
+
+        StopKeyLoopImmediate();
+        keyFadeCoroutine = null;
+    }
+
+    private void StopKeyLoopImmediate()
+    {
+        if (keyLoopSource == null)
+            return;
+
+        keyLoopSource.Stop();
+        keyLoopSource.clip = null;
+        keyLoopSource.volume = 0f;
+    }
+
+    private void StartMoves(MoveInstruction[] moves)
+    {
+        if (moves == null)
+            return;
+
+        for (int i = 0; i < moves.Length; i++)
+        {
+            MoveInstruction move = moves[i];
+            if (move == null || move.actor == null)
+                continue;
+
+            if (move.instant)
+            {
+                Vector3 localPosition = move.actor.localPosition;
+                localPosition.x = move.targetLocalPosition.x;
+                localPosition.y = move.targetLocalPosition.y;
+                move.actor.localPosition = localPosition;
+                continue;
+            }
+
+            StartCoroutine(CoMoveActor(move.actor, move.targetLocalPosition, move.durationSeconds));
+        }
+    }
+
+    private IEnumerator CoMoveActor(Transform actor, Vector2 targetLocalPosition, float durationSeconds)
+    {
+        if (actor == null)
+            yield break;
+
+        string characterId = ResolveCharacterId(actor);
+        Animator animator = FindAnimatorOwner(actor);
+        SpriteRenderer spriteRenderer = actor.GetComponent<SpriteRenderer>();
+        if (spriteRenderer == null)
+            spriteRenderer = actor.GetComponentInChildren<SpriteRenderer>(true);
+        Sprite originalSprite = spriteRenderer != null ? spriteRenderer.sprite : null;
+        Vector3 startPosition = actor.localPosition;
+        Vector3 targetPosition = new Vector3(targetLocalPosition.x, targetLocalPosition.y, startPosition.z);
+        ApplyFacing(actor, targetPosition.x - startPosition.x);
+
+        AnimationClip walkClip = ResolveWalkClip(characterId, animator);
+        bool useDirectPlayerSprites =
+            string.Equals(characterId, "NAME_PLAYER", System.StringComparison.OrdinalIgnoreCase) &&
+            spriteRenderer != null &&
+            playerWalkSprites != null &&
+            playerWalkSprites.Length > 0;
+        bool sampledWalk = false;
+        bool previousAnimatorEnabled = false;
+        float walkElapsed = 0f;
+
+        if (useDirectPlayerSprites)
+        {
+            if (animator != null)
+            {
+                previousAnimatorEnabled = animator.enabled;
+                animator.enabled = false;
+            }
+            sampledWalk = false;
+        }
+        else if (walkClip != null)
+        {
+            if (animator != null)
+            {
+                previousAnimatorEnabled = animator.enabled;
+                animator.enabled = false;
+            }
+            sampledWalk = true;
+        }
+
+        float duration = Mathf.Max(0.01f, durationSeconds);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            actor.localPosition = Vector3.Lerp(startPosition, targetPosition, Mathf.Clamp01(elapsed / duration));
+            if (useDirectPlayerSprites)
+            {
+                walkElapsed += Time.unscaledDeltaTime;
+                int frameIndex = Mathf.FloorToInt((walkElapsed / 0.12f)) % playerWalkSprites.Length;
+                spriteRenderer.sprite = playerWalkSprites[frameIndex];
+            }
+            else if (sampledWalk)
+            {
+                walkElapsed += Time.unscaledDeltaTime;
+                float sampleTime = walkClip.length > 0f ? walkElapsed % walkClip.length : 0f;
+                walkClip.SampleAnimation(actor.gameObject, sampleTime);
+            }
+            yield return null;
+        }
+
+        actor.localPosition = targetPosition;
+
+        if (sampledWalk && animator != null)
+        {
+            animator.enabled = previousAnimatorEnabled;
+            if (previousAnimatorEnabled)
+            {
+                animator.Rebind();
+                animator.Update(0f);
+            }
+        }
+
+        if (useDirectPlayerSprites)
+        {
+            if (spriteRenderer != null && originalSprite != null)
+                spriteRenderer.sprite = originalSprite;
+
+            if (animator != null)
+            {
+                animator.enabled = previousAnimatorEnabled;
+                if (previousAnimatorEnabled)
+                {
+                    animator.Rebind();
+                    animator.Update(0f);
+                }
+            }
+        }
+    }
+
+    private AnimationClip ResolveWalkClip(string characterId, Animator animator)
+    {
+        if (string.Equals(characterId, "NAME_PLAYER", System.StringComparison.OrdinalIgnoreCase) && playerWalkClip != null)
+            return playerWalkClip;
+
+        return FindControllerClip(animator, "Walk");
+    }
+
+    private static string ResolveCharacterId(Transform actor)
+    {
+        if (actor == null)
+            return string.Empty;
+
+        CharacterIdentifier identifier = actor.GetComponent<CharacterIdentifier>();
+        if (identifier == null)
+            identifier = actor.GetComponentInParent<CharacterIdentifier>();
+        if (identifier == null)
+            identifier = actor.GetComponentInChildren<CharacterIdentifier>(true);
+
+        return identifier != null ? identifier.characterID : actor.name;
+    }
+
+    private static AnimationClip FindControllerClip(Animator animator, string keyword)
+    {
+        if (animator == null || animator.runtimeAnimatorController == null || string.IsNullOrEmpty(keyword))
+            return null;
+
+        return animator.runtimeAnimatorController.animationClips
+            .FirstOrDefault(clip => clip != null &&
+                                    clip.name.IndexOf(keyword, System.StringComparison.OrdinalIgnoreCase) >= 0);
+    }
+
+    private static void ApplyFacing(Transform actor, float deltaX)
+    {
+        if (actor == null || Mathf.Abs(deltaX) <= 0.001f)
+            return;
+
+        Vector3 scale = actor.localScale;
+        float absX = Mathf.Abs(scale.x);
+        if (absX <= 0.001f)
+            absX = 1f;
+
+        scale.x = deltaX > 0f ? absX : -absX;
+        actor.localScale = scale;
+    }
+
+    private void PrepareConversationStateIfNeeded()
+    {
+        if (!string.Equals(FlowContext.CurrentId, conversationId, System.StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (conversationPrepared)
+            return;
+
+        EnsureDoorStartsOpen();
+        SetAppearanceActorVisible(false);
+        conversationPrepared = true;
+    }
+
+    private void SetAppearanceActorVisible(bool visible)
+    {
+        if (appearanceActor == null)
+            return;
+
+        if (appearanceActor.gameObject.activeSelf != visible)
+            appearanceActor.gameObject.SetActive(visible);
+    }
+
+    private void FlipAppearanceActor()
+    {
+        if (appearanceActor == null)
+            return;
+
+        Vector3 scale = appearanceActor.localScale;
+        scale.x *= -1f;
+        appearanceActor.localScale = scale;
     }
 
     private void ResetIfConversationChanged()
@@ -388,6 +784,14 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
 
         handledKeySequence = false;
         handledDoorClose = false;
+        handledMove31 = false;
+        handledMove35 = false;
+        handledMove07 = false;
+        handledAppearance = false;
+        handledFlip37 = false;
         initializedDoorOpen = false;
+        conversationPrepared = false;
+        StopKeyLoopImmediate();
+        SetAppearanceActorVisible(true);
     }
 }

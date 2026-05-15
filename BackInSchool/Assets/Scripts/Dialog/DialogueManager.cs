@@ -162,7 +162,9 @@ public class DialogueManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        StopPresentationAnimationImmediate();
+        bool preserveStoryPresentationState =
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "STORY";
+        StopPresentationAnimationImmediate(!preserveStoryPresentationState);
     }
 
     void Update()
@@ -1061,7 +1063,10 @@ public class DialogueManager : MonoBehaviour
         pendingLinePresentations.Clear();
         activeLinePresentations.Clear();
         currentLineIndex = -1;
-        StopPresentationAnimationImmediate();
+        bool preserveStoryPresentationState =
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "STORY";
+        if (!preserveStoryPresentationState)
+            StopPresentationAnimationImmediate();
         CurrentConversationId = string.Empty;
         currentSpeaker = null;
         currentBubbleSpeaker = null;
@@ -1395,6 +1400,13 @@ public class DialogueManager : MonoBehaviour
         bool hasExplicitPresentation = presentationClip != null || !string.IsNullOrEmpty(animationTrigger);
         if (!hasExplicitPresentation)
         {
+            // 명시적 연출이 한 번 걸린 타깃은, 다음 줄에 새 연출이 오기 전까지 마지막 상태를 유지한다.
+            if (activePresentationClips.ContainsKey(animator) || activePresentationTriggers.ContainsKey(animator))
+            {
+                currentLinePresentationAnimators.Add(animator);
+                return;
+            }
+
             currentLinePresentationAnimators.Remove(animator);
             RestoreAnimatorToDefault(animator);
             return;
@@ -1469,7 +1481,7 @@ public class DialogueManager : MonoBehaviour
 
     }
 
-    private void StopPresentationAnimationImmediate()
+    private void StopPresentationAnimationImmediate(bool resumeDefaults = true)
     {
         foreach (var pair in presentationGraphs)
         {
@@ -1484,6 +1496,9 @@ public class DialogueManager : MonoBehaviour
         activePresentationTriggers.Clear();
         suspendedDefaultSources.Clear();
         currentLinePresentationAnimators.Clear();
+
+        if (!resumeDefaults)
+            return;
 
         DialogueCharacterPresentation[] defaults = FindObjectsByType<DialogueCharacterPresentation>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         for (int i = 0; i < defaults.Length; i++)

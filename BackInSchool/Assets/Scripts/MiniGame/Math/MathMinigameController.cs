@@ -10,6 +10,50 @@ using UnityEngine.UI;
 public class MathMinigameController : MonoBehaviour
 {
     [Serializable]
+    public class EnglishMatchingPairDefinition
+    {
+        public string word;
+        public string meaning;
+    }
+
+    [Serializable]
+    public class EnglishOrderingQuestionDefinition
+    {
+        [TextArea(2, 5)]
+        public string prompt = "다음 단어를 올바른 순서로 배열하시오.";
+        public string[] shuffledWords = Array.Empty<string>();
+        public string[] correctOrder = Array.Empty<string>();
+        [TextArea(2, 4)]
+        public string answerSentence = string.Empty;
+    }
+
+    [Serializable]
+    public class EnglishTrueFalseQuestionDefinition
+    {
+        [TextArea(2, 5)]
+        public string prompt = "다음 문장이 맞으면 True, 틀리면 False를 고르시오.";
+        [TextArea(2, 4)]
+        public string statement = string.Empty;
+        public bool correctAnswer = true;
+        [TextArea(2, 4)]
+        public string explanation = string.Empty;
+    }
+
+    [Serializable]
+    public class EnglishListeningBlankQuestionDefinition
+    {
+        [TextArea(2, 5)]
+        public string prompt = "음성을 듣고 빈칸에 들어갈 알맞은 단어를 고르시오.";
+        [TextArea(2, 4)]
+        public string sentenceWithBlank = string.Empty;
+        public AudioClip voiceClip;
+        public string[] choices = Array.Empty<string>();
+        public int correctChoiceIndex;
+        [TextArea(2, 4)]
+        public string completedSentence = string.Empty;
+    }
+
+    [Serializable]
     public class MathQuestionDefinition
     {
         [Tooltip("Optional label shown in the header.")]
@@ -38,7 +82,7 @@ public class MathMinigameController : MonoBehaviour
     [Header("Flow")]
     public MathMinigameConfig config;
     [Tooltip("Only these FLOW_ID values will run this controller.")]
-    public string[] supportedFlowIds = new[] { "CLASS1_D2" };
+    public string[] supportedFlowIds = new[] { "CLASS1_D2", "AFTERSCHOOL_ENGLISH_D1" };
     [Tooltip("Penalty applied when the player gives up.")]
     public int penaltyOnGiveUp = 1;
     [Tooltip("Delay before advancing after a correct answer.")]
@@ -47,6 +91,21 @@ public class MathMinigameController : MonoBehaviour
     [Header("Questions")]
     [Tooltip("Three math questions are expected, but the controller supports any count >= 1.")]
     public List<MathQuestionDefinition> questions = new List<MathQuestionDefinition>();
+
+    [Header("AfterSchool English")]
+    public string afterSchoolEnglishFlowId = "AFTERSCHOOL_ENGLISH_D1";
+    public string englishMatchingTitle = "알맞은 짝을 찾아요";
+    [TextArea(2, 5)]
+    public string englishMatchingDescription = "영단어와 알맞은 뜻을 찾아 선으로 이어 보세요.";
+    public List<EnglishMatchingPairDefinition> englishMatchingPairs = new List<EnglishMatchingPairDefinition>();
+    public float englishMatchSuccessDelaySeconds = 0.45f;
+    public string englishOrderingTitle = "다음 단어를 올바른 순서로 배열하시오.";
+    public EnglishOrderingQuestionDefinition englishOrderingQuestion = new EnglishOrderingQuestionDefinition();
+    public string englishTrueFalseTitle = "True or False";
+    public EnglishTrueFalseQuestionDefinition englishTrueFalseQuestion = new EnglishTrueFalseQuestionDefinition();
+    public List<EnglishTrueFalseQuestionDefinition> englishTrueFalseQuestions = new List<EnglishTrueFalseQuestionDefinition>();
+    public string englishListeningTitle = "듣고 알맞은 단어를 고르시오.";
+    public EnglishListeningBlankQuestionDefinition englishListeningQuestion = new EnglishListeningBlankQuestionDefinition();
 
     [Header("Drawing Pad")]
     public Vector2Int drawingTextureSize = new Vector2Int(1024, 1024);
@@ -95,11 +154,138 @@ public class MathMinigameController : MonoBehaviour
     private bool ended;
     private bool advancing;
     private Coroutine advanceRoutine;
+    private bool isAfterSchoolEnglishMode;
+    private string currentFlowId;
+
+    private RectTransform englishLineLayer;
+    private readonly List<Button> englishLeftButtons = new List<Button>();
+    private readonly List<Button> englishRightButtons = new List<Button>();
+    private readonly List<TextMeshProUGUI> englishLeftLabels = new List<TextMeshProUGUI>();
+    private readonly List<TextMeshProUGUI> englishRightLabels = new List<TextMeshProUGUI>();
+    private readonly List<int> englishRightPairIndices = new List<int>();
+    private readonly HashSet<int> englishMatchedPairs = new HashSet<int>();
+    private readonly List<GameObject> englishLineObjects = new List<GameObject>();
+    private readonly List<RectTransform> englishLeftButtonRects = new List<RectTransform>();
+    private readonly List<RectTransform> englishRightButtonRects = new List<RectTransform>();
+    private int selectedLeftPairIndex = -1;
+    private int selectedRightDisplayIndex = -1;
+    private int englishDraggingLeftPairIndex = -1;
+    private bool englishMatchDropResolvedThisDrag;
+    private Image englishPreviewLineImage;
+    private RectTransform englishPreviewLineRect;
+    private int currentEnglishStage;
+    private readonly List<int> englishOrderingCurrentOrder = new List<int>();
+    private TextMeshProUGUI englishOrderingAnswerText;
+    private Button englishOrderingResetButton;
+    private Button englishOrderingSubmitButton;
+    private RectTransform englishOrderingTilesRoot;
+    private readonly List<EnglishOrderingCardDragHandle> englishOrderingCardHandles = new List<EnglishOrderingCardDragHandle>();
+    private int currentEnglishTrueFalseQuestionIndex;
+    private int englishListeningSelectedChoiceIndex = -1;
+    private AudioSource englishAudioSource;
 
     private Camera uiCamera;
 
+    private sealed class EnglishMatchingDragSource : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerDownHandler
+    {
+        public MathMinigameController controller;
+        public int pairIndex;
+
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            controller?.PrepareEnglishMatchDrag(pairIndex);
+        }
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            controller?.BeginEnglishMatchDrag(pairIndex, eventData);
+        }
+
+        public void OnDrag(PointerEventData eventData)
+        {
+            controller?.UpdateEnglishMatchDrag(eventData);
+        }
+
+        public void OnEndDrag(PointerEventData eventData)
+        {
+            controller?.EndEnglishMatchDrag();
+        }
+    }
+
+    private sealed class EnglishMatchingDropTarget : MonoBehaviour, IDropHandler
+    {
+        public MathMinigameController controller;
+        public int displayIndex;
+
+        public void OnDrop(PointerEventData eventData)
+        {
+            controller?.ResolveEnglishDraggedMatch(displayIndex);
+        }
+    }
+
+    private sealed class EnglishOrderingCardDragHandle : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    {
+        public MathMinigameController controller;
+        public int displayIndex;
+        public Vector2 dragPointerOffset;
+        public Vector2 dragStartAnchoredPosition;
+        public Vector2 dragStartPointerLocalPosition;
+
+        private RectTransform rectTransform;
+        private LayoutElement layoutElement;
+        private CanvasGroup canvasGroup;
+
+        public RectTransform RectTransform
+        {
+            get
+            {
+                if (rectTransform == null)
+                    rectTransform = GetComponent<RectTransform>();
+                return rectTransform;
+            }
+        }
+
+        public LayoutElement LayoutElement
+        {
+            get
+            {
+                if (layoutElement == null)
+                    layoutElement = GetComponent<LayoutElement>();
+                return layoutElement;
+            }
+        }
+
+        public CanvasGroup CanvasGroup
+        {
+            get
+            {
+                if (canvasGroup == null)
+                    canvasGroup = GetComponent<CanvasGroup>();
+                return canvasGroup;
+            }
+        }
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            controller?.BeginEnglishOrderingDrag(this);
+        }
+
+        public void OnDrag(PointerEventData eventData)
+        {
+            controller?.UpdateEnglishOrderingDrag(this, eventData);
+        }
+
+        public void OnEndDrag(PointerEventData eventData)
+        {
+            controller?.EndEnglishOrderingDrag(this, eventData);
+        }
+    }
+
     private void Awake()
     {
+        currentFlowId = ResolveCurrentFlowId();
+        isAfterSchoolEnglishMode = string.Equals(currentFlowId, afterSchoolEnglishFlowId, StringComparison.OrdinalIgnoreCase);
+
         if (!ShouldRunForCurrentFlow())
         {
             enabled = false;
@@ -107,9 +293,26 @@ public class MathMinigameController : MonoBehaviour
         }
 
         ApplyConfigIfNeeded();
-        EnsureUIFont();
-        EnsureQuestionsOrFallback();
         EnsureEventSystem();
+
+        EnsureUIFont();
+
+        if (isAfterSchoolEnglishMode)
+        {
+            EnsureEnglishMatchingPairsOrFallback();
+            EnsureEnglishOrderingQuestionOrFallback();
+            EnsureEnglishTrueFalseQuestionOrFallback();
+            EnsureEnglishListeningQuestionOrFallback();
+            currentEnglishStage = 0;
+            BuildCurrentEnglishStageUI();
+
+            if (LocalizationManager.Instance != null)
+                LocalizationManager.Instance.OnLanguageChanged += OnLanguageChanged;
+
+            return;
+        }
+
+        EnsureQuestionsOrFallback();
 
         BuildRuntimeUI();
         BuildDrawingTexture();
@@ -140,6 +343,13 @@ public class MathMinigameController : MonoBehaviour
         if (ended)
             return;
 
+        if (isAfterSchoolEnglishMode)
+        {
+            if (Input.GetKeyDown(KeyCode.Escape))
+                End(false);
+            return;
+        }
+
         HandleDrawingInput();
         HandleAnswerTypingFallback();
 
@@ -152,23 +362,35 @@ public class MathMinigameController : MonoBehaviour
 
     private bool ShouldRunForCurrentFlow()
     {
-        string flowId = FlowContext.CurrentId;
-        if (string.IsNullOrEmpty(flowId))
-            flowId = PlayerPrefs.GetString("FLOW_ID", string.Empty);
-
-        if (string.IsNullOrEmpty(flowId))
+        if (string.IsNullOrEmpty(currentFlowId))
             return false;
 
+        if (string.Equals(currentFlowId, "AFTERSCHOOL_ENGLISH_D1", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (!string.IsNullOrWhiteSpace(afterSchoolEnglishFlowId) &&
+            string.Equals(currentFlowId, afterSchoolEnglishFlowId, StringComparison.OrdinalIgnoreCase))
+            return true;
+
         if (supportedFlowIds == null || supportedFlowIds.Length == 0)
-            return string.Equals(flowId, "CLASS1_D2", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(currentFlowId, "CLASS1_D2", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(currentFlowId, "AFTERSCHOOL_ENGLISH_D1", StringComparison.OrdinalIgnoreCase);
 
         for (int i = 0; i < supportedFlowIds.Length; i++)
         {
-            if (string.Equals(flowId, supportedFlowIds[i], StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(currentFlowId, supportedFlowIds[i], StringComparison.OrdinalIgnoreCase))
                 return true;
         }
 
         return false;
+    }
+
+    private string ResolveCurrentFlowId()
+    {
+        string flowId = FlowContext.CurrentId;
+        if (string.IsNullOrEmpty(flowId))
+            flowId = PlayerPrefs.GetString("FLOW_ID", string.Empty);
+        return flowId;
     }
 
     private void EnsureQuestionsOrFallback()
@@ -200,6 +422,152 @@ public class MathMinigameController : MonoBehaviour
                 hintTexts = new[] { "첫 번째 힌트", "두 번째 힌트", "세 번째 힌트" }
             }
         };
+        englishTrueFalseQuestions = new List<EnglishTrueFalseQuestionDefinition>
+        {
+            englishTrueFalseQuestion,
+            new EnglishTrueFalseQuestionDefinition
+            {
+                prompt = "?ㅼ쓬 臾몄옣??留욎쑝硫?True, ?由щ㈃ False瑜?怨좊Ⅴ?쒖삤.",
+                statement = "Birds can swim underwater for an hour.",
+                correctAnswer = false,
+                explanation = "False."
+            },
+            new EnglishTrueFalseQuestionDefinition
+            {
+                prompt = "?ㅼ쓬 臾몄옣??留욎쑝硫?True, ?由щ㈃ False瑜?怨좊Ⅴ?쒖삤.",
+                statement = "Winter comes after autumn.",
+                correctAnswer = true,
+                explanation = "True."
+            }
+        };
+    }
+
+    private void EnsureEnglishMatchingPairsOrFallback()
+    {
+        if (englishMatchingPairs != null && englishMatchingPairs.Count > 0)
+            return;
+
+        englishMatchingPairs = new List<EnglishMatchingPairDefinition>
+        {
+            new EnglishMatchingPairDefinition { word = "sun", meaning = "태양" },
+            new EnglishMatchingPairDefinition { word = "egg", meaning = "계란" },
+            new EnglishMatchingPairDefinition { word = "paper", meaning = "종이" },
+            new EnglishMatchingPairDefinition { word = "vegetable", meaning = "채소" },
+        };
+    }
+
+    private void EnsureEnglishOrderingQuestionOrFallback()
+    {
+        bool hasWords = englishOrderingQuestion != null
+            && englishOrderingQuestion.shuffledWords != null
+            && englishOrderingQuestion.shuffledWords.Length > 0
+            && englishOrderingQuestion.correctOrder != null
+            && englishOrderingQuestion.correctOrder.Length > 0;
+
+        if (hasWords)
+            return;
+
+        englishOrderingQuestion = new EnglishOrderingQuestionDefinition
+        {
+            prompt = "다음 단어를 올바른 순서로 배열하시오.",
+            shuffledWords = new[] { "the problem", "difficult", "I", "found" },
+            correctOrder = new[] { "I", "found", "the problem", "difficult" },
+            answerSentence = "I found the problem difficult."
+        };
+    }
+
+    private void EnsureEnglishTrueFalseQuestionOrFallback()
+    {
+        bool listValid = englishTrueFalseQuestions != null && englishTrueFalseQuestions.Count > 0;
+        if (listValid)
+            return;
+
+        bool valid = englishTrueFalseQuestion != null && !string.IsNullOrWhiteSpace(englishTrueFalseQuestion.statement);
+        if (valid)
+        {
+            englishTrueFalseQuestions = new List<EnglishTrueFalseQuestionDefinition>
+            {
+                englishTrueFalseQuestion
+            };
+            return;
+        }
+
+        englishTrueFalseQuestion = new EnglishTrueFalseQuestionDefinition
+        {
+            prompt = "다음 문장이 맞으면 True, 틀리면 False를 고르시오.",
+            statement = "The sun rises in the west.",
+            correctAnswer = false,
+            explanation = "False. The sun rises in the east."
+        };
+
+        englishTrueFalseQuestions = new List<EnglishTrueFalseQuestionDefinition>
+        {
+            englishTrueFalseQuestion,
+            new EnglishTrueFalseQuestionDefinition
+            {
+                prompt = "다음 문장이 맞으면 True, 틀리면 False를 고르시오.",
+                statement = "Birds can swim underwater for an hour.",
+                correctAnswer = false,
+                explanation = "False."
+            },
+            new EnglishTrueFalseQuestionDefinition
+            {
+                prompt = "다음 문장이 맞으면 True, 틀리면 False를 고르시오.",
+                statement = "Winter comes after autumn.",
+                correctAnswer = true,
+                explanation = "True."
+            }
+        };
+    }
+
+    private void EnsureEnglishListeningQuestionOrFallback()
+    {
+        bool valid = englishListeningQuestion != null
+            && !string.IsNullOrWhiteSpace(englishListeningQuestion.sentenceWithBlank)
+            && englishListeningQuestion.choices != null
+            && englishListeningQuestion.choices.Length > 0;
+
+        if (valid)
+            return;
+
+        englishListeningQuestion = new EnglishListeningBlankQuestionDefinition
+        {
+            prompt = "음성을 듣고 빈칸에 들어갈 알맞은 단어를 고르시오.",
+            sentenceWithBlank = "I ____ to school every day.",
+            choices = new[] { "go", "goes", "going" },
+            correctChoiceIndex = 0,
+            completedSentence = "I go to school every day."
+        };
+    }
+
+    private void BuildCurrentEnglishStageUI()
+    {
+        if (uiCanvas != null)
+        {
+            Destroy(uiCanvas.gameObject);
+            uiCanvas = null;
+            uiRootRect = null;
+        }
+
+        if (currentEnglishStage <= 0)
+        {
+            BuildEnglishMatchingUI();
+            return;
+        }
+
+        if (currentEnglishStage == 1)
+        {
+            BuildEnglishOrderingUI();
+            return;
+        }
+
+        if (currentEnglishStage == 2)
+        {
+            BuildEnglishTrueFalseUI();
+            return;
+        }
+
+        BuildEnglishListeningUI();
     }
 
     private void BuildRuntimeUI()
@@ -243,6 +611,1173 @@ public class MathMinigameController : MonoBehaviour
         BuildLeftPanel(leftPaper.transform);
         BuildRightPanel(rightPaper.transform);
         BuildFriendBubble(root.transform);
+    }
+
+    private void BuildEnglishMatchingUI()
+    {
+        var canvasGo = new GameObject("__AfterSchoolEnglishUI", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        uiCanvas = canvasGo.GetComponent<Canvas>();
+        uiCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        uiCanvas.overrideSorting = true;
+        uiCanvas.sortingOrder = -10;
+        uiCamera = uiCanvas.worldCamera;
+
+        var scaler = canvasGo.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        var root = CreateUIObject("Root", canvasGo.transform, typeof(Image));
+        var rootRect = root.GetComponent<RectTransform>();
+        StretchFull(rootRect);
+        uiRootRect = rootRect;
+        root.GetComponent<Image>().color = new Color(dimColor.r, dimColor.g, dimColor.b, 0.18f);
+
+        var panel = CreateUIObject("MainPanel", root.transform, typeof(Image));
+        var panelRect = panel.GetComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(0.08f, 0.08f);
+        panelRect.anchorMax = new Vector2(0.92f, 0.92f);
+        panelRect.offsetMin = Vector2.zero;
+        panelRect.offsetMax = Vector2.zero;
+        panel.GetComponent<Image>().color = panelColor;
+        AddThinOutline(panel);
+
+        var titleText = CreateText("Title", panel.transform, 52f, FontStyles.Bold);
+        titleText.rectTransform.anchorMin = new Vector2(0.08f, 0.86f);
+        titleText.rectTransform.anchorMax = new Vector2(0.92f, 0.96f);
+        titleText.rectTransform.offsetMin = Vector2.zero;
+        titleText.rectTransform.offsetMax = Vector2.zero;
+        titleText.alignment = TextAlignmentOptions.Center;
+        titleText.color = accentColor;
+        titleText.text = englishMatchingTitle;
+
+        var descText = CreateText("Description", panel.transform, 26f, FontStyles.Normal);
+        descText.rectTransform.anchorMin = new Vector2(0.10f, 0.77f);
+        descText.rectTransform.anchorMax = new Vector2(0.90f, 0.85f);
+        descText.rectTransform.offsetMin = Vector2.zero;
+        descText.rectTransform.offsetMax = Vector2.zero;
+        descText.alignment = TextAlignmentOptions.Center;
+        descText.color = new Color(0.20f, 0.20f, 0.24f, 1f);
+        descText.text = englishMatchingDescription;
+
+        feedbackText = CreateText("Feedback", panel.transform, 22f, FontStyles.Bold);
+        feedbackText.rectTransform.anchorMin = new Vector2(0.10f, 0.70f);
+        feedbackText.rectTransform.anchorMax = new Vector2(0.90f, 0.76f);
+        feedbackText.rectTransform.offsetMin = Vector2.zero;
+        feedbackText.rectTransform.offsetMax = Vector2.zero;
+        feedbackText.alignment = TextAlignmentOptions.Center;
+        feedbackText.color = feedbackSuccessColor;
+        feedbackText.text = string.Empty;
+
+        var board = CreateUIObject("Board", panel.transform);
+        var boardRect = board.GetComponent<RectTransform>();
+        boardRect.anchorMin = new Vector2(0.06f, 0.10f);
+        boardRect.anchorMax = new Vector2(0.94f, 0.68f);
+        boardRect.offsetMin = Vector2.zero;
+        boardRect.offsetMax = Vector2.zero;
+
+        var leftColumn = CreateUIObject("LeftColumn", board.transform, typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+        var leftRect = leftColumn.GetComponent<RectTransform>();
+        leftRect.anchorMin = new Vector2(0.00f, 0.0f);
+        leftRect.anchorMax = new Vector2(0.28f, 1.0f);
+        leftRect.offsetMin = Vector2.zero;
+        leftRect.offsetMax = Vector2.zero;
+        ConfigureMatchColumn(leftColumn.GetComponent<VerticalLayoutGroup>(), leftColumn.GetComponent<ContentSizeFitter>());
+
+        var rightColumn = CreateUIObject("RightColumn", board.transform, typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+        var rightRect = rightColumn.GetComponent<RectTransform>();
+        rightRect.anchorMin = new Vector2(0.72f, 0.0f);
+        rightRect.anchorMax = new Vector2(1.00f, 1.0f);
+        rightRect.offsetMin = Vector2.zero;
+        rightRect.offsetMax = Vector2.zero;
+        ConfigureMatchColumn(rightColumn.GetComponent<VerticalLayoutGroup>(), rightColumn.GetComponent<ContentSizeFitter>());
+
+        var lineLayer = CreateUIObject("LineLayer", board.transform);
+        englishLineLayer = lineLayer.GetComponent<RectTransform>();
+        englishLineLayer.anchorMin = Vector2.zero;
+        englishLineLayer.anchorMax = Vector2.one;
+        englishLineLayer.offsetMin = Vector2.zero;
+        englishLineLayer.offsetMax = Vector2.zero;
+
+        BuildEnglishMatchingButtons(leftColumn.transform, rightColumn.transform);
+    }
+
+    private void ConfigureMatchColumn(VerticalLayoutGroup layout, ContentSizeFitter fitter)
+    {
+        layout.childAlignment = TextAnchor.UpperCenter;
+        layout.childControlHeight = false;
+        layout.childControlWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.childForceExpandWidth = true;
+        layout.spacing = 24f;
+
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+    }
+
+    private void BuildEnglishMatchingButtons(Transform leftParent, Transform rightParent)
+    {
+        englishLeftButtons.Clear();
+        englishRightButtons.Clear();
+        englishLeftLabels.Clear();
+        englishRightLabels.Clear();
+        englishRightPairIndices.Clear();
+        englishMatchedPairs.Clear();
+        englishLeftButtonRects.Clear();
+        englishRightButtonRects.Clear();
+        selectedLeftPairIndex = -1;
+        selectedRightDisplayIndex = -1;
+        englishDraggingLeftPairIndex = -1;
+        englishMatchDropResolvedThisDrag = false;
+
+        if (englishPreviewLineImage != null)
+        {
+            Destroy(englishPreviewLineImage.gameObject);
+            englishPreviewLineImage = null;
+            englishPreviewLineRect = null;
+        }
+
+        var displayOrder = new List<int>();
+        for (int i = 0; i < englishMatchingPairs.Count; i++)
+            displayOrder.Add(i);
+
+        for (int i = 0; i < displayOrder.Count; i++)
+        {
+            int swapIndex = UnityEngine.Random.Range(i, displayOrder.Count);
+            (displayOrder[i], displayOrder[swapIndex]) = (displayOrder[swapIndex], displayOrder[i]);
+        }
+
+        for (int i = 0; i < englishMatchingPairs.Count; i++)
+        {
+            int leftPairIndex = i;
+            var leftButton = CreateButton($"Left_{i}", leftParent, out var leftLabel);
+            var leftRect = leftButton.GetComponent<RectTransform>();
+            englishLeftButtons.Add(leftButton);
+            englishLeftLabels.Add(leftLabel);
+            englishLeftButtonRects.Add(leftRect);
+            SetPreferredHeight(leftRect, 116f);
+            leftLabel.fontSize = 34f;
+            leftLabel.color = new Color(0.16f, 0.16f, 0.18f, 1f);
+            leftLabel.text = englishMatchingPairs[leftPairIndex].word;
+            var leftSource = leftButton.gameObject.AddComponent<EnglishMatchingDragSource>();
+            leftSource.controller = this;
+            leftSource.pairIndex = leftPairIndex;
+
+            int rightPairIndex = displayOrder[i];
+            englishRightPairIndices.Add(rightPairIndex);
+            int rightDisplayIndex = i;
+            var rightButton = CreateButton($"Right_{i}", rightParent, out var rightLabel);
+            var rightRect = rightButton.GetComponent<RectTransform>();
+            englishRightButtons.Add(rightButton);
+            englishRightLabels.Add(rightLabel);
+            englishRightButtonRects.Add(rightRect);
+            SetPreferredHeight(rightRect, 116f);
+            rightLabel.fontSize = 34f;
+            rightLabel.color = new Color(0.16f, 0.16f, 0.18f, 1f);
+            rightLabel.text = englishMatchingPairs[rightPairIndex].meaning;
+            var rightTarget = rightButton.gameObject.AddComponent<EnglishMatchingDropTarget>();
+            rightTarget.controller = this;
+            rightTarget.displayIndex = rightDisplayIndex;
+        }
+
+        Canvas.ForceUpdateCanvases();
+        UpdateEnglishButtonStates();
+    }
+
+    private void PrepareEnglishMatchDrag(int pairIndex)
+    {
+        if (advancing || englishMatchedPairs.Contains(pairIndex))
+            return;
+
+        selectedLeftPairIndex = pairIndex;
+        selectedRightDisplayIndex = -1;
+        UpdateEnglishButtonStates();
+    }
+
+    private void BeginEnglishMatchDrag(int pairIndex, PointerEventData eventData)
+    {
+        if (advancing || englishMatchedPairs.Contains(pairIndex))
+            return;
+
+        englishDraggingLeftPairIndex = pairIndex;
+        englishMatchDropResolvedThisDrag = false;
+        selectedLeftPairIndex = pairIndex;
+        selectedRightDisplayIndex = -1;
+        EnsureEnglishPreviewLine();
+        UpdateEnglishMatchDrag(eventData);
+        UpdateEnglishButtonStates();
+    }
+
+    private void UpdateEnglishMatchDrag(PointerEventData eventData)
+    {
+        if (englishDraggingLeftPairIndex < 0 || englishPreviewLineRect == null || englishLineLayer == null)
+            return;
+
+        RectTransform leftRect = englishLeftButtonRects[englishDraggingLeftPairIndex];
+        Vector2 leftPoint = GetRectCenterInLayer(leftRect, englishLineLayer);
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                englishLineLayer,
+                eventData.position,
+                GetUICamera(),
+                out var dragPoint))
+        {
+            return;
+        }
+
+        UpdateEnglishLineRect(englishPreviewLineRect, leftPoint, dragPoint, 6f);
+    }
+
+    private void ResolveEnglishDraggedMatch(int displayIndex)
+    {
+        if (englishDraggingLeftPairIndex < 0 || advancing)
+            return;
+
+        englishMatchDropResolvedThisDrag = true;
+        selectedRightDisplayIndex = displayIndex;
+        UpdateEnglishButtonStates();
+        TryResolveEnglishSelection();
+        EndEnglishMatchDrag();
+    }
+
+    private void TryResolveEnglishSelection()
+    {
+        if (selectedLeftPairIndex < 0 || selectedRightDisplayIndex < 0)
+            return;
+
+        int rightPairIndex = englishRightPairIndices[selectedRightDisplayIndex];
+        if (selectedLeftPairIndex == rightPairIndex)
+        {
+            englishMatchedPairs.Add(selectedLeftPairIndex);
+            DrawEnglishMatchLine(selectedLeftPairIndex, selectedRightDisplayIndex);
+            SetFeedback("정답!", true);
+            selectedLeftPairIndex = -1;
+            selectedRightDisplayIndex = -1;
+            englishDraggingLeftPairIndex = -1;
+            UpdateEnglishButtonStates();
+
+            if (englishMatchedPairs.Count >= englishMatchingPairs.Count)
+            {
+                if (advanceRoutine != null)
+                    StopCoroutine(advanceRoutine);
+                advanceRoutine = StartCoroutine(CoAdvanceAfterEnglishMatchSuccess());
+            }
+
+            return;
+        }
+
+        SetFeedback("다시 연결해 보자.", false);
+        selectedLeftPairIndex = -1;
+        selectedRightDisplayIndex = -1;
+        englishDraggingLeftPairIndex = -1;
+        UpdateEnglishButtonStates();
+    }
+
+    private void EndEnglishMatchDrag()
+    {
+        HideEnglishPreviewLine();
+
+        if (englishMatchDropResolvedThisDrag)
+        {
+            englishMatchDropResolvedThisDrag = false;
+            return;
+        }
+
+        englishDraggingLeftPairIndex = -1;
+        selectedLeftPairIndex = -1;
+        selectedRightDisplayIndex = -1;
+        UpdateEnglishButtonStates();
+    }
+
+    private IEnumerator CoAdvanceAfterEnglishMatchSuccess()
+    {
+        advancing = true;
+        yield return new WaitForSecondsRealtime(Mathf.Max(0.05f, englishMatchSuccessDelaySeconds));
+
+        if (ended)
+            yield break;
+
+        advanceRoutine = null;
+        advancing = false;
+
+        if (HasEnglishOrderingStage())
+        {
+            currentEnglishStage = 1;
+            BuildCurrentEnglishStageUI();
+            yield break;
+        }
+
+        End(true);
+    }
+
+    private bool HasEnglishOrderingStage()
+    {
+        return englishOrderingQuestion != null
+            && englishOrderingQuestion.shuffledWords != null
+            && englishOrderingQuestion.correctOrder != null
+            && englishOrderingQuestion.shuffledWords.Length > 0
+            && englishOrderingQuestion.correctOrder.Length > 0;
+    }
+
+    private bool HasEnglishTrueFalseStage()
+    {
+        return englishTrueFalseQuestions != null
+            && englishTrueFalseQuestions.Count > 0
+            && currentEnglishTrueFalseQuestionIndex < englishTrueFalseQuestions.Count
+            && !string.IsNullOrWhiteSpace(englishTrueFalseQuestions[currentEnglishTrueFalseQuestionIndex].statement);
+    }
+
+    private void SyncCurrentEnglishTrueFalseQuestion()
+    {
+        if (englishTrueFalseQuestions == null || englishTrueFalseQuestions.Count == 0)
+            return;
+
+        currentEnglishTrueFalseQuestionIndex = Mathf.Clamp(
+            currentEnglishTrueFalseQuestionIndex,
+            0,
+            englishTrueFalseQuestions.Count - 1);
+        englishTrueFalseQuestion = englishTrueFalseQuestions[currentEnglishTrueFalseQuestionIndex];
+    }
+
+    private bool HasEnglishListeningStage()
+    {
+        return englishListeningQuestion != null
+            && !string.IsNullOrWhiteSpace(englishListeningQuestion.sentenceWithBlank)
+            && englishListeningQuestion.choices != null
+            && englishListeningQuestion.choices.Length > 0;
+    }
+
+    private void DrawEnglishMatchLine(int leftPairIndex, int rightDisplayIndex)
+    {
+        if (englishLineLayer == null)
+            return;
+
+        RectTransform leftRect = englishLeftButtonRects[leftPairIndex];
+        RectTransform rightRect = englishRightButtonRects[rightDisplayIndex];
+
+        Vector2 leftPoint = GetRectCenterInLayer(leftRect, englishLineLayer);
+        Vector2 rightPoint = GetRectCenterInLayer(rightRect, englishLineLayer);
+
+        var lineGo = CreateUIObject($"Line_{leftPairIndex}", englishLineLayer, typeof(Image));
+        var lineRect = lineGo.GetComponent<RectTransform>();
+        var lineImage = lineGo.GetComponent<Image>();
+        lineImage.color = new Color(0.94f, 0.38f, 0.36f, 1f);
+        UpdateEnglishLineRect(lineRect, leftPoint, rightPoint, 8f);
+
+        englishLineObjects.Add(lineGo);
+    }
+
+    private void EnsureEnglishPreviewLine()
+    {
+        if (englishPreviewLineImage != null || englishLineLayer == null)
+            return;
+
+        var previewGo = CreateUIObject("PreviewLine", englishLineLayer, typeof(Image));
+        englishPreviewLineRect = previewGo.GetComponent<RectTransform>();
+        englishPreviewLineImage = previewGo.GetComponent<Image>();
+        englishPreviewLineImage.color = new Color(0.94f, 0.38f, 0.36f, 0.55f);
+        englishPreviewLineImage.raycastTarget = false;
+    }
+
+    private void HideEnglishPreviewLine()
+    {
+        if (englishPreviewLineImage != null)
+            englishPreviewLineImage.enabled = false;
+    }
+
+    private void UpdateEnglishLineRect(RectTransform lineRect, Vector2 startPoint, Vector2 endPoint, float thickness)
+    {
+        if (lineRect == null)
+            return;
+
+        Vector2 diff = endPoint - startPoint;
+        float length = diff.magnitude;
+        lineRect.sizeDelta = new Vector2(length, thickness);
+        lineRect.anchoredPosition = startPoint + (diff * 0.5f);
+        lineRect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg);
+
+        if (englishPreviewLineImage != null && lineRect == englishPreviewLineRect)
+            englishPreviewLineImage.enabled = true;
+    }
+
+    private Camera GetUICamera()
+    {
+        return uiCanvas != null && uiCanvas.renderMode != RenderMode.ScreenSpaceOverlay
+            ? uiCanvas.worldCamera
+            : null;
+    }
+
+    private static Vector2 GetRectCenterInLayer(RectTransform target, RectTransform layer)
+    {
+        Vector3 world = target.TransformPoint(target.rect.center);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            layer,
+            RectTransformUtility.WorldToScreenPoint(null, world),
+            null,
+            out var local);
+        return local;
+    }
+
+    private void UpdateEnglishButtonStates()
+    {
+        for (int i = 0; i < englishLeftButtons.Count; i++)
+        {
+            bool isMatched = englishMatchedPairs.Contains(i);
+            bool isSelected = selectedLeftPairIndex == i;
+            ApplyEnglishButtonVisual(englishLeftButtons[i], englishLeftLabels[i], isMatched, isSelected);
+        }
+
+        for (int i = 0; i < englishRightButtons.Count; i++)
+        {
+            bool isMatched = englishMatchedPairs.Contains(englishRightPairIndices[i]);
+            bool isSelected = selectedRightDisplayIndex == i;
+            ApplyEnglishButtonVisual(englishRightButtons[i], englishRightLabels[i], isMatched, isSelected);
+        }
+    }
+
+    private void BuildEnglishOrderingUI()
+    {
+        var canvasGo = new GameObject("__AfterSchoolEnglishOrderUI", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        uiCanvas = canvasGo.GetComponent<Canvas>();
+        uiCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        uiCanvas.overrideSorting = true;
+        uiCanvas.sortingOrder = -10;
+        uiCamera = uiCanvas.worldCamera;
+
+        var scaler = canvasGo.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        var root = CreateUIObject("Root", canvasGo.transform, typeof(Image));
+        var rootRect = root.GetComponent<RectTransform>();
+        StretchFull(rootRect);
+        uiRootRect = rootRect;
+        root.GetComponent<Image>().color = new Color(dimColor.r, dimColor.g, dimColor.b, 0.18f);
+
+        var panel = CreateUIObject("MainPanel", root.transform, typeof(Image));
+        var panelRect = panel.GetComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(0.08f, 0.08f);
+        panelRect.anchorMax = new Vector2(0.92f, 0.92f);
+        panelRect.offsetMin = Vector2.zero;
+        panelRect.offsetMax = Vector2.zero;
+        panel.GetComponent<Image>().color = panelColor;
+        AddThinOutline(panel);
+
+        var titleText = CreateText("Title", panel.transform, 48f, FontStyles.Bold);
+        titleText.rectTransform.anchorMin = new Vector2(0.08f, 0.88f);
+        titleText.rectTransform.anchorMax = new Vector2(0.92f, 0.96f);
+        titleText.rectTransform.offsetMin = Vector2.zero;
+        titleText.rectTransform.offsetMax = Vector2.zero;
+        titleText.alignment = TextAlignmentOptions.Center;
+        titleText.color = accentColor;
+        titleText.text = englishOrderingTitle;
+
+        var promptText = CreateText("Prompt", panel.transform, 28f, FontStyles.Normal);
+        promptText.rectTransform.anchorMin = new Vector2(0.10f, 0.76f);
+        promptText.rectTransform.anchorMax = new Vector2(0.90f, 0.86f);
+        promptText.rectTransform.offsetMin = Vector2.zero;
+        promptText.rectTransform.offsetMax = Vector2.zero;
+        promptText.alignment = TextAlignmentOptions.Center;
+        promptText.color = new Color(0.20f, 0.20f, 0.24f, 0.7f);
+        promptText.text = string.Empty;
+
+        feedbackText = CreateText("Feedback", panel.transform, 22f, FontStyles.Bold);
+        feedbackText.rectTransform.anchorMin = new Vector2(0.10f, 0.60f);
+        feedbackText.rectTransform.anchorMax = new Vector2(0.90f, 0.68f);
+        feedbackText.rectTransform.offsetMin = Vector2.zero;
+        feedbackText.rectTransform.offsetMax = Vector2.zero;
+        feedbackText.alignment = TextAlignmentOptions.Center;
+        feedbackText.color = feedbackSuccessColor;
+        feedbackText.text = string.Empty;
+
+        englishOrderingAnswerText = null;
+
+        var wordsPanel = CreateUIObject("WordsPanel", panel.transform, typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+        var wordsRect = wordsPanel.GetComponent<RectTransform>();
+        wordsRect.anchorMin = new Vector2(0.10f, 0.24f);
+        wordsRect.anchorMax = new Vector2(0.90f, 0.60f);
+        wordsRect.offsetMin = Vector2.zero;
+        wordsRect.offsetMax = Vector2.zero;
+        var wordsLayout = wordsPanel.GetComponent<VerticalLayoutGroup>();
+        wordsLayout.childAlignment = TextAnchor.UpperCenter;
+        wordsLayout.childControlHeight = false;
+        wordsLayout.childControlWidth = true;
+        wordsLayout.childForceExpandHeight = false;
+        wordsLayout.childForceExpandWidth = true;
+        wordsLayout.spacing = 18f;
+        var wordsFitter = wordsPanel.GetComponent<ContentSizeFitter>();
+        wordsFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        wordsFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+        var instructionText = CreateText("OrderingInstruction", wordsPanel.transform, 22f, FontStyles.Normal);
+        instructionText.alignment = TextAlignmentOptions.Center;
+        instructionText.color = new Color(0.24f, 0.24f, 0.28f, 1f);
+        instructionText.text = "단어를 좌우로 옮겨 순서를 맞춘 뒤 제출하세요.";
+        instructionText.text = "단어 타일을 마우스로 드래그해 올바른 순서로 배열한 뒤 제출하세요.";
+        SetPreferredHeight(instructionText.rectTransform, 42f);
+
+        var tilesRoot = CreateUIObject("TilesRoot", wordsPanel.transform, typeof(HorizontalLayoutGroup), typeof(ContentSizeFitter));
+        englishOrderingTilesRoot = tilesRoot.GetComponent<RectTransform>();
+        var tilesLayout = tilesRoot.GetComponent<HorizontalLayoutGroup>();
+        tilesLayout.childAlignment = TextAnchor.MiddleCenter;
+        tilesLayout.childControlHeight = false;
+        tilesLayout.childControlWidth = true;
+        tilesLayout.childForceExpandHeight = false;
+        tilesLayout.childForceExpandWidth = false;
+        tilesLayout.spacing = 16f;
+        var tilesFitter = tilesRoot.GetComponent<ContentSizeFitter>();
+        tilesFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        tilesFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        SetPreferredHeight(englishOrderingTilesRoot, 156f);
+
+        var resetButton = CreateButton("ResetButton", panel.transform, out var resetLabel);
+        englishOrderingResetButton = resetButton;
+        var resetRect = resetButton.GetComponent<RectTransform>();
+        resetRect.anchorMin = new Vector2(0.24f, 0.08f);
+        resetRect.anchorMax = new Vector2(0.44f, 0.14f);
+        resetRect.offsetMin = Vector2.zero;
+        resetRect.offsetMax = Vector2.zero;
+        resetLabel.fontSize = 24f;
+        resetLabel.text = "처음 배열";
+        resetButton.onClick.AddListener(ResetEnglishOrderingLayout);
+
+        var submitButton = CreateButton("SubmitButton", panel.transform, out var submitLabel);
+        englishOrderingSubmitButton = submitButton;
+        var submitRect = submitButton.GetComponent<RectTransform>();
+        submitRect.anchorMin = new Vector2(0.56f, 0.08f);
+        submitRect.anchorMax = new Vector2(0.76f, 0.14f);
+        submitRect.offsetMin = Vector2.zero;
+        submitRect.offsetMax = Vector2.zero;
+        submitLabel.fontSize = 24f;
+        submitLabel.text = "제출";
+        submitButton.onClick.AddListener(EvaluateEnglishOrderingAnswer);
+
+        ResetEnglishOrderingLayout();
+
+        UpdateEnglishOrderingUI();
+    }
+
+    private void MoveEnglishOrderingWord(int currentIndex, int direction)
+    {
+        if (advancing)
+            return;
+
+        int nextIndex = currentIndex + direction;
+        if (currentIndex < 0 || currentIndex >= englishOrderingCurrentOrder.Count)
+            return;
+        if (nextIndex < 0 || nextIndex >= englishOrderingCurrentOrder.Count)
+            return;
+
+        (englishOrderingCurrentOrder[currentIndex], englishOrderingCurrentOrder[nextIndex]) =
+            (englishOrderingCurrentOrder[nextIndex], englishOrderingCurrentOrder[currentIndex]);
+
+        UpdateEnglishOrderingUI();
+    }
+
+    private void BeginEnglishOrderingDrag(EnglishOrderingCardDragHandle handle)
+    {
+        if (advancing || handle == null)
+            return;
+
+        if (englishOrderingTilesRoot != null)
+        {
+            handle.dragStartAnchoredPosition = handle.RectTransform.anchoredPosition;
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    englishOrderingTilesRoot,
+                    Input.mousePosition,
+                    GetUICamera(),
+                    out var localPoint))
+            {
+                handle.dragStartPointerLocalPosition = localPoint;
+                handle.dragPointerOffset = Vector2.zero;
+            }
+            else
+            {
+                handle.dragStartPointerLocalPosition = Vector2.zero;
+                handle.dragPointerOffset = Vector2.zero;
+            }
+        }
+
+        handle.transform.SetAsLastSibling();
+        handle.LayoutElement.ignoreLayout = true;
+        handle.CanvasGroup.blocksRaycasts = false;
+        handle.CanvasGroup.alpha = 0.88f;
+        SetFeedback(string.Empty, true);
+    }
+
+    private void UpdateEnglishOrderingDrag(EnglishOrderingCardDragHandle handle, PointerEventData eventData)
+    {
+        if (advancing || handle == null || englishOrderingTilesRoot == null)
+            return;
+
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                englishOrderingTilesRoot,
+                eventData.position,
+                GetUICamera(),
+                out var localPoint))
+        {
+            return;
+        }
+
+        Vector2 delta = localPoint - handle.dragStartPointerLocalPosition;
+        handle.RectTransform.anchoredPosition = handle.dragStartAnchoredPosition + delta;
+    }
+
+    private void EndEnglishOrderingDrag(EnglishOrderingCardDragHandle handle, PointerEventData eventData)
+    {
+        if (handle == null)
+            return;
+
+        handle.RectTransform.anchoredPosition = handle.dragStartAnchoredPosition;
+        handle.LayoutElement.ignoreLayout = false;
+        handle.CanvasGroup.blocksRaycasts = true;
+        handle.CanvasGroup.alpha = 1f;
+
+        int targetIndex = GetEnglishOrderingDropIndex(eventData.position, handle.displayIndex);
+        ApplyEnglishOrderingDragReorder(handle.displayIndex, targetIndex);
+    }
+
+    private int GetEnglishOrderingDropIndex(Vector2 screenPosition, int fallbackIndex)
+    {
+        if (englishOrderingTilesRoot == null || englishOrderingCardHandles.Count == 0)
+            return fallbackIndex;
+
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                englishOrderingTilesRoot,
+                screenPosition,
+                GetUICamera(),
+                out var localPoint))
+        {
+            return fallbackIndex;
+        }
+
+        int closestIndex = fallbackIndex;
+        float closestDistance = float.MaxValue;
+
+        for (int i = 0; i < englishOrderingCardHandles.Count; i++)
+        {
+            var handle = englishOrderingCardHandles[i];
+            if (handle == null)
+                continue;
+
+            Vector2 center = GetRectCenterInLayer(handle.RectTransform, englishOrderingTilesRoot);
+            float distance = Mathf.Abs(localPoint.x - center.x);
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestIndex = i;
+            }
+        }
+
+        return closestIndex;
+    }
+
+    private void ApplyEnglishOrderingDragReorder(int currentIndex, int targetIndex)
+    {
+        if (currentIndex < 0 || currentIndex >= englishOrderingCurrentOrder.Count)
+        {
+            UpdateEnglishOrderingUI();
+            return;
+        }
+
+        targetIndex = Mathf.Clamp(targetIndex, 0, englishOrderingCurrentOrder.Count - 1);
+        int wordIndex = englishOrderingCurrentOrder[currentIndex];
+        englishOrderingCurrentOrder.RemoveAt(currentIndex);
+        if (targetIndex > currentIndex)
+            targetIndex--;
+        englishOrderingCurrentOrder.Insert(targetIndex, wordIndex);
+        UpdateEnglishOrderingUI();
+    }
+
+    private void ResetEnglishOrderingLayout()
+    {
+        if (advancing)
+            return;
+
+        englishOrderingCurrentOrder.Clear();
+        for (int i = 0; i < englishOrderingQuestion.shuffledWords.Length; i++)
+            englishOrderingCurrentOrder.Add(i);
+
+        SetFeedback(string.Empty, true);
+        UpdateEnglishOrderingUI();
+    }
+
+    private void UpdateEnglishOrderingUI()
+    {
+        if (englishOrderingAnswerText != null)
+        {
+            if (englishOrderingCurrentOrder.Count == 0)
+            {
+                englishOrderingAnswerText.text = "_";
+            }
+            else
+            {
+                var arrangedWords = new List<string>();
+                for (int i = 0; i < englishOrderingCurrentOrder.Count; i++)
+                    arrangedWords.Add(englishOrderingQuestion.shuffledWords[englishOrderingCurrentOrder[i]]);
+                englishOrderingAnswerText.text = string.Join(" ", arrangedWords);
+            }
+        }
+
+        englishOrderingCardHandles.Clear();
+
+        if (englishOrderingTilesRoot != null)
+        {
+            for (int i = englishOrderingTilesRoot.childCount - 1; i >= 0; i--)
+                Destroy(englishOrderingTilesRoot.GetChild(i).gameObject);
+
+            for (int i = 0; i < englishOrderingCurrentOrder.Count; i++)
+            {
+                int wordIndex = englishOrderingCurrentOrder[i];
+                string word = englishOrderingQuestion.shuffledWords[wordIndex];
+
+                var card = CreateUIObject(
+                    $"WordCard_{i}",
+                    englishOrderingTilesRoot,
+                    typeof(Image),
+                    typeof(LayoutElement),
+                    typeof(CanvasGroup));
+                var cardImage = card.GetComponent<Image>();
+                cardImage.color = new Color(0.98f, 0.84f, 0.84f, 1f);
+                AddThinOutline(card);
+                var cardLayout = card.GetComponent<LayoutElement>();
+                cardLayout.minWidth = 160f;
+                cardLayout.preferredHeight = 140f;
+
+                var wordLabel = CreateText("WordLabel", card.transform, 28f, FontStyles.Bold);
+                StretchFull(wordLabel.rectTransform);
+                wordLabel.margin = new Vector4(18f, 18f, 18f, 18f);
+                wordLabel.alignment = TextAlignmentOptions.Center;
+                wordLabel.color = new Color(0.16f, 0.16f, 0.18f, 1f);
+                wordLabel.enableWordWrapping = false;
+                wordLabel.overflowMode = TextOverflowModes.Overflow;
+                wordLabel.text = word;
+                float preferredWordWidth = wordLabel.GetPreferredValues(word).x + 54f;
+                cardLayout.preferredWidth = Mathf.Clamp(preferredWordWidth, 160f, 420f);
+                card.GetComponent<RectTransform>().sizeDelta = new Vector2(cardLayout.preferredWidth, cardLayout.preferredHeight);
+
+                var dragHandle = card.AddComponent<EnglishOrderingCardDragHandle>();
+                dragHandle.controller = this;
+                dragHandle.displayIndex = i;
+                englishOrderingCardHandles.Add(dragHandle);
+            }
+        }
+    }
+
+    private void EvaluateEnglishOrderingAnswer()
+    {
+        bool correct = englishOrderingCurrentOrder.Count == englishOrderingQuestion.correctOrder.Length;
+        for (int i = 0; correct && i < englishOrderingQuestion.correctOrder.Length; i++)
+        {
+            string selectedWord = englishOrderingQuestion.shuffledWords[englishOrderingCurrentOrder[i]];
+            if (!string.Equals(selectedWord, englishOrderingQuestion.correctOrder[i], StringComparison.Ordinal))
+                correct = false;
+        }
+
+        if (correct)
+        {
+            SetFeedback(englishOrderingQuestion.answerSentence, true);
+            if (advanceRoutine != null)
+                StopCoroutine(advanceRoutine);
+            advanceRoutine = StartCoroutine(CoAdvanceAfterEnglishOrderingSuccess());
+            return;
+        }
+
+        SetFeedback("순서를 다시 맞춰보자.", false);
+        ResetEnglishOrderingLayout();
+        UpdateEnglishOrderingUI();
+    }
+
+    private IEnumerator CoAdvanceAfterEnglishOrderingSuccess()
+    {
+        advancing = true;
+        yield return new WaitForSecondsRealtime(Mathf.Max(0.05f, englishMatchSuccessDelaySeconds));
+
+        if (ended)
+            yield break;
+
+        advanceRoutine = null;
+        advancing = false;
+
+        if (HasEnglishTrueFalseStage())
+        {
+            currentEnglishTrueFalseQuestionIndex = 0;
+            currentEnglishStage = 2;
+            BuildCurrentEnglishStageUI();
+            yield break;
+        }
+
+        if (HasEnglishListeningStage())
+        {
+            currentEnglishStage = 3;
+            BuildCurrentEnglishStageUI();
+            yield break;
+        }
+
+        End(true);
+    }
+
+    private void BuildEnglishTrueFalseUI()
+    {
+        SyncCurrentEnglishTrueFalseQuestion();
+        EnglishTrueFalseQuestionDefinition question = englishTrueFalseQuestion;
+        var canvasGo = new GameObject("__AfterSchoolEnglishTrueFalseUI", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        uiCanvas = canvasGo.GetComponent<Canvas>();
+        uiCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        uiCanvas.overrideSorting = true;
+        uiCanvas.sortingOrder = -10;
+        uiCamera = uiCanvas.worldCamera;
+
+        var scaler = canvasGo.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        var root = CreateUIObject("Root", canvasGo.transform, typeof(Image));
+        StretchFull(root.GetComponent<RectTransform>());
+        root.GetComponent<Image>().color = new Color(dimColor.r, dimColor.g, dimColor.b, 0.18f);
+
+        var panel = CreateUIObject("MainPanel", root.transform, typeof(Image));
+        var panelRect = panel.GetComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(0.12f, 0.12f);
+        panelRect.anchorMax = new Vector2(0.88f, 0.88f);
+        panelRect.offsetMin = Vector2.zero;
+        panelRect.offsetMax = Vector2.zero;
+        panel.GetComponent<Image>().color = panelColor;
+        AddThinOutline(panel);
+
+        var titleText = CreateText("Title", panel.transform, 52f, FontStyles.Bold);
+        titleText.rectTransform.anchorMin = new Vector2(0.08f, 0.84f);
+        titleText.rectTransform.anchorMax = new Vector2(0.92f, 0.94f);
+        titleText.alignment = TextAlignmentOptions.Center;
+        titleText.color = accentColor;
+        titleText.text = englishTrueFalseTitle;
+
+        var promptText = CreateText("Prompt", panel.transform, 28f, FontStyles.Normal);
+        promptText.rectTransform.anchorMin = new Vector2(0.10f, 0.72f);
+        promptText.rectTransform.anchorMax = new Vector2(0.90f, 0.82f);
+        promptText.alignment = TextAlignmentOptions.Center;
+        promptText.color = new Color(0.20f, 0.20f, 0.24f, 1f);
+        promptText.text = question.prompt;
+
+        var statementPanel = CreateUIObject("StatementPanel", panel.transform, typeof(Image));
+        var statementRect = statementPanel.GetComponent<RectTransform>();
+        statementRect.anchorMin = new Vector2(0.12f, 0.45f);
+        statementRect.anchorMax = new Vector2(0.88f, 0.67f);
+        statementPanel.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.94f);
+        AddThinOutline(statementPanel);
+
+        var statementText = CreateText("Statement", statementPanel.transform, 36f, FontStyles.Bold);
+        StretchFull(statementText.rectTransform);
+        statementText.margin = new Vector4(20f, 20f, 20f, 20f);
+        statementText.alignment = TextAlignmentOptions.Center;
+        statementText.color = new Color(0.16f, 0.16f, 0.18f, 1f);
+        statementText.text = question.statement;
+
+        feedbackText = CreateText("Feedback", panel.transform, 24f, FontStyles.Bold);
+        feedbackText.rectTransform.anchorMin = new Vector2(0.10f, 0.32f);
+        feedbackText.rectTransform.anchorMax = new Vector2(0.90f, 0.40f);
+        feedbackText.alignment = TextAlignmentOptions.Center;
+        feedbackText.color = feedbackSuccessColor;
+        feedbackText.text = string.Empty;
+
+        var trueButton = CreateButton("TrueButton", panel.transform, out var trueLabel);
+        var trueRect = trueButton.GetComponent<RectTransform>();
+        trueRect.anchorMin = new Vector2(0.22f, 0.14f);
+        trueRect.anchorMax = new Vector2(0.44f, 0.24f);
+        trueLabel.fontSize = 34f;
+        trueLabel.text = "True";
+        trueButton.onClick.AddListener(() => EvaluateEnglishTrueFalseAnswer(true));
+
+        var falseButton = CreateButton("FalseButton", panel.transform, out var falseLabel);
+        var falseRect = falseButton.GetComponent<RectTransform>();
+        falseRect.anchorMin = new Vector2(0.56f, 0.14f);
+        falseRect.anchorMax = new Vector2(0.78f, 0.24f);
+        falseLabel.fontSize = 34f;
+        falseLabel.text = "False";
+        falseButton.onClick.AddListener(() => EvaluateEnglishTrueFalseAnswer(false));
+    }
+
+    private void EvaluateEnglishTrueFalseAnswer(bool selected)
+    {
+        if (advancing)
+            return;
+
+        SyncCurrentEnglishTrueFalseQuestion();
+        EnglishTrueFalseQuestionDefinition question = englishTrueFalseQuestion;
+        bool correct = selected == question.correctAnswer;
+        if (correct)
+        {
+            SetFeedback(string.IsNullOrWhiteSpace(englishTrueFalseQuestion.explanation) ? "정답!" : englishTrueFalseQuestion.explanation, true);
+            if (advanceRoutine != null)
+                StopCoroutine(advanceRoutine);
+            advanceRoutine = StartCoroutine(CoAdvanceAfterEnglishTrueFalseSuccess());
+            return;
+        }
+
+        SetFeedback("다시 생각해 보자.", false);
+    }
+
+    private IEnumerator CoAdvanceAfterEnglishTrueFalseSuccess()
+    {
+        advancing = true;
+        yield return new WaitForSecondsRealtime(Mathf.Max(0.05f, englishMatchSuccessDelaySeconds));
+
+        if (ended)
+            yield break;
+
+        advanceRoutine = null;
+        advancing = false;
+
+        if (englishTrueFalseQuestions != null && currentEnglishTrueFalseQuestionIndex + 1 < englishTrueFalseQuestions.Count)
+        {
+            currentEnglishTrueFalseQuestionIndex++;
+            SyncCurrentEnglishTrueFalseQuestion();
+            BuildCurrentEnglishStageUI();
+            yield break;
+        }
+
+        if (HasEnglishListeningStage())
+        {
+            currentEnglishStage = 3;
+            BuildCurrentEnglishStageUI();
+            yield break;
+        }
+
+        End(true);
+    }
+
+    private void BuildEnglishListeningUI()
+    {
+        var canvasGo = new GameObject("__AfterSchoolEnglishListeningUI", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        uiCanvas = canvasGo.GetComponent<Canvas>();
+        uiCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        uiCanvas.overrideSorting = true;
+        uiCanvas.sortingOrder = -10;
+        uiCamera = uiCanvas.worldCamera;
+
+        var scaler = canvasGo.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        var root = CreateUIObject("Root", canvasGo.transform, typeof(Image));
+        StretchFull(root.GetComponent<RectTransform>());
+        root.GetComponent<Image>().color = new Color(dimColor.r, dimColor.g, dimColor.b, 0.18f);
+
+        var panel = CreateUIObject("MainPanel", root.transform, typeof(Image));
+        var panelRect = panel.GetComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(0.10f, 0.10f);
+        panelRect.anchorMax = new Vector2(0.90f, 0.90f);
+        panel.GetComponent<Image>().color = panelColor;
+        AddThinOutline(panel);
+
+        var titleText = CreateText("Title", panel.transform, 48f, FontStyles.Bold);
+        titleText.rectTransform.anchorMin = new Vector2(0.08f, 0.86f);
+        titleText.rectTransform.anchorMax = new Vector2(0.92f, 0.94f);
+        titleText.alignment = TextAlignmentOptions.Center;
+        titleText.color = accentColor;
+        titleText.text = englishListeningTitle;
+
+        var promptText = CreateText("Prompt", panel.transform, 28f, FontStyles.Normal);
+        promptText.rectTransform.anchorMin = new Vector2(0.10f, 0.75f);
+        promptText.rectTransform.anchorMax = new Vector2(0.90f, 0.84f);
+        promptText.alignment = TextAlignmentOptions.Center;
+        promptText.color = new Color(0.20f, 0.20f, 0.24f, 1f);
+        promptText.text = englishListeningQuestion.prompt;
+
+        var playButton = CreateButton("PlayAudioButton", panel.transform, out var playLabel);
+        var playRect = playButton.GetComponent<RectTransform>();
+        playRect.anchorMin = new Vector2(0.36f, 0.64f);
+        playRect.anchorMax = new Vector2(0.64f, 0.72f);
+        playLabel.fontSize = 30f;
+        playLabel.text = "음성 재생";
+        playButton.onClick.AddListener(PlayEnglishListeningAudio);
+
+        var sentencePanel = CreateUIObject("SentencePanel", panel.transform, typeof(Image));
+        var sentenceRect = sentencePanel.GetComponent<RectTransform>();
+        sentenceRect.anchorMin = new Vector2(0.12f, 0.48f);
+        sentenceRect.anchorMax = new Vector2(0.88f, 0.60f);
+        sentencePanel.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.94f);
+        AddThinOutline(sentencePanel);
+
+        englishOrderingAnswerText = CreateText("SentenceText", sentencePanel.transform, 34f, FontStyles.Bold);
+        StretchFull(englishOrderingAnswerText.rectTransform);
+        englishOrderingAnswerText.margin = new Vector4(20f, 14f, 20f, 14f);
+        englishOrderingAnswerText.alignment = TextAlignmentOptions.Center;
+        englishOrderingAnswerText.color = new Color(0.16f, 0.16f, 0.18f, 1f);
+        englishOrderingAnswerText.text = englishListeningQuestion.sentenceWithBlank;
+
+        feedbackText = CreateText("Feedback", panel.transform, 22f, FontStyles.Bold);
+        feedbackText.rectTransform.anchorMin = new Vector2(0.10f, 0.39f);
+        feedbackText.rectTransform.anchorMax = new Vector2(0.90f, 0.45f);
+        feedbackText.alignment = TextAlignmentOptions.Center;
+        feedbackText.color = feedbackSuccessColor;
+        feedbackText.text = string.Empty;
+
+        var choicesRoot = CreateUIObject("ChoicesRoot", panel.transform, typeof(HorizontalLayoutGroup), typeof(ContentSizeFitter));
+        var choicesRect = choicesRoot.GetComponent<RectTransform>();
+        choicesRect.anchorMin = new Vector2(0.12f, 0.20f);
+        choicesRect.anchorMax = new Vector2(0.88f, 0.34f);
+        var choicesLayout = choicesRoot.GetComponent<HorizontalLayoutGroup>();
+        choicesLayout.childAlignment = TextAnchor.MiddleCenter;
+        choicesLayout.childControlHeight = false;
+        choicesLayout.childControlWidth = false;
+        choicesLayout.childForceExpandHeight = false;
+        choicesLayout.childForceExpandWidth = false;
+        choicesLayout.spacing = 16f;
+        var choicesFitter = choicesRoot.GetComponent<ContentSizeFitter>();
+        choicesFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        choicesFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        englishOrderingCurrentOrder.Clear();
+        englishListeningSelectedChoiceIndex = -1;
+
+        for (int i = 0; i < englishListeningQuestion.choices.Length; i++)
+        {
+            int choiceIndex = i;
+            var button = CreateButton($"Choice_{i}", choicesRoot.transform, out var label);
+            var rect = button.GetComponent<RectTransform>();
+            rect.sizeDelta = new Vector2(220f, 86f);
+            label.fontSize = 28f;
+            label.text = englishListeningQuestion.choices[i];
+            label.color = new Color(0.16f, 0.16f, 0.18f, 1f);
+            button.onClick.AddListener(() => SelectEnglishListeningChoice(choiceIndex));
+        }
+
+        var submitButton = CreateButton("SubmitButton", panel.transform, out var submitLabel);
+        var submitRect = submitButton.GetComponent<RectTransform>();
+        submitRect.anchorMin = new Vector2(0.38f, 0.08f);
+        submitRect.anchorMax = new Vector2(0.62f, 0.14f);
+        submitLabel.fontSize = 24f;
+        submitLabel.text = "제출";
+        submitButton.onClick.AddListener(EvaluateEnglishListeningAnswer);
+
+        EnsureEnglishAudioSource();
+    }
+
+    private void EnsureEnglishAudioSource()
+    {
+        if (englishAudioSource != null)
+            return;
+
+        var host = new GameObject("__AfterSchoolEnglishAudio");
+        englishAudioSource = host.AddComponent<AudioSource>();
+        englishAudioSource.playOnAwake = false;
+        DontDestroyOnLoad(host);
+    }
+
+    private void PlayEnglishListeningAudio()
+    {
+        if (englishListeningQuestion == null || englishListeningQuestion.voiceClip == null)
+            return;
+
+        EnsureEnglishAudioSource();
+        englishAudioSource.Stop();
+        englishAudioSource.clip = englishListeningQuestion.voiceClip;
+        englishAudioSource.Play();
+    }
+
+    private void SelectEnglishListeningChoice(int choiceIndex)
+    {
+        if (advancing)
+            return;
+
+        englishListeningSelectedChoiceIndex = choiceIndex;
+        UpdateEnglishListeningChoiceVisuals();
+    }
+
+    private void UpdateEnglishListeningChoiceVisuals()
+    {
+        if (uiCanvas == null)
+            return;
+
+        var buttons = uiCanvas.GetComponentsInChildren<Button>(true);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            if (!buttons[i].name.StartsWith("Choice_", StringComparison.Ordinal))
+                continue;
+
+            int idx = int.Parse(buttons[i].name.Substring("Choice_".Length));
+            var colors = buttons[i].colors;
+            colors.normalColor = idx == englishListeningSelectedChoiceIndex
+                ? new Color(0.98f, 0.86f, 0.54f, 1f)
+                : new Color(0.98f, 0.84f, 0.84f, 1f);
+            colors.highlightedColor = Color.Lerp(colors.normalColor, Color.white, 0.08f);
+            colors.pressedColor = Color.Lerp(colors.normalColor, Color.black, 0.08f);
+            colors.selectedColor = colors.highlightedColor;
+            colors.disabledColor = colors.normalColor;
+            buttons[i].colors = colors;
+        }
+    }
+
+    private void EvaluateEnglishListeningAnswer()
+    {
+        if (advancing || englishListeningSelectedChoiceIndex < 0)
+            return;
+
+        bool correct = englishListeningSelectedChoiceIndex == englishListeningQuestion.correctChoiceIndex;
+        if (correct)
+        {
+            if (englishOrderingAnswerText != null)
+                englishOrderingAnswerText.text = string.IsNullOrWhiteSpace(englishListeningQuestion.completedSentence)
+                    ? englishListeningQuestion.sentenceWithBlank
+                    : englishListeningQuestion.completedSentence;
+
+            SetFeedback("정답!", true);
+            if (advanceRoutine != null)
+                StopCoroutine(advanceRoutine);
+            advanceRoutine = StartCoroutine(CoAdvanceAfterEnglishListeningSuccess());
+            return;
+        }
+
+        SetFeedback("다시 들어보고 골라보자.", false);
+    }
+
+    private IEnumerator CoAdvanceAfterEnglishListeningSuccess()
+    {
+        advancing = true;
+        yield return new WaitForSecondsRealtime(Mathf.Max(0.05f, englishMatchSuccessDelaySeconds));
+
+        if (ended)
+            yield break;
+
+        End(true);
+    }
+
+    private void ApplyEnglishButtonVisual(Button button, TextMeshProUGUI label, bool isMatched, bool isSelected)
+    {
+        if (button == null)
+            return;
+
+        var colors = button.colors;
+        if (isMatched)
+        {
+            colors.normalColor = new Color(0.78f, 0.92f, 0.78f, 1f);
+            button.interactable = false;
+            if (label != null)
+                label.color = new Color(0.22f, 0.44f, 0.24f, 1f);
+        }
+        else if (isSelected)
+        {
+            colors.normalColor = new Color(0.98f, 0.86f, 0.54f, 1f);
+            button.interactable = true;
+            if (label != null)
+                label.color = new Color(0.20f, 0.18f, 0.12f, 1f);
+        }
+        else
+        {
+            colors.normalColor = new Color(0.98f, 0.84f, 0.84f, 1f);
+            button.interactable = true;
+            if (label != null)
+                label.color = new Color(0.16f, 0.16f, 0.18f, 1f);
+        }
+
+        colors.highlightedColor = Color.Lerp(colors.normalColor, Color.white, 0.08f);
+        colors.pressedColor = Color.Lerp(colors.normalColor, Color.black, 0.08f);
+        colors.selectedColor = colors.highlightedColor;
+        colors.disabledColor = colors.normalColor;
+        button.colors = colors;
     }
 
     private void BuildLeftPanel(Transform parent)
@@ -942,6 +2477,17 @@ public class MathMinigameController : MonoBehaviour
             uiCanvas = null;
         }
 
+        englishPreviewLineImage = null;
+        englishPreviewLineRect = null;
+        englishLineLayer = null;
+        englishOrderingTilesRoot = null;
+        englishOrderingCardHandles.Clear();
+        englishLeftButtonRects.Clear();
+        englishRightButtonRects.Clear();
+
+        if (englishAudioSource != null)
+            englishAudioSource.Stop();
+
         if (drawingTexture != null)
         {
             Destroy(drawingTexture);
@@ -1100,17 +2646,119 @@ public class MathMinigameController : MonoBehaviour
 
     private void ApplyConfigIfNeeded()
     {
+        supportedFlowIds = MergeSupportedFlowIds(supportedFlowIds, new[] { "AFTERSCHOOL_ENGLISH_D1", afterSchoolEnglishFlowId });
+
         if (config == null)
             return;
 
         if (config.supportedFlowIds != null && config.supportedFlowIds.Length > 0)
-            supportedFlowIds = (string[])config.supportedFlowIds.Clone();
+            supportedFlowIds = MergeSupportedFlowIds(supportedFlowIds, config.supportedFlowIds);
 
         penaltyOnGiveUp = config.penaltyOnGiveUp;
         correctAnswerDelaySeconds = config.correctAnswerDelaySeconds;
 
         if (config.questions != null && config.questions.Count > 0)
             questions = new List<MathQuestionDefinition>(config.questions);
+
+        afterSchoolEnglishFlowId = string.IsNullOrWhiteSpace(config.afterSchoolEnglishFlowId)
+            ? afterSchoolEnglishFlowId
+            : config.afterSchoolEnglishFlowId;
+        englishMatchingTitle = string.IsNullOrWhiteSpace(config.englishMatchingTitle)
+            ? englishMatchingTitle
+            : config.englishMatchingTitle;
+        englishMatchingDescription = string.IsNullOrWhiteSpace(config.englishMatchingDescription)
+            ? englishMatchingDescription
+            : config.englishMatchingDescription;
+        englishMatchSuccessDelaySeconds = config.englishMatchSuccessDelaySeconds;
+
+        if (config.englishMatchingPairs != null && config.englishMatchingPairs.Count > 0)
+        {
+            englishMatchingPairs = new List<EnglishMatchingPairDefinition>();
+            for (int i = 0; i < config.englishMatchingPairs.Count; i++)
+            {
+                var pair = config.englishMatchingPairs[i];
+                englishMatchingPairs.Add(new EnglishMatchingPairDefinition
+                {
+                    word = pair.word,
+                    meaning = pair.meaning
+                });
+            }
+        }
+
+        if (config.englishOrderingQuestion != null)
+        {
+            englishOrderingTitle = string.IsNullOrWhiteSpace(config.englishOrderingTitle)
+                ? englishOrderingTitle
+                : config.englishOrderingTitle;
+
+            englishOrderingQuestion = new EnglishOrderingQuestionDefinition
+            {
+                prompt = string.IsNullOrWhiteSpace(config.englishOrderingQuestion.prompt)
+                    ? englishOrderingQuestion.prompt
+                    : config.englishOrderingQuestion.prompt,
+                shuffledWords = config.englishOrderingQuestion.shuffledWords != null
+                    ? (string[])config.englishOrderingQuestion.shuffledWords.Clone()
+                    : Array.Empty<string>(),
+                correctOrder = config.englishOrderingQuestion.correctOrder != null
+                    ? (string[])config.englishOrderingQuestion.correctOrder.Clone()
+                    : Array.Empty<string>(),
+                answerSentence = config.englishOrderingQuestion.answerSentence ?? string.Empty
+            };
+        }
+
+        if (config.englishTrueFalseQuestion != null)
+        {
+            englishTrueFalseTitle = string.IsNullOrWhiteSpace(config.englishTrueFalseTitle)
+                ? englishTrueFalseTitle
+                : config.englishTrueFalseTitle;
+
+            englishTrueFalseQuestion = new EnglishTrueFalseQuestionDefinition
+            {
+                prompt = string.IsNullOrWhiteSpace(config.englishTrueFalseQuestion.prompt)
+                    ? englishTrueFalseQuestion.prompt
+                    : config.englishTrueFalseQuestion.prompt,
+                statement = config.englishTrueFalseQuestion.statement ?? string.Empty,
+                correctAnswer = config.englishTrueFalseQuestion.correctAnswer,
+                explanation = config.englishTrueFalseQuestion.explanation ?? string.Empty
+            };
+        }
+
+        if (config.englishTrueFalseQuestions != null && config.englishTrueFalseQuestions.Count > 0)
+        {
+            englishTrueFalseQuestions = new List<EnglishTrueFalseQuestionDefinition>();
+            for (int i = 0; i < config.englishTrueFalseQuestions.Count; i++)
+            {
+                var source = config.englishTrueFalseQuestions[i];
+                englishTrueFalseQuestions.Add(new EnglishTrueFalseQuestionDefinition
+                {
+                    prompt = source.prompt ?? string.Empty,
+                    statement = source.statement ?? string.Empty,
+                    correctAnswer = source.correctAnswer,
+                    explanation = source.explanation ?? string.Empty
+                });
+            }
+        }
+
+        if (config.englishListeningQuestion != null)
+        {
+            englishListeningTitle = string.IsNullOrWhiteSpace(config.englishListeningTitle)
+                ? englishListeningTitle
+                : config.englishListeningTitle;
+
+            englishListeningQuestion = new EnglishListeningBlankQuestionDefinition
+            {
+                prompt = string.IsNullOrWhiteSpace(config.englishListeningQuestion.prompt)
+                    ? englishListeningQuestion.prompt
+                    : config.englishListeningQuestion.prompt,
+                sentenceWithBlank = config.englishListeningQuestion.sentenceWithBlank ?? string.Empty,
+                voiceClip = config.englishListeningQuestion.voiceClip,
+                choices = config.englishListeningQuestion.choices != null
+                    ? (string[])config.englishListeningQuestion.choices.Clone()
+                    : Array.Empty<string>(),
+                correctChoiceIndex = config.englishListeningQuestion.correctChoiceIndex,
+                completedSentence = config.englishListeningQuestion.completedSentence ?? string.Empty
+            };
+        }
 
         drawingTextureSize = config.drawingTextureSize;
         brushRadius = config.brushRadius;
@@ -1129,6 +2777,41 @@ public class MathMinigameController : MonoBehaviour
         feedbackErrorColor = config.feedbackErrorColor;
         friendBubbleName = string.IsNullOrEmpty(config.friendBubbleName) ? friendBubbleName : config.friendBubbleName;
         friendBubbleShowSeconds = config.friendBubbleShowSeconds;
+    }
+
+    private static string[] MergeSupportedFlowIds(string[] current, string[] fromConfig)
+    {
+        var merged = new List<string>();
+
+        void AddRange(string[] source)
+        {
+            if (source == null)
+                return;
+
+            for (int i = 0; i < source.Length; i++)
+            {
+                string id = source[i];
+                if (string.IsNullOrWhiteSpace(id))
+                    continue;
+
+                bool exists = false;
+                for (int j = 0; j < merged.Count; j++)
+                {
+                    if (string.Equals(merged[j], id, StringComparison.OrdinalIgnoreCase))
+                    {
+                        exists = true;
+                        break;
+                    }
+                }
+
+                if (!exists)
+                    merged.Add(id);
+            }
+        }
+
+        AddRange(current);
+        AddRange(fromConfig);
+        return merged.ToArray();
     }
 
     private GameObject CreatePanel(string name, Transform parent, float preferredWidth)

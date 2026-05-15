@@ -126028,6 +126028,10 @@ MonoBehaviour:
   cameraSoftZoneHeight: 0.45
   cameraXDamping: 0.35
   cameraYDamping: 0.85
+  defaultWalkAnimationClip: {fileID: 7400000, guid: 55e87a88cc97e724bb014c57529c756a, type: 2}
+  defaultSprintAnimationClip: {fileID: 7400000, guid: 5b829f0974694424fb14f01817d11b89, type: 2}
+  shoesWalkAnimationClip: {fileID: 7400000, guid: d0622991b08898145a764fcce7026993, type: 2}
+  shoesSprintAnimationClip: {fileID: 7400000, guid: b4bb5e4f31c1b6b44b100c83e8adfd6b, type: 2}
 --- !u!212 &1777294592
 SpriteRenderer:
   m_ObjectHideFlags: 0

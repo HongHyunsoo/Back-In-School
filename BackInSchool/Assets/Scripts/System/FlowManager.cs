@@ -92,6 +92,7 @@ public class FlowManager : MonoBehaviour
 
             list.Add(E(FlowEventType.STORY, "DAY1_CLASSEND", "Class End"));
             list.Add(E(FlowEventType.STORY, "D1_AfterSchool_A", "AfterSchool A"));
+            list.Add(E(FlowEventType.MINIGAME, "AFTERSCHOOL_ENGLISH_D1", "AfterSchool English"));
             list.Add(E(FlowEventType.STORY, "D1_AfterSchool_B", "AfterSchool B"));
             list.Add(E(FlowEventType.STORY, "D1_AfterSchool_C", "AfterSchool C"));
             list.Add(E(FlowEventType.STORY, "D1_AfterSchool_D", "AfterSchool D"));

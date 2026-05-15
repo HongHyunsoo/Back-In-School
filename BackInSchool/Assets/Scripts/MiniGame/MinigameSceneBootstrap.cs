@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// Attach this to any GameObject in the MINIGAME scene.
@@ -15,8 +16,12 @@ public class MinigameSceneBootstrap : MonoBehaviour
     public string class2Prefix = "CLASS2_";
     [Tooltip("If FLOW_ID starts with this prefix, we run the arrival space mash minigame.")]
     public string arrivalSpacePrefix = "ARRIVAL_SPACE_";
-    [Tooltip("CLASS1 flow IDs that should run the math quiz instead of Croquis.")]
-    public string[] class1MathFlowIds = new[] { "CLASS1_D2" };
+    [Tooltip("CLASS1 flow IDs that should run the quiz minigame instead of Croquis.")]
+    [FormerlySerializedAs("class1MathFlowIds")]
+    public string[] class1QuizFlowIds = new[] { "CLASS1_D2" };
+    [Tooltip("Additional flow IDs that should route to the quiz minigame.")]
+    [FormerlySerializedAs("extraMathFlowIds")]
+    public string[] extraQuizFlowIds = new[] { "AFTERSCHOOL_ENGLISH_D1" };
     [Tooltip("CLASS2 flow IDs that should run the presentation typing minigame instead of Pixel Paint.")]
     public string[] class2PresentationFlowIds = new[] { "CLASS2_D2" };
     [Tooltip("Auto-create missing minigame controllers at runtime. Disable for strict scene validation.")]
@@ -33,8 +38,11 @@ public class MinigameSceneBootstrap : MonoBehaviour
     public CroquisMinigameController croquis;
     public CroquisMinigameConfig croquisConfig;
 
-    [Header("Math Quiz")]
-    public MathMinigameController math;
+    [Header("Quiz")]
+    [FormerlySerializedAs("math")]
+    public MathMinigameController quiz;
+    [FormerlySerializedAs("mathConfig")]
+    public MathMinigameConfig quizConfig;
 
     [Header("Pixel Paint")]
     public PixelPaintMinigameController pixelPaint;
@@ -49,8 +57,8 @@ public class MinigameSceneBootstrap : MonoBehaviour
 
         bool shouldRunTetris = FlowContext.CurrentIdStartsWith(lunchPrefix);
         bool shouldRunArrivalSpaceMash = FlowContext.CurrentIdStartsWith(arrivalSpacePrefix);
-        bool shouldRunMath = IsMathClass1Flow(id);
-        bool shouldRunCroquis = FlowContext.CurrentIdStartsWith(class1Prefix) && !shouldRunMath;
+        bool shouldRunQuiz = IsQuizClass1Flow(id) || IsExtraQuizFlow(id);
+        bool shouldRunCroquis = FlowContext.CurrentIdStartsWith(class1Prefix) && !shouldRunQuiz;
         bool shouldRunPresentationTyping = IsPresentationClass2Flow(id);
         bool shouldRunPixelPaint = FlowContext.CurrentIdStartsWith(class2Prefix) && !shouldRunPresentationTyping;
 
@@ -58,7 +66,7 @@ public class MinigameSceneBootstrap : MonoBehaviour
             shouldRunTetris,
             shouldRunArrivalSpaceMash,
             shouldRunCroquis,
-            shouldRunMath,
+            shouldRunQuiz,
             shouldRunPixelPaint,
             shouldRunPresentationTyping);
 
@@ -68,11 +76,11 @@ public class MinigameSceneBootstrap : MonoBehaviour
         ApplyControllerState(tetris, shouldRunTetris, CanToggleHostGameObject(tetris));
         ApplyControllerState(arrivalSpaceMash, shouldRunArrivalSpaceMash, CanToggleHostGameObject(arrivalSpaceMash));
         ApplyControllerState(croquis, shouldRunCroquis, CanToggleHostGameObject(croquis));
-        ApplyControllerState(math, shouldRunMath, CanToggleHostGameObject(math));
+        ApplyControllerState(quiz, shouldRunQuiz, CanToggleHostGameObject(quiz));
         ApplyControllerState(pixelPaint, shouldRunPixelPaint, CanToggleHostGameObject(pixelPaint));
         ApplyControllerState(presentationTyping, shouldRunPresentationTyping, CanToggleHostGameObject(presentationTyping));
 
-        if (!shouldRunTetris && !shouldRunArrivalSpaceMash && !shouldRunCroquis && !shouldRunMath && !shouldRunPixelPaint && !shouldRunPresentationTyping)
+        if (!shouldRunTetris && !shouldRunArrivalSpaceMash && !shouldRunCroquis && !shouldRunQuiz && !shouldRunPixelPaint && !shouldRunPresentationTyping)
         {
             Debug.LogError($"[MinigameSceneBootstrap] Unsupported FLOW_ID '{id}'. Check FlowManager timeline and minigame routing prefixes.");
         }
@@ -82,7 +90,7 @@ public class MinigameSceneBootstrap : MonoBehaviour
         bool shouldRunTetris,
         bool shouldRunArrivalSpaceMash,
         bool shouldRunCroquis,
-        bool shouldRunMath,
+        bool shouldRunQuiz,
         bool shouldRunPixelPaint,
         bool shouldRunPresentationTyping)
     {
@@ -123,16 +131,18 @@ public class MinigameSceneBootstrap : MonoBehaviour
         if (croquis != null && croquis.config == null && croquisConfig != null)
             croquis.config = croquisConfig;
 
-        if (math == null)
-            math = FindController<MathMinigameController>();
-        if (math == null)
+        if (quiz == null)
+            quiz = FindController<MathMinigameController>();
+        if (quiz == null)
         {
-            if (autoCreateMissingControllers || shouldRunMath)
+            if (autoCreateMissingControllers || shouldRunQuiz)
             {
-                var go = new GameObject("MathMinigame");
-                math = go.AddComponent<MathMinigameController>();
+                var go = new GameObject("QuizMinigame");
+                quiz = go.AddComponent<MathMinigameController>();
             }
         }
+        if (quiz != null && quiz.config == null && quizConfig != null)
+            quiz.config = quizConfig;
 
         if (pixelPaint == null)
             pixelPaint = FindController<PixelPaintMinigameController>();
@@ -199,7 +209,7 @@ public class MinigameSceneBootstrap : MonoBehaviour
         if (tetris != null && tetris.gameObject == host) count++;
         if (arrivalSpaceMash != null && arrivalSpaceMash.gameObject == host) count++;
         if (croquis != null && croquis.gameObject == host) count++;
-        if (math != null && math.gameObject == host) count++;
+        if (quiz != null && quiz.gameObject == host) count++;
         if (pixelPaint != null && pixelPaint.gameObject == host) count++;
         if (presentationTyping != null && presentationTyping.gameObject == host) count++;
 
@@ -217,17 +227,17 @@ public class MinigameSceneBootstrap : MonoBehaviour
         controller.enabled = shouldRun;
     }
 
-    private bool IsMathClass1Flow(string id)
+    private bool IsQuizClass1Flow(string id)
     {
         if (string.IsNullOrEmpty(id))
             return false;
 
-        if (class1MathFlowIds == null || class1MathFlowIds.Length == 0)
+        if (class1QuizFlowIds == null || class1QuizFlowIds.Length == 0)
             return string.Equals(id, "CLASS1_D2", System.StringComparison.OrdinalIgnoreCase);
 
-        for (int i = 0; i < class1MathFlowIds.Length; i++)
+        for (int i = 0; i < class1QuizFlowIds.Length; i++)
         {
-            if (string.Equals(id, class1MathFlowIds[i], System.StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(id, class1QuizFlowIds[i], System.StringComparison.OrdinalIgnoreCase))
                 return true;
         }
 
@@ -245,6 +255,23 @@ public class MinigameSceneBootstrap : MonoBehaviour
         for (int i = 0; i < class2PresentationFlowIds.Length; i++)
         {
             if (string.Equals(id, class2PresentationFlowIds[i], System.StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool IsExtraQuizFlow(string id)
+    {
+        if (string.IsNullOrEmpty(id))
+            return false;
+
+        if (extraQuizFlowIds == null || extraQuizFlowIds.Length == 0)
+            return string.Equals(id, "AFTERSCHOOL_ENGLISH_D1", System.StringComparison.OrdinalIgnoreCase);
+
+        for (int i = 0; i < extraQuizFlowIds.Length; i++)
+        {
+            if (string.Equals(id, extraQuizFlowIds[i], System.StringComparison.OrdinalIgnoreCase))
                 return true;
         }
 
