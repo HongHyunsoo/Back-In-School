@@ -74,6 +74,7 @@ public class MathMinigameConfig : ScriptableObject
     public List<EnglishTrueFalseQuestionDefinition> englishTrueFalseQuestions = new List<EnglishTrueFalseQuestionDefinition>();
     public string englishListeningTitle = "듣고 알맞은 단어를 고르시오.";
     public EnglishListeningBlankQuestionDefinition englishListeningQuestion = new EnglishListeningBlankQuestionDefinition();
+    public List<EnglishListeningBlankQuestionDefinition> englishListeningQuestions = new List<EnglishListeningBlankQuestionDefinition>();
 
     [Header("Drawing Pad")]
     public Vector2Int drawingTextureSize = new Vector2Int(1024, 1024);

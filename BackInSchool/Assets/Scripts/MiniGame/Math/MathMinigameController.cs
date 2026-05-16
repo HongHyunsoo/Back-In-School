@@ -104,8 +104,10 @@ public class MathMinigameController : MonoBehaviour
     public string englishTrueFalseTitle = "True or False";
     public EnglishTrueFalseQuestionDefinition englishTrueFalseQuestion = new EnglishTrueFalseQuestionDefinition();
     public List<EnglishTrueFalseQuestionDefinition> englishTrueFalseQuestions = new List<EnglishTrueFalseQuestionDefinition>();
+    public GameObject englishWordPrefab;
     public string englishListeningTitle = "듣고 알맞은 단어를 고르시오.";
     public EnglishListeningBlankQuestionDefinition englishListeningQuestion = new EnglishListeningBlankQuestionDefinition();
+    public List<EnglishListeningBlankQuestionDefinition> englishListeningQuestions = new List<EnglishListeningBlankQuestionDefinition>();
 
     [Header("Drawing Pad")]
     public Vector2Int drawingTextureSize = new Vector2Int(1024, 1024);
@@ -181,8 +183,39 @@ public class MathMinigameController : MonoBehaviour
     private RectTransform englishOrderingTilesRoot;
     private readonly List<EnglishOrderingCardDragHandle> englishOrderingCardHandles = new List<EnglishOrderingCardDragHandle>();
     private int currentEnglishTrueFalseQuestionIndex;
+    private int currentEnglishListeningQuestionIndex;
     private int englishListeningSelectedChoiceIndex = -1;
     private AudioSource englishAudioSource;
+    private bool englishUseSceneHierarchy;
+    private Transform englishMinigameRoot;
+    private RectTransform englishCanvasRoot;
+    private RectTransform englishQuiz01Root;
+    private RectTransform englishQuiz02Root;
+    private RectTransform englishQuiz03Root;
+    private RectTransform englishQuiz04Root;
+    private TextMeshProUGUI englishQuiz01PromptText;
+    private TextMeshProUGUI englishQuiz02PromptText;
+    private TextMeshProUGUI englishQuiz03PromptText;
+    private TextMeshProUGUI englishQuiz03QuestionText;
+    private TextMeshProUGUI englishQuiz04PromptText;
+    private TextMeshProUGUI englishQuiz04QuestionText;
+    private RectTransform englishQuiz01WordsRoot;
+    private RectTransform englishQuiz01MeaningRoot;
+    private RectTransform englishQuiz02WordsRoot;
+    private RectTransform englishQuiz04ChoicesRoot;
+    private Button englishQuiz03TrueButton;
+    private Button englishQuiz03FalseButton;
+    private Button englishQuiz04SoundButton;
+    private Button englishQuiz04SceneSubmitButton;
+    private Button englishQuiz02SubmitButton;
+    private Button englishQuiz02ResetButton;
+    private Button englishQuiz04SubmitButton;
+    private Button englishQuiz02SceneSubmitButton;
+    private Button englishQuiz02SceneAgainButton;
+    private readonly List<Button> englishSceneChoiceButtons = new List<Button>();
+    private GameObject englishSceneHintDrawer;
+    private GameObject englishSceneFeedbackObject;
+    private EnglishOrderingCardDragHandle activeEnglishOrderingDragHandle;
 
     private Camera uiCamera;
 
@@ -223,13 +256,16 @@ public class MathMinigameController : MonoBehaviour
         }
     }
 
-    private sealed class EnglishOrderingCardDragHandle : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    private sealed class EnglishOrderingCardDragHandle : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         public MathMinigameController controller;
         public int displayIndex;
         public Vector2 dragPointerOffset;
         public Vector2 dragStartAnchoredPosition;
         public Vector2 dragStartPointerLocalPosition;
+        public string dragWordText;
+        public Transform originalParent;
+        public int originalSiblingIndex;
 
         private RectTransform rectTransform;
         private LayoutElement layoutElement;
@@ -265,9 +301,19 @@ public class MathMinigameController : MonoBehaviour
             }
         }
 
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            controller?.BeginEnglishOrderingPointerDrag(this, eventData);
+        }
+
+        public void OnPointerUp(PointerEventData eventData)
+        {
+            controller?.EndEnglishOrderingPointerDrag(this, eventData);
+        }
+
         public void OnBeginDrag(PointerEventData eventData)
         {
-            controller?.BeginEnglishOrderingDrag(this);
+            controller?.BeginEnglishOrderingPointerDrag(this, eventData);
         }
 
         public void OnDrag(PointerEventData eventData)
@@ -277,7 +323,51 @@ public class MathMinigameController : MonoBehaviour
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            controller?.EndEnglishOrderingDrag(this, eventData);
+            controller?.EndEnglishOrderingPointerDrag(this, eventData);
+        }
+    }
+
+    private sealed class HoverHintDrawer : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    {
+        public RectTransform drawerRect;
+        public float closedX = 260f;
+        public float openX = 0f;
+        public float slideSpeed = 12f;
+
+        private bool isHovered;
+
+        private void OnEnable()
+        {
+            if (drawerRect == null)
+                return;
+
+            Vector2 pos = drawerRect.anchoredPosition;
+            pos.x = closedX;
+            drawerRect.anchoredPosition = pos;
+            isHovered = false;
+        }
+
+        private void Update()
+        {
+            if (drawerRect == null)
+                return;
+
+            float target = isHovered ? openX : closedX;
+            Vector2 pos = drawerRect.anchoredPosition;
+            pos.x = Mathf.Lerp(pos.x, target, Time.unscaledDeltaTime * slideSpeed);
+            if (Mathf.Abs(pos.x - target) < 0.25f)
+                pos.x = target;
+            drawerRect.anchoredPosition = pos;
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            isHovered = true;
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            isHovered = false;
         }
     }
 
@@ -303,7 +393,9 @@ public class MathMinigameController : MonoBehaviour
             EnsureEnglishOrderingQuestionOrFallback();
             EnsureEnglishTrueFalseQuestionOrFallback();
             EnsureEnglishListeningQuestionOrFallback();
+            NormalizeEnglishMinigameStrings();
             currentEnglishStage = 0;
+            englishUseSceneHierarchy = TryBindEnglishSceneHierarchy();
             BuildCurrentEnglishStageUI();
 
             if (LocalizationManager.Instance != null)
@@ -345,6 +437,26 @@ public class MathMinigameController : MonoBehaviour
 
         if (isAfterSchoolEnglishMode)
         {
+            if (currentEnglishStage == 1 && activeEnglishOrderingDragHandle == null && Input.GetMouseButtonDown(0))
+                TryBeginEnglishOrderingDragFromMouse();
+
+            if (activeEnglishOrderingDragHandle != null)
+            {
+                var pointerData = new PointerEventData(EventSystem.current)
+                {
+                    position = Input.mousePosition
+                };
+
+                if (Input.GetMouseButton(0))
+                {
+                    UpdateEnglishOrderingDrag(activeEnglishOrderingDragHandle, pointerData);
+                }
+                else
+                {
+                    EndEnglishOrderingPointerDrag(activeEnglishOrderingDragHandle, pointerData);
+                }
+            }
+
             if (Input.GetKeyDown(KeyCode.Escape))
                 End(false);
             return;
@@ -522,26 +634,135 @@ public class MathMinigameController : MonoBehaviour
 
     private void EnsureEnglishListeningQuestionOrFallback()
     {
-        bool valid = englishListeningQuestion != null
-            && !string.IsNullOrWhiteSpace(englishListeningQuestion.sentenceWithBlank)
-            && englishListeningQuestion.choices != null
-            && englishListeningQuestion.choices.Length > 0;
-
-        if (valid)
-            return;
-
-        englishListeningQuestion = new EnglishListeningBlankQuestionDefinition
+        bool IsValidListeningQuestion(EnglishListeningBlankQuestionDefinition question)
         {
-            prompt = "음성을 듣고 빈칸에 들어갈 알맞은 단어를 고르시오.",
-            sentenceWithBlank = "I ____ to school every day.",
-            choices = new[] { "go", "goes", "going" },
-            correctChoiceIndex = 0,
-            completedSentence = "I go to school every day."
-        };
+            return question != null
+                && !string.IsNullOrWhiteSpace(question.sentenceWithBlank)
+                && question.choices != null
+                && question.choices.Length > 0;
+        }
+
+        if (englishListeningQuestions == null)
+            englishListeningQuestions = new List<EnglishListeningBlankQuestionDefinition>();
+
+        englishListeningQuestions.RemoveAll(question => !IsValidListeningQuestion(question));
+
+        if (englishListeningQuestions.Count == 0)
+        {
+            if (IsValidListeningQuestion(englishListeningQuestion))
+            {
+                englishListeningQuestions.Add(englishListeningQuestion);
+            }
+            else
+            {
+                englishListeningQuestions.Add(new EnglishListeningBlankQuestionDefinition
+                {
+                    prompt = "Listen to the audio and choose the word that best fits the blank.",
+                    sentenceWithBlank = "I ____ to school every day.",
+                    choices = new[] { "go", "goes", "going" },
+                    correctChoiceIndex = 0,
+                    completedSentence = "I go to school every day."
+                });
+            }
+        }
+
+        currentEnglishListeningQuestionIndex = Mathf.Clamp(currentEnglishListeningQuestionIndex, 0, englishListeningQuestions.Count - 1);
+        englishListeningQuestion = englishListeningQuestions[currentEnglishListeningQuestionIndex];
+    }
+
+    private Transform FindSceneTransformByNameIncludeInactive(string targetName)
+    {
+        if (string.IsNullOrWhiteSpace(targetName))
+            return null;
+
+        var activeAndInactive = FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        if (activeAndInactive != null)
+        {
+            for (int i = 0; i < activeAndInactive.Length; i++)
+            {
+                Transform candidate = activeAndInactive[i];
+                if (candidate != null && candidate.name == targetName && candidate.gameObject.scene.IsValid())
+                    return candidate;
+            }
+        }
+
+        var all = Resources.FindObjectsOfTypeAll<Transform>();
+        if (all == null)
+            return null;
+
+        for (int i = 0; i < all.Length; i++)
+        {
+            Transform candidate = all[i];
+            if (candidate == null)
+                continue;
+
+            if (!candidate.gameObject.scene.IsValid())
+                continue;
+
+            if (candidate.name == targetName)
+                return candidate;
+        }
+
+        return null;
+    }
+
+    private bool TryBindEnglishSceneHierarchy()
+    {
+        englishMinigameRoot = FindSceneTransformByNameIncludeInactive("EnglishMinigame");
+        if (englishMinigameRoot == null)
+            return false;
+
+        englishCanvasRoot = FindDeepChild(englishMinigameRoot, "Canvas") as RectTransform;
+        englishQuiz01Root = FindDeepChild(englishMinigameRoot, "Quiz_01") as RectTransform;
+        englishQuiz02Root = FindDeepChild(englishMinigameRoot, "Quiz_02") as RectTransform;
+        englishQuiz03Root = FindDeepChild(englishMinigameRoot, "Quiz_03") as RectTransform;
+        englishQuiz04Root = FindDeepChild(englishMinigameRoot, "Quiz_04") as RectTransform;
+
+        if (englishCanvasRoot == null || englishQuiz01Root == null || englishQuiz02Root == null || englishQuiz03Root == null || englishQuiz04Root == null)
+            return false;
+
+        englishQuiz01PromptText = FindDeepChild(englishQuiz01Root, "Text (TMP)")?.GetComponent<TextMeshProUGUI>();
+        englishQuiz01WordsRoot = FindDeepChild(englishQuiz01Root, "Words") as RectTransform;
+        englishQuiz01MeaningRoot = FindDeepChild(englishQuiz01Root, "Meaning") as RectTransform;
+
+        englishQuiz02PromptText = FindDeepChild(englishQuiz02Root, "Text (TMP)")?.GetComponent<TextMeshProUGUI>();
+        englishQuiz02WordsRoot = FindDeepChild(englishQuiz02Root, "Words") as RectTransform;
+        englishQuiz02SceneAgainButton = FindDeepChild(englishQuiz02Root, "Btn_Again")?.GetComponent<Button>();
+        englishQuiz02SceneSubmitButton = FindDeepChild(englishQuiz02Root, "Btn_Submit")?.GetComponent<Button>();
+
+        englishQuiz03PromptText = FindDeepChild(englishQuiz03Root, "Text (TMP)")?.GetComponent<TextMeshProUGUI>();
+        englishQuiz03QuestionText = FindDeepChild(englishQuiz03Root, "Question")?.GetComponent<TextMeshProUGUI>();
+        englishQuiz03TrueButton = FindDeepChild(englishQuiz03Root, "True")?.GetComponent<Button>();
+        englishQuiz03FalseButton = FindDeepChild(englishQuiz03Root, "False")?.GetComponent<Button>();
+
+        englishQuiz04PromptText = FindDeepChild(englishQuiz04Root, "Text (TMP)")?.GetComponent<TextMeshProUGUI>();
+        englishQuiz04QuestionText = FindDeepChild(englishQuiz04Root, "Quiz_04_Question")?.GetComponent<TextMeshProUGUI>();
+        englishQuiz04SoundButton = FindDeepChild(englishQuiz04Root, "SoundButton")?.GetComponent<Button>();
+        englishQuiz04SceneSubmitButton = FindDeepChild(englishQuiz04Root, "Btn_Submit")?.GetComponent<Button>();
+        englishQuiz04ChoicesRoot = FindDeepChild(englishQuiz04Root, "Words") as RectTransform;
+        if (englishQuiz04ChoicesRoot == null)
+            englishQuiz04ChoicesRoot = FindDeepChild(englishQuiz04Root, "ChoicesRoot") as RectTransform;
+
+        if (englishQuiz01PromptText != null) englishQuiz01PromptText.raycastTarget = false;
+        if (englishQuiz02PromptText != null) englishQuiz02PromptText.raycastTarget = false;
+        if (englishQuiz03PromptText != null) englishQuiz03PromptText.raycastTarget = false;
+        if (englishQuiz03QuestionText != null) englishQuiz03QuestionText.raycastTarget = false;
+        if (englishQuiz04PromptText != null) englishQuiz04PromptText.raycastTarget = false;
+        if (englishQuiz04QuestionText != null) englishQuiz04QuestionText.raycastTarget = false;
+
+        englishMinigameRoot.gameObject.SetActive(true);
+        SetEnglishSceneStageActive(null);
+        return true;
     }
 
     private void BuildCurrentEnglishStageUI()
     {
+        if (englishUseSceneHierarchy)
+        {
+            BuildCurrentEnglishStageSceneUI();
+            return;
+        }
+
         if (uiCanvas != null)
         {
             Destroy(uiCanvas.gameObject);
@@ -568,6 +789,625 @@ public class MathMinigameController : MonoBehaviour
         }
 
         BuildEnglishListeningUI();
+    }
+
+    private void BuildCurrentEnglishStageSceneUI()
+    {
+        if (englishMinigameRoot == null)
+        {
+            englishUseSceneHierarchy = false;
+            BuildCurrentEnglishStageUI();
+            return;
+        }
+
+        englishMinigameRoot.gameObject.SetActive(true);
+        ClearEnglishSceneRuntime();
+
+        if (currentEnglishStage <= 0)
+        {
+            BuildEnglishMatchingSceneUI();
+            return;
+        }
+
+        if (currentEnglishStage == 1)
+        {
+            BuildEnglishOrderingSceneUI();
+            return;
+        }
+
+        if (currentEnglishStage == 2)
+        {
+            BuildEnglishTrueFalseSceneUI();
+            return;
+        }
+
+        BuildEnglishListeningSceneUI();
+    }
+
+    private string GetEnglishStageHintText(int stageIndex)
+    {
+        switch (stageIndex)
+        {
+            case 0:
+                return "왼쪽 단어를 누른 채 드래그해서 알맞은 뜻 위에 놓아보세요.";
+            case 1:
+                return "단어 타일을 마우스로 드래그해 순서를 바꾼 뒤 제출하세요.";
+            case 2:
+                return "문장을 읽고 사실이면 True, 아니면 False를 고르세요.";
+            case 3:
+                return "음성을 듣고 빈칸에 들어갈 단어를 고른 뒤 제출하세요.";
+            default:
+                return string.Empty;
+        }
+    }
+
+    private void NormalizeEnglishMinigameStrings()
+    {
+        englishMatchingTitle = "Match the Correct Pair";
+        englishMatchingDescription = "Drag each word to the matching meaning.";
+        englishOrderingTitle = "Arrange the following words in the correct order.";
+        englishTrueFalseTitle = "True or False";
+        englishListeningTitle = "Listen and Choose the Correct Word";
+
+        if (englishOrderingQuestion != null)
+            englishOrderingQuestion.prompt = "Arrange the following words in the correct order.";
+
+        if (englishTrueFalseQuestion != null)
+            englishTrueFalseQuestion.prompt = "Choose True if the sentence is correct, or False if it is not.";
+
+        if (englishTrueFalseQuestions != null)
+        {
+            for (int i = 0; i < englishTrueFalseQuestions.Count; i++)
+            {
+                if (englishTrueFalseQuestions[i] != null)
+                    englishTrueFalseQuestions[i].prompt = "Choose True if the sentence is correct, or False if it is not.";
+            }
+        }
+
+        if (englishListeningQuestion != null)
+            englishListeningQuestion.prompt = "Listen to the audio and choose the word that best fits the blank.";
+        if (englishListeningQuestions != null)
+        {
+            for (int i = 0; i < englishListeningQuestions.Count; i++)
+            {
+                if (englishListeningQuestions[i] != null)
+                    englishListeningQuestions[i].prompt = "Listen to the audio and choose the word that best fits the blank.";
+            }
+        }
+    }
+
+    private static T GetOrAddComponent<T>(GameObject target) where T : Component
+    {
+        T existing = target.GetComponent<T>();
+        return existing != null ? existing : target.AddComponent<T>();
+    }
+
+    private Transform FindDeepChild(Transform root, string childName)
+    {
+        if (root == null)
+            return null;
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform child = root.GetChild(i);
+            if (child.name == childName)
+                return child;
+
+            Transform nested = FindDeepChild(child, childName);
+            if (nested != null)
+                return nested;
+        }
+
+        return null;
+    }
+
+    private void SetEnglishSceneStageActive(RectTransform activeStage)
+    {
+        if (englishQuiz01Root != null) englishQuiz01Root.gameObject.SetActive(activeStage == englishQuiz01Root);
+        if (englishQuiz02Root != null) englishQuiz02Root.gameObject.SetActive(activeStage == englishQuiz02Root);
+        if (englishQuiz03Root != null) englishQuiz03Root.gameObject.SetActive(activeStage == englishQuiz03Root);
+        if (englishQuiz04Root != null) englishQuiz04Root.gameObject.SetActive(activeStage == englishQuiz04Root);
+    }
+
+    private void ClearEnglishSceneRuntime()
+    {
+        if (englishSceneHintDrawer != null)
+        {
+            Destroy(englishSceneHintDrawer);
+            englishSceneHintDrawer = null;
+        }
+
+        if (englishSceneFeedbackObject != null)
+        {
+            Destroy(englishSceneFeedbackObject);
+            englishSceneFeedbackObject = null;
+            feedbackText = null;
+        }
+
+        if (englishQuiz02SubmitButton != null && englishQuiz02SubmitButton.name == "SubmitButton_Runtime")
+        {
+            Destroy(englishQuiz02SubmitButton.gameObject);
+            englishQuiz02SubmitButton = null;
+        }
+
+        if (englishQuiz02ResetButton != null && englishQuiz02ResetButton.name == "ResetButton_Runtime")
+        {
+            Destroy(englishQuiz02ResetButton.gameObject);
+            englishQuiz02ResetButton = null;
+        }
+
+        if (englishQuiz04SubmitButton != null && englishQuiz04SubmitButton.name == "SubmitButton_Runtime")
+        {
+            Destroy(englishQuiz04SubmitButton.gameObject);
+            englishQuiz04SubmitButton = null;
+        }
+
+        if (englishQuiz04ChoicesRoot != null)
+        {
+            for (int i = englishQuiz04ChoicesRoot.childCount - 1; i >= 0; i--)
+            {
+                Transform child = englishQuiz04ChoicesRoot.GetChild(i);
+                if (child.name.StartsWith("Choice_", StringComparison.Ordinal))
+                    Destroy(child.gameObject);
+            }
+        }
+
+        if (englishQuiz02WordsRoot != null)
+        {
+            for (int i = englishQuiz02WordsRoot.childCount - 1; i >= 0; i--)
+            {
+                Transform child = englishQuiz02WordsRoot.GetChild(i);
+                if (child.name.StartsWith("OrderWord_", StringComparison.Ordinal))
+                    Destroy(child.gameObject);
+            }
+        }
+
+        foreach (GameObject lineObject in englishLineObjects)
+        {
+            if (lineObject != null)
+                Destroy(lineObject);
+        }
+
+        englishLineObjects.Clear();
+        englishLeftButtons.Clear();
+        englishRightButtons.Clear();
+        englishLeftLabels.Clear();
+        englishRightLabels.Clear();
+        englishRightPairIndices.Clear();
+        englishLeftButtonRects.Clear();
+        englishRightButtonRects.Clear();
+        englishMatchedPairs.Clear();
+        englishOrderingCardHandles.Clear();
+        englishSceneChoiceButtons.Clear();
+
+        selectedLeftPairIndex = -1;
+        selectedRightDisplayIndex = -1;
+        englishDraggingLeftPairIndex = -1;
+        englishListeningSelectedChoiceIndex = -1;
+
+        if (englishPreviewLineImage != null)
+        {
+            Destroy(englishPreviewLineImage.gameObject);
+            englishPreviewLineImage = null;
+            englishPreviewLineRect = null;
+        }
+    }
+
+    private TextMeshProUGUI CreateEnglishSceneFeedback(RectTransform parent)
+    {
+        var feedbackParent = englishCanvasRoot != null ? englishCanvasRoot : parent;
+        var feedback = CreateText("Feedback_Runtime", feedbackParent, 24f, FontStyles.Bold);
+        var rect = feedback.rectTransform;
+        rect.anchorMin = new Vector2(0.22f, 0.18f);
+        rect.anchorMax = new Vector2(0.78f, 0.30f);
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        feedback.alignment = TextAlignmentOptions.Center;
+        feedback.enableWordWrapping = true;
+        feedback.overflowMode = TextOverflowModes.Overflow;
+        feedback.raycastTarget = false;
+        feedback.color = feedbackSuccessColor;
+        feedback.text = string.Empty;
+        feedback.rectTransform.SetAsLastSibling();
+        englishSceneFeedbackObject = feedback.gameObject;
+        return feedback;
+    }
+
+    private Button CreateEnglishSceneActionButton(RectTransform parent, string runtimeName, string labelText, Vector2 anchorMin, Vector2 anchorMax)
+    {
+        var button = CreateButton(runtimeName, parent, out var label);
+        var rect = button.GetComponent<RectTransform>();
+        rect.anchorMin = anchorMin;
+        rect.anchorMax = anchorMax;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+        label.fontSize = 24f;
+        label.text = labelText;
+        return button;
+    }
+
+    private void EnsureEnglishSceneHintDrawer(RectTransform parent, int stageIndex)
+    {
+        string hint = GetEnglishStageHintText(stageIndex);
+        if (string.IsNullOrWhiteSpace(hint))
+            return;
+
+        Transform hintParent = englishCanvasRoot != null ? englishCanvasRoot : parent;
+        BuildEnglishHintDrawer(hintParent, hint);
+        englishSceneHintDrawer = hintParent.Find("HintDrawer")?.gameObject;
+    }
+
+    private Button CreateEnglishWordInstance(RectTransform parent, string objectName, string text, Vector2? sizeOverride = null, bool preservePrefabLayout = false)
+    {
+        GameObject wordObject;
+        bool usingPrefab = englishWordPrefab != null;
+        if (englishWordPrefab != null)
+        {
+            wordObject = Instantiate(englishWordPrefab, parent);
+            wordObject.name = objectName;
+        }
+        else
+        {
+            wordObject = CreateButton(objectName, parent, out _).gameObject;
+        }
+
+        var button = GetOrAddComponent<Button>(wordObject);
+        var image = GetOrAddComponent<Image>(wordObject);
+        GetOrAddComponent<CanvasGroup>(wordObject);
+        button.targetGraphic = image;
+        image.raycastTarget = true;
+        var rect = wordObject.GetComponent<RectTransform>();
+        rect.localScale = Vector3.one;
+
+        var label = wordObject.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (label == null)
+            label = CreateText("Text (TMP)", wordObject.transform, 30f, FontStyles.Bold);
+
+        label.text = text;
+        label.raycastTarget = false;
+
+        if (!usingPrefab)
+        {
+            image.color = new Color(0.98f, 0.84f, 0.84f, 1f);
+            label.fontSize = 30f;
+            label.alignment = TextAlignmentOptions.Center;
+            label.enableWordWrapping = false;
+            label.overflowMode = TextOverflowModes.Overflow;
+            label.color = new Color(0.16f, 0.16f, 0.18f, 1f);
+        }
+
+        if (!(usingPrefab && preservePrefabLayout))
+        {
+            var layout = GetOrAddComponent<LayoutElement>(wordObject);
+            float preferredWidth = Mathf.Clamp(label.GetPreferredValues(text).x + 56f, 150f, 420f);
+            float preferredHeight = sizeOverride?.y ?? (usingPrefab ? Mathf.Max(rect.rect.height, rect.sizeDelta.y, 74f) : 74f);
+            Vector2 preferredSize = sizeOverride ?? new Vector2(preferredWidth, preferredHeight);
+            layout.preferredWidth = preferredSize.x;
+            layout.minWidth = preferredSize.x;
+            layout.preferredHeight = preferredSize.y;
+            layout.minHeight = preferredSize.y;
+            rect.sizeDelta = preferredSize;
+        }
+
+        return button;
+    }
+
+    private void BuildEnglishMatchingSceneUI()
+    {
+        SetEnglishSceneStageActive(englishQuiz01Root);
+        if (englishQuiz01PromptText != null)
+            englishQuiz01PromptText.text = englishMatchingDescription;
+
+        feedbackText = CreateEnglishSceneFeedback(englishQuiz01Root);
+        EnsureEnglishSceneHintDrawer(englishQuiz01Root, 0);
+
+        if (englishQuiz01WordsRoot == null || englishQuiz01MeaningRoot == null)
+            return;
+
+        Transform lineLayer = FindDeepChild(englishQuiz01Root, "LineLayer");
+        if (lineLayer == null)
+        {
+            var lineLayerGo = CreateUIObject("LineLayer", englishQuiz01Root);
+            englishLineLayer = lineLayerGo.GetComponent<RectTransform>();
+            englishLineLayer.anchorMin = Vector2.zero;
+            englishLineLayer.anchorMax = Vector2.one;
+            englishLineLayer.offsetMin = Vector2.zero;
+            englishLineLayer.offsetMax = Vector2.zero;
+            englishLineLayer.SetSiblingIndex(0);
+        }
+        else
+        {
+            englishLineLayer = lineLayer.GetComponent<RectTransform>();
+        }
+
+        var leftRoots = new List<Button>(englishQuiz01WordsRoot.GetComponentsInChildren<Button>(true));
+        leftRoots.Sort((a, b) => string.CompareOrdinal(a.name, b.name));
+        var rightRoots = new List<Button>(englishQuiz01MeaningRoot.GetComponentsInChildren<Button>(true));
+        rightRoots.Sort((a, b) => string.CompareOrdinal(a.name, b.name));
+
+        int pairCount = Mathf.Min(englishMatchingPairs.Count, leftRoots.Count, rightRoots.Count);
+        var displayOrder = new List<int>();
+        for (int i = 0; i < pairCount; i++)
+            displayOrder.Add(i);
+        for (int i = 0; i < displayOrder.Count; i++)
+        {
+            int swapIndex = UnityEngine.Random.Range(i, displayOrder.Count);
+            (displayOrder[i], displayOrder[swapIndex]) = (displayOrder[swapIndex], displayOrder[i]);
+        }
+
+        for (int i = 0; i < leftRoots.Count; i++)
+        {
+            bool active = i < pairCount;
+            leftRoots[i].gameObject.SetActive(active);
+            if (!active)
+                continue;
+
+            var label = leftRoots[i].GetComponentInChildren<TextMeshProUGUI>(true);
+            label.text = englishMatchingPairs[i].word;
+            englishLeftButtons.Add(leftRoots[i]);
+            englishLeftLabels.Add(label);
+            englishLeftButtonRects.Add(leftRoots[i].GetComponent<RectTransform>());
+            var dragSource = GetOrAddComponent<EnglishMatchingDragSource>(leftRoots[i].gameObject);
+            dragSource.controller = this;
+            dragSource.pairIndex = i;
+        }
+
+        for (int i = 0; i < rightRoots.Count; i++)
+        {
+            bool active = i < pairCount;
+            rightRoots[i].gameObject.SetActive(active);
+            if (!active)
+                continue;
+
+            int pairIndex = displayOrder[i];
+            var label = rightRoots[i].GetComponentInChildren<TextMeshProUGUI>(true);
+            label.text = englishMatchingPairs[pairIndex].meaning;
+            englishRightButtons.Add(rightRoots[i]);
+            englishRightLabels.Add(label);
+            englishRightButtonRects.Add(rightRoots[i].GetComponent<RectTransform>());
+            englishRightPairIndices.Add(pairIndex);
+            var dropTarget = GetOrAddComponent<EnglishMatchingDropTarget>(rightRoots[i].gameObject);
+            dropTarget.controller = this;
+            dropTarget.displayIndex = i;
+        }
+
+        Canvas.ForceUpdateCanvases();
+        UpdateEnglishButtonStates();
+    }
+
+    private void BuildEnglishOrderingSceneUI()
+    {
+        SetEnglishSceneStageActive(englishQuiz02Root);
+        if (englishQuiz02PromptText != null)
+            englishQuiz02PromptText.text = englishOrderingTitle;
+
+        feedbackText = CreateEnglishSceneFeedback(englishQuiz02Root);
+        EnsureEnglishSceneHintDrawer(englishQuiz02Root, 1);
+
+        if (englishQuiz02WordsRoot == null)
+            return;
+
+        var layout = englishQuiz02WordsRoot.GetComponent<HorizontalLayoutGroup>();
+        if (layout != null)
+            layout.enabled = false;
+
+        var fitter = englishQuiz02WordsRoot.GetComponent<ContentSizeFitter>();
+        if (fitter != null)
+            fitter.enabled = false;
+
+        englishOrderingTilesRoot = englishQuiz02WordsRoot;
+        englishOrderingAnswerText = null;
+        activeEnglishOrderingDragHandle = null;
+        ResetEnglishOrderingLayout();
+        UpdateEnglishOrderingUI();
+
+        englishQuiz02ResetButton = englishQuiz02SceneAgainButton != null
+            ? englishQuiz02SceneAgainButton
+            : CreateEnglishSceneActionButton(
+            englishQuiz02Root,
+            "ResetButton_Runtime",
+            "처음 배열",
+            new Vector2(0.24f, 0.08f),
+            new Vector2(0.44f, 0.16f));
+        englishQuiz02ResetButton.onClick.RemoveAllListeners();
+        englishQuiz02ResetButton.onClick.AddListener(() =>
+        {
+            ResetEnglishOrderingLayout();
+            UpdateEnglishOrderingUI();
+            SetFeedback(string.Empty, true);
+        });
+
+        englishQuiz02SubmitButton = englishQuiz02SceneSubmitButton != null
+            ? englishQuiz02SceneSubmitButton
+            : CreateEnglishSceneActionButton(
+            englishQuiz02Root,
+            "SubmitButton_Runtime",
+            "제출",
+            new Vector2(0.56f, 0.08f),
+            new Vector2(0.76f, 0.16f));
+        englishQuiz02SubmitButton.onClick.RemoveAllListeners();
+        englishQuiz02SubmitButton.onClick.AddListener(EvaluateEnglishOrderingAnswer);
+    }
+
+    private void BuildEnglishTrueFalseSceneUI()
+    {
+        SyncCurrentEnglishTrueFalseQuestion();
+        SetEnglishSceneStageActive(englishQuiz03Root);
+
+        if (englishQuiz03PromptText != null)
+            englishQuiz03PromptText.text = englishTrueFalseTitle;
+        if (englishQuiz03QuestionText != null)
+            englishQuiz03QuestionText.text = englishTrueFalseQuestion.statement;
+
+        feedbackText = CreateEnglishSceneFeedback(englishQuiz03Root);
+        EnsureEnglishSceneHintDrawer(englishQuiz03Root, 2);
+
+        if (englishQuiz03TrueButton != null)
+        {
+            englishQuiz03TrueButton.onClick.RemoveAllListeners();
+            englishQuiz03TrueButton.onClick.AddListener(() => EvaluateEnglishTrueFalseAnswer(true));
+        }
+
+        if (englishQuiz03FalseButton != null)
+        {
+            englishQuiz03FalseButton.onClick.RemoveAllListeners();
+            englishQuiz03FalseButton.onClick.AddListener(() => EvaluateEnglishTrueFalseAnswer(false));
+        }
+    }
+
+    private void SyncCurrentEnglishListeningQuestion()
+    {
+        if (englishListeningQuestions == null || englishListeningQuestions.Count == 0)
+            return;
+
+        currentEnglishListeningQuestionIndex = Mathf.Clamp(currentEnglishListeningQuestionIndex, 0, englishListeningQuestions.Count - 1);
+        englishListeningQuestion = englishListeningQuestions[currentEnglishListeningQuestionIndex];
+    }
+
+    private void BuildEnglishListeningSceneUI()
+    {
+        SyncCurrentEnglishListeningQuestion();
+        SetEnglishSceneStageActive(englishQuiz04Root);
+        if (englishQuiz04PromptText != null)
+            englishQuiz04PromptText.text = englishListeningTitle;
+        if (englishQuiz04QuestionText != null)
+            englishQuiz04QuestionText.text = englishListeningQuestion.sentenceWithBlank;
+
+        feedbackText = CreateEnglishSceneFeedback(englishQuiz04Root);
+        EnsureEnglishSceneHintDrawer(englishQuiz04Root, 3);
+
+        if (englishQuiz04SoundButton != null)
+        {
+            englishQuiz04SoundButton.onClick.RemoveAllListeners();
+            englishQuiz04SoundButton.onClick.AddListener(PlayEnglishListeningAudio);
+        }
+
+        if (englishQuiz04ChoicesRoot == null)
+        {
+            var choicesRootGo = CreateUIObject("ChoicesRoot_Runtime", englishQuiz04Root, typeof(HorizontalLayoutGroup), typeof(ContentSizeFitter));
+            englishQuiz04ChoicesRoot = choicesRootGo.GetComponent<RectTransform>();
+            englishQuiz04ChoicesRoot.anchorMin = new Vector2(0.16f, 0.18f);
+            englishQuiz04ChoicesRoot.anchorMax = new Vector2(0.84f, 0.30f);
+            englishQuiz04ChoicesRoot.offsetMin = Vector2.zero;
+            englishQuiz04ChoicesRoot.offsetMax = Vector2.zero;
+        }
+
+        var choiceLayout = GetOrAddComponent<HorizontalLayoutGroup>(englishQuiz04ChoicesRoot.gameObject);
+        choiceLayout.childAlignment = TextAnchor.MiddleCenter;
+        choiceLayout.childControlWidth = false;
+        choiceLayout.childControlHeight = false;
+        choiceLayout.childForceExpandWidth = false;
+        choiceLayout.childForceExpandHeight = false;
+        choiceLayout.spacing = 18f;
+        var choiceFitter = GetOrAddComponent<ContentSizeFitter>(englishQuiz04ChoicesRoot.gameObject);
+        choiceFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        choiceFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        englishSceneChoiceButtons.Clear();
+        englishListeningSelectedChoiceIndex = -1;
+        for (int i = 0; i < englishListeningQuestion.choices.Length; i++)
+        {
+            int choiceIndex = i;
+            var button = CreateEnglishWordInstance(englishQuiz04ChoicesRoot, $"Choice_{i}", englishListeningQuestion.choices[i], preservePrefabLayout: true);
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(() => SelectEnglishListeningChoice(choiceIndex));
+            button.transition = Selectable.Transition.None;
+            var choiceImage = button.GetComponent<Image>();
+            if (choiceImage != null)
+                choiceImage.color = new Color(1f, 1f, 1f, 0f);
+            var choiceLabel = button.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (choiceLabel != null)
+                choiceLabel.raycastTarget = false;
+            englishSceneChoiceButtons.Add(button);
+        }
+
+        englishQuiz04SubmitButton = CreateEnglishSceneActionButton(
+            englishQuiz04Root,
+            "SubmitButton_Runtime",
+            "제출",
+            new Vector2(0.40f, 0.08f),
+            new Vector2(0.60f, 0.15f));
+        englishQuiz04SubmitButton.onClick.RemoveAllListeners();
+        englishQuiz04SubmitButton.onClick.AddListener(EvaluateEnglishListeningAnswer);
+        if (englishQuiz04SceneSubmitButton != null && englishQuiz04SceneSubmitButton != englishQuiz04SubmitButton)
+        {
+            Destroy(englishQuiz04SubmitButton.gameObject);
+            englishQuiz04SubmitButton = englishQuiz04SceneSubmitButton;
+            englishQuiz04SubmitButton.onClick.RemoveAllListeners();
+            englishQuiz04SubmitButton.onClick.AddListener(EvaluateEnglishListeningAnswer);
+        }
+
+        if (englishQuiz04SceneSubmitButton != null)
+        {
+            englishQuiz04SubmitButton = englishQuiz04SceneSubmitButton;
+            englishQuiz04SubmitButton.onClick.RemoveAllListeners();
+            englishQuiz04SubmitButton.onClick.AddListener(EvaluateEnglishListeningAnswer);
+        }
+
+        var quiz04SubmitLabel = englishQuiz04SubmitButton != null
+            ? englishQuiz04SubmitButton.GetComponentInChildren<TextMeshProUGUI>(true)
+            : null;
+        if (quiz04SubmitLabel != null)
+        {
+            quiz04SubmitLabel.text = "Submit";
+            quiz04SubmitLabel.raycastTarget = false;
+        }
+
+        EnsureEnglishAudioSource();
+        UpdateEnglishListeningChoiceVisuals();
+    }
+
+    private void BuildEnglishHintDrawer(Transform parent, string hintText)
+    {
+        if (string.IsNullOrWhiteSpace(hintText))
+            return;
+
+        var drawer = CreateUIObject("HintDrawer", parent, typeof(Image));
+        var drawerRect = drawer.GetComponent<RectTransform>();
+        drawerRect.anchorMin = new Vector2(1f, 0.50f);
+        drawerRect.anchorMax = new Vector2(1f, 0.50f);
+        drawerRect.pivot = new Vector2(1f, 0.5f);
+        drawerRect.sizeDelta = new Vector2(360f, 220f);
+        drawerRect.anchoredPosition = new Vector2(260f, 0f);
+
+        var drawerImage = drawer.GetComponent<Image>();
+        drawerImage.color = hintPanelColor;
+        drawerImage.raycastTarget = true;
+        AddThinOutline(drawer);
+
+        var tab = CreateUIObject("HintTab", drawer.transform, typeof(Image));
+        var tabRect = tab.GetComponent<RectTransform>();
+        tabRect.anchorMin = new Vector2(0f, 0.28f);
+        tabRect.anchorMax = new Vector2(0f, 0.72f);
+        tabRect.pivot = new Vector2(0f, 0.5f);
+        tabRect.sizeDelta = new Vector2(96f, 96f);
+        tabRect.anchoredPosition = Vector2.zero;
+        var tabImage = tab.GetComponent<Image>();
+        tabImage.color = new Color(0.99f, 0.94f, 0.80f, 1f);
+        tabImage.raycastTarget = false;
+        AddThinOutline(tab);
+
+        var tabLabel = CreateText("HintTabLabel", tab.transform, 24f, FontStyles.Bold);
+        StretchFull(tabLabel.rectTransform);
+        tabLabel.alignment = TextAlignmentOptions.Center;
+        tabLabel.color = accentColor;
+        tabLabel.text = "Hint";
+        tabLabel.raycastTarget = false;
+
+        var bodyLabel = CreateText("HintBody", drawer.transform, 22f, FontStyles.Normal);
+        bodyLabel.rectTransform.anchorMin = new Vector2(0f, 0f);
+        bodyLabel.rectTransform.anchorMax = new Vector2(1f, 1f);
+        bodyLabel.rectTransform.offsetMin = new Vector2(110f, 18f);
+        bodyLabel.rectTransform.offsetMax = new Vector2(-20f, -18f);
+        bodyLabel.alignment = TextAlignmentOptions.MidlineLeft;
+        bodyLabel.enableWordWrapping = true;
+        bodyLabel.overflowMode = TextOverflowModes.Overflow;
+        bodyLabel.color = new Color(0.16f, 0.16f, 0.18f, 1f);
+        bodyLabel.text = hintText;
+        bodyLabel.raycastTarget = false;
+
+        var drawerHandle = drawer.AddComponent<HoverHintDrawer>();
+        drawerHandle.drawerRect = drawerRect;
     }
 
     private void BuildRuntimeUI()
@@ -668,6 +1508,8 @@ public class MathMinigameController : MonoBehaviour
         feedbackText.alignment = TextAlignmentOptions.Center;
         feedbackText.color = feedbackSuccessColor;
         feedbackText.text = string.Empty;
+
+        BuildEnglishHintDrawer(panel.transform, GetEnglishStageHintText(0));
 
         var board = CreateUIObject("Board", panel.transform);
         var boardRect = board.GetComponent<RectTransform>();
@@ -1090,6 +1932,8 @@ public class MathMinigameController : MonoBehaviour
         feedbackText.color = feedbackSuccessColor;
         feedbackText.text = string.Empty;
 
+        BuildEnglishHintDrawer(panel.transform, GetEnglishStageHintText(1));
+
         englishOrderingAnswerText = null;
 
         var wordsPanel = CreateUIObject("WordsPanel", panel.transform, typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
@@ -1174,44 +2018,111 @@ public class MathMinigameController : MonoBehaviour
         UpdateEnglishOrderingUI();
     }
 
-    private void BeginEnglishOrderingDrag(EnglishOrderingCardDragHandle handle)
-    {
-        if (advancing || handle == null)
-            return;
-
-        if (englishOrderingTilesRoot != null)
-        {
-            handle.dragStartAnchoredPosition = handle.RectTransform.anchoredPosition;
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                    englishOrderingTilesRoot,
-                    Input.mousePosition,
-                    GetUICamera(),
-                    out var localPoint))
-            {
-                handle.dragStartPointerLocalPosition = localPoint;
-                handle.dragPointerOffset = Vector2.zero;
-            }
-            else
-            {
-                handle.dragStartPointerLocalPosition = Vector2.zero;
-                handle.dragPointerOffset = Vector2.zero;
-            }
-        }
-
-        handle.transform.SetAsLastSibling();
-        handle.LayoutElement.ignoreLayout = true;
-        handle.CanvasGroup.blocksRaycasts = false;
-        handle.CanvasGroup.alpha = 0.88f;
-        SetFeedback(string.Empty, true);
-    }
-
-    private void UpdateEnglishOrderingDrag(EnglishOrderingCardDragHandle handle, PointerEventData eventData)
+    private void BeginEnglishOrderingDrag(EnglishOrderingCardDragHandle handle, PointerEventData eventData)
     {
         if (advancing || handle == null || englishOrderingTilesRoot == null)
             return;
 
+        int wordIndex = (handle.displayIndex >= 0 && handle.displayIndex < englishOrderingCurrentOrder.Count)
+            ? englishOrderingCurrentOrder[handle.displayIndex]
+            : -1;
+        handle.dragWordText = wordIndex >= 0 && wordIndex < englishOrderingQuestion.shuffledWords.Length
+            ? englishOrderingQuestion.shuffledWords[wordIndex]
+            : string.Empty;
+
+        RectTransform dragLayer = englishCanvasRoot != null ? englishCanvasRoot : englishOrderingTilesRoot;
+        handle.originalParent = handle.RectTransform.parent;
+        handle.originalSiblingIndex = handle.RectTransform.GetSiblingIndex();
+
+        Vector2 dragStartPosition = handle.RectTransform.anchoredPosition;
+        Vector3 worldCenter = handle.RectTransform.TransformPoint(handle.RectTransform.rect.center);
+        Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(GetUICamera(), worldCenter);
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                dragLayer,
+                screenPoint,
+                GetUICamera(),
+                out var dragLocalPoint))
+        {
+            dragStartPosition = dragLocalPoint;
+        }
+
+        handle.RectTransform.SetParent(dragLayer, true);
+        handle.RectTransform.SetAsLastSibling();
+        handle.RectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+        handle.RectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+        handle.RectTransform.pivot = new Vector2(0.5f, 0.5f);
+        handle.RectTransform.anchoredPosition = dragStartPosition;
+
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                dragLayer,
+                eventData.position,
+                GetUICamera(),
+                out var localPoint))
+        {
+            handle.dragStartPointerLocalPosition = localPoint;
+            handle.dragPointerOffset = handle.RectTransform.anchoredPosition - localPoint;
+        }
+        else
+        {
+            handle.dragStartPointerLocalPosition = Vector2.zero;
+            handle.dragPointerOffset = Vector2.zero;
+        }
+
+        handle.CanvasGroup.blocksRaycasts = false;
+        handle.CanvasGroup.alpha = 0.92f;
+        SetFeedback(string.Empty, true);
+    }
+
+    private void BeginEnglishOrderingPointerDrag(EnglishOrderingCardDragHandle handle, PointerEventData eventData)
+    {
+        if (handle == null || activeEnglishOrderingDragHandle == handle)
+            return;
+
+        activeEnglishOrderingDragHandle = handle;
+        BeginEnglishOrderingDrag(handle, eventData);
+    }
+
+    private void TryBeginEnglishOrderingDragFromMouse()
+    {
+        if (EventSystem.current == null || englishOrderingTilesRoot == null)
+            return;
+
+        var pointerData = new PointerEventData(EventSystem.current)
+        {
+            position = Input.mousePosition
+        };
+
+        var results = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(pointerData, results);
+        for (int i = 0; i < results.Count; i++)
+        {
+            var target = results[i].gameObject;
+            if (target == null)
+                continue;
+
+            var handle = target.GetComponentInParent<EnglishOrderingCardDragHandle>();
+            if (handle == null)
+                continue;
+
+            if (handle.RectTransform == null || handle.RectTransform.parent != englishOrderingTilesRoot)
+                continue;
+
+            BeginEnglishOrderingPointerDrag(handle, pointerData);
+            return;
+        }
+    }
+
+    private void UpdateEnglishOrderingDrag(EnglishOrderingCardDragHandle handle, PointerEventData eventData)
+    {
+        if (advancing || handle == null)
+            return;
+
+        RectTransform dragLayer = englishCanvasRoot != null ? englishCanvasRoot : englishOrderingTilesRoot;
+        if (dragLayer == null)
+            return;
+
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                englishOrderingTilesRoot,
+                dragLayer,
                 eventData.position,
                 GetUICamera(),
                 out var localPoint))
@@ -1219,8 +2130,7 @@ public class MathMinigameController : MonoBehaviour
             return;
         }
 
-        Vector2 delta = localPoint - handle.dragStartPointerLocalPosition;
-        handle.RectTransform.anchoredPosition = handle.dragStartAnchoredPosition + delta;
+        handle.RectTransform.anchoredPosition = localPoint + handle.dragPointerOffset;
     }
 
     private void EndEnglishOrderingDrag(EnglishOrderingCardDragHandle handle, PointerEventData eventData)
@@ -1228,13 +2138,27 @@ public class MathMinigameController : MonoBehaviour
         if (handle == null)
             return;
 
-        handle.RectTransform.anchoredPosition = handle.dragStartAnchoredPosition;
-        handle.LayoutElement.ignoreLayout = false;
-        handle.CanvasGroup.blocksRaycasts = true;
         handle.CanvasGroup.alpha = 1f;
+        handle.CanvasGroup.blocksRaycasts = true;
+
+        if (handle.originalParent != null)
+        {
+            handle.RectTransform.SetParent(handle.originalParent, false);
+            handle.RectTransform.SetSiblingIndex(handle.originalSiblingIndex);
+        }
 
         int targetIndex = GetEnglishOrderingDropIndex(eventData.position, handle.displayIndex);
         ApplyEnglishOrderingDragReorder(handle.displayIndex, targetIndex);
+    }
+
+    private void EndEnglishOrderingPointerDrag(EnglishOrderingCardDragHandle handle, PointerEventData eventData)
+    {
+        if (handle == null)
+            return;
+
+        EndEnglishOrderingDrag(handle, eventData);
+        if (activeEnglishOrderingDragHandle == handle)
+            activeEnglishOrderingDragHandle = null;
     }
 
     private int GetEnglishOrderingDropIndex(Vector2 screenPosition, int fallbackIndex)
@@ -1242,34 +2166,26 @@ public class MathMinigameController : MonoBehaviour
         if (englishOrderingTilesRoot == null || englishOrderingCardHandles.Count == 0)
             return fallbackIndex;
 
-        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                englishOrderingTilesRoot,
-                screenPosition,
-                GetUICamera(),
-                out var localPoint))
-        {
-            return fallbackIndex;
-        }
-
-        int closestIndex = fallbackIndex;
-        float closestDistance = float.MaxValue;
-
+        int targetIndex = englishOrderingCardHandles.Count - 1;
         for (int i = 0; i < englishOrderingCardHandles.Count; i++)
         {
+            if (i == fallbackIndex)
+                continue;
+
             var handle = englishOrderingCardHandles[i];
             if (handle == null)
                 continue;
 
-            Vector2 center = GetRectCenterInLayer(handle.RectTransform, englishOrderingTilesRoot);
-            float distance = Mathf.Abs(localPoint.x - center.x);
-            if (distance < closestDistance)
+            Vector3 worldCenter = handle.RectTransform.TransformPoint(handle.RectTransform.rect.center);
+            Vector2 handleScreenCenter = RectTransformUtility.WorldToScreenPoint(GetUICamera(), worldCenter);
+            if (screenPosition.x < handleScreenCenter.x)
             {
-                closestDistance = distance;
-                closestIndex = i;
+                targetIndex = i;
+                break;
             }
         }
 
-        return closestIndex;
+        return Mathf.Clamp(targetIndex, 0, englishOrderingCardHandles.Count - 1);
     }
 
     private void ApplyEnglishOrderingDragReorder(int currentIndex, int targetIndex)
@@ -1302,6 +2218,62 @@ public class MathMinigameController : MonoBehaviour
         UpdateEnglishOrderingUI();
     }
 
+    private void LayoutEnglishOrderingCardsManually()
+    {
+        if (englishOrderingTilesRoot == null || englishOrderingCardHandles.Count == 0)
+            return;
+
+        const float spacing = 18f;
+        float totalWidth = 0f;
+
+        for (int i = 0; i < englishOrderingCardHandles.Count; i++)
+        {
+            var handle = englishOrderingCardHandles[i];
+            if (handle == null)
+                continue;
+
+            var rect = handle.RectTransform;
+            var layout = handle.LayoutElement;
+            if (layout != null)
+                layout.ignoreLayout = true;
+
+            float width = rect.rect.width;
+            if (width <= 1f && layout != null)
+                width = layout.preferredWidth;
+            if (width <= 1f)
+                width = 160f;
+
+            totalWidth += width;
+            if (i < englishOrderingCardHandles.Count - 1)
+                totalWidth += spacing;
+        }
+
+        float currentX = -totalWidth * 0.5f;
+        for (int i = 0; i < englishOrderingCardHandles.Count; i++)
+        {
+            var handle = englishOrderingCardHandles[i];
+            if (handle == null)
+                continue;
+
+            var rect = handle.RectTransform;
+            var layout = handle.LayoutElement;
+            float width = rect.rect.width;
+            if (width <= 1f && layout != null)
+                width = layout.preferredWidth;
+            if (width <= 1f)
+                width = 160f;
+
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = new Vector2(currentX + (width * 0.5f), 0f);
+            rect.localScale = Vector3.one;
+            rect.SetSiblingIndex(i);
+
+            currentX += width + spacing;
+        }
+    }
+
     private void UpdateEnglishOrderingUI()
     {
         if (englishOrderingAnswerText != null)
@@ -1324,43 +2296,63 @@ public class MathMinigameController : MonoBehaviour
         if (englishOrderingTilesRoot != null)
         {
             for (int i = englishOrderingTilesRoot.childCount - 1; i >= 0; i--)
-                Destroy(englishOrderingTilesRoot.GetChild(i).gameObject);
+            {
+                Transform child = englishOrderingTilesRoot.GetChild(i);
+                if (!englishUseSceneHierarchy
+                    || child.name.StartsWith("OrderWord_", StringComparison.Ordinal)
+                    || child.name.StartsWith("Word_", StringComparison.Ordinal))
+                    Destroy(child.gameObject);
+            }
 
             for (int i = 0; i < englishOrderingCurrentOrder.Count; i++)
             {
                 int wordIndex = englishOrderingCurrentOrder[i];
                 string word = englishOrderingQuestion.shuffledWords[wordIndex];
 
-                var card = CreateUIObject(
-                    $"WordCard_{i}",
-                    englishOrderingTilesRoot,
-                    typeof(Image),
-                    typeof(LayoutElement),
-                    typeof(CanvasGroup));
-                var cardImage = card.GetComponent<Image>();
-                cardImage.color = new Color(0.98f, 0.84f, 0.84f, 1f);
-                AddThinOutline(card);
-                var cardLayout = card.GetComponent<LayoutElement>();
-                cardLayout.minWidth = 160f;
-                cardLayout.preferredHeight = 140f;
+                Button button;
+                GameObject card;
+                if (englishUseSceneHierarchy)
+                {
+                    button = CreateEnglishWordInstance(englishOrderingTilesRoot, $"OrderWord_{i}", word);
+                    card = button.gameObject;
+                }
+                else
+                {
+                    card = CreateUIObject(
+                        $"WordCard_{i}",
+                        englishOrderingTilesRoot,
+                        typeof(Image),
+                        typeof(LayoutElement),
+                        typeof(CanvasGroup));
+                    var cardImage = card.GetComponent<Image>();
+                    cardImage.color = new Color(0.98f, 0.84f, 0.84f, 1f);
+                    AddThinOutline(card);
+                    var cardLayout = card.GetComponent<LayoutElement>();
+                    cardLayout.minWidth = 160f;
+                    cardLayout.preferredHeight = 140f;
 
-                var wordLabel = CreateText("WordLabel", card.transform, 28f, FontStyles.Bold);
-                StretchFull(wordLabel.rectTransform);
-                wordLabel.margin = new Vector4(18f, 18f, 18f, 18f);
-                wordLabel.alignment = TextAlignmentOptions.Center;
-                wordLabel.color = new Color(0.16f, 0.16f, 0.18f, 1f);
-                wordLabel.enableWordWrapping = false;
-                wordLabel.overflowMode = TextOverflowModes.Overflow;
-                wordLabel.text = word;
-                float preferredWordWidth = wordLabel.GetPreferredValues(word).x + 54f;
-                cardLayout.preferredWidth = Mathf.Clamp(preferredWordWidth, 160f, 420f);
-                card.GetComponent<RectTransform>().sizeDelta = new Vector2(cardLayout.preferredWidth, cardLayout.preferredHeight);
+                    var wordLabel = CreateText("WordLabel", card.transform, 28f, FontStyles.Bold);
+                    StretchFull(wordLabel.rectTransform);
+                    wordLabel.margin = new Vector4(18f, 18f, 18f, 18f);
+                    wordLabel.alignment = TextAlignmentOptions.Center;
+                    wordLabel.color = new Color(0.16f, 0.16f, 0.18f, 1f);
+                    wordLabel.enableWordWrapping = false;
+                    wordLabel.overflowMode = TextOverflowModes.Overflow;
+                    wordLabel.raycastTarget = false;
+                    wordLabel.text = word;
+                    float preferredWordWidth = wordLabel.GetPreferredValues(word).x + 54f;
+                    cardLayout.preferredWidth = Mathf.Clamp(preferredWordWidth, 160f, 420f);
+                    card.GetComponent<RectTransform>().sizeDelta = new Vector2(cardLayout.preferredWidth, cardLayout.preferredHeight);
+                }
 
-                var dragHandle = card.AddComponent<EnglishOrderingCardDragHandle>();
+                var dragHandle = GetOrAddComponent<EnglishOrderingCardDragHandle>(card);
                 dragHandle.controller = this;
                 dragHandle.displayIndex = i;
                 englishOrderingCardHandles.Add(dragHandle);
             }
+
+            Canvas.ForceUpdateCanvases();
+            LayoutEnglishOrderingCardsManually();
         }
     }
 
@@ -1480,6 +2472,8 @@ public class MathMinigameController : MonoBehaviour
         feedbackText.alignment = TextAlignmentOptions.Center;
         feedbackText.color = feedbackSuccessColor;
         feedbackText.text = string.Empty;
+
+        BuildEnglishHintDrawer(panel.transform, GetEnglishStageHintText(2));
 
         var trueButton = CreateButton("TrueButton", panel.transform, out var trueLabel);
         var trueRect = trueButton.GetComponent<RectTransform>();
@@ -1615,6 +2609,8 @@ public class MathMinigameController : MonoBehaviour
         feedbackText.color = feedbackSuccessColor;
         feedbackText.text = string.Empty;
 
+        BuildEnglishHintDrawer(panel.transform, GetEnglishStageHintText(3));
+
         var choicesRoot = CreateUIObject("ChoicesRoot", panel.transform, typeof(HorizontalLayoutGroup), typeof(ContentSizeFitter));
         var choicesRect = choicesRoot.GetComponent<RectTransform>();
         choicesRect.anchorMin = new Vector2(0.12f, 0.20f);
@@ -1689,6 +2685,28 @@ public class MathMinigameController : MonoBehaviour
 
     private void UpdateEnglishListeningChoiceVisuals()
     {
+        if (englishUseSceneHierarchy)
+        {
+            for (int i = 0; i < englishSceneChoiceButtons.Count; i++)
+            {
+                Button button = englishSceneChoiceButtons[i];
+                if (button == null)
+                    continue;
+
+                var label = button.GetComponentInChildren<TextMeshProUGUI>(true);
+                bool isSelected = i == englishListeningSelectedChoiceIndex;
+                if (label != null)
+                    label.color = isSelected
+                        ? new Color(0.82f, 0.26f, 0.26f, 1f)
+                        : new Color(0.18f, 0.18f, 0.20f, 1f);
+                var image = button.GetComponent<Image>();
+                if (image != null)
+                    image.color = new Color(1f, 1f, 1f, 0f);
+            }
+
+            return;
+        }
+
         if (uiCanvas == null)
             return;
 
@@ -1741,6 +2759,17 @@ public class MathMinigameController : MonoBehaviour
 
         if (ended)
             yield break;
+
+        advanceRoutine = null;
+        advancing = false;
+
+        if (englishListeningQuestions != null && currentEnglishListeningQuestionIndex + 1 < englishListeningQuestions.Count)
+        {
+            currentEnglishListeningQuestionIndex++;
+            SyncCurrentEnglishListeningQuestion();
+            BuildCurrentEnglishStageUI();
+            yield break;
+        }
 
         End(true);
     }
@@ -2471,6 +3500,14 @@ public class MathMinigameController : MonoBehaviour
             focusRoutine = null;
         }
 
+        if (englishUseSceneHierarchy)
+        {
+            ClearEnglishSceneRuntime();
+            SetEnglishSceneStageActive(null);
+            if (englishMinigameRoot != null)
+                englishMinigameRoot.gameObject.SetActive(false);
+        }
+
         if (uiCanvas != null)
         {
             Destroy(uiCanvas.gameObject);
@@ -2759,6 +3796,32 @@ public class MathMinigameController : MonoBehaviour
                 completedSentence = config.englishListeningQuestion.completedSentence ?? string.Empty
             };
         }
+
+        englishListeningQuestions = new List<EnglishListeningBlankQuestionDefinition>();
+        if (config.englishListeningQuestions != null && config.englishListeningQuestions.Count > 0)
+        {
+            for (int i = 0; i < config.englishListeningQuestions.Count; i++)
+            {
+                var source = config.englishListeningQuestions[i];
+                if (source == null)
+                    continue;
+
+                englishListeningQuestions.Add(new EnglishListeningBlankQuestionDefinition
+                {
+                    prompt = string.IsNullOrWhiteSpace(source.prompt)
+                        ? "Listen to the audio and choose the word that best fits the blank."
+                        : source.prompt,
+                    sentenceWithBlank = source.sentenceWithBlank ?? string.Empty,
+                    voiceClip = source.voiceClip,
+                    choices = source.choices != null ? (string[])source.choices.Clone() : Array.Empty<string>(),
+                    correctChoiceIndex = source.correctChoiceIndex,
+                    completedSentence = source.completedSentence ?? string.Empty
+                });
+            }
+        }
+
+        if (englishListeningQuestions.Count == 0 && englishListeningQuestion != null)
+            englishListeningQuestions.Add(englishListeningQuestion);
 
         drawingTextureSize = config.drawingTextureSize;
         brushRadius = config.brushRadius;

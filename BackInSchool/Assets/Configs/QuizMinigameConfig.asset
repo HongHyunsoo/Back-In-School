@@ -75,6 +75,34 @@ MonoBehaviour:
     - going
     correctChoiceIndex: 0
     completedSentence: I go to school every day.
+  englishListeningQuestions:
+  - prompt: Listen to the audio and choose the word that best fits the blank.
+    sentenceWithBlank: I ____ to school every day.
+    voiceClip: {fileID: 0}
+    choices:
+    - go
+    - goes
+    - going
+    correctChoiceIndex: 0
+    completedSentence: I go to school every day.
+  - prompt: Listen to the audio and choose the word that best fits the blank.
+    sentenceWithBlank: She ____ breakfast at home.
+    voiceClip: {fileID: 0}
+    choices:
+    - eat
+    - eats
+    - eating
+    correctChoiceIndex: 1
+    completedSentence: She eats breakfast at home.
+  - prompt: Listen to the audio and choose the word that best fits the blank.
+    sentenceWithBlank: They ____ soccer after school.
+    voiceClip: {fileID: 0}
+    choices:
+    - plays
+    - play
+    - playing
+    correctChoiceIndex: 1
+    completedSentence: They play soccer after school.
   drawingTextureSize: {x: 1024, y: 1024}
   brushRadius: 5
   drawingBackgroundColor: {r: 0.98, g: 0.98, b: 0.98, a: 1}
