@@ -231,7 +231,7 @@ public class FlowManager : MonoBehaviour
 
 
     // 媛?紐⑤뱶媛 ?앸굹硫??닿구 ?몄텧?섎㈃ ??
-    public void CompleteCurrentEvent(int penaltyDelta = 0)
+    public void CompleteCurrentEvent(int penaltyDelta = 0, bool useSceneFade = true)
     {
         if (timeline.TryGetValue(day, out var list) && stepIndex < list.Count)
         {
@@ -247,7 +247,7 @@ public class FlowManager : MonoBehaviour
 
         penaltyPoints += penaltyDelta;
         stepIndex++;
-        PlayCurrent();
+        PlayCurrent(useSceneFade);
     }
 
     public bool TryGetNextPlayableEvent(out FlowEvent nextEvent, out int nextIndex)

@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -19,90 +19,106 @@ MonoBehaviour:
   correctAnswerDelaySeconds: 0.55
   questions: []
   afterSchoolEnglishFlowId: AFTERSCHOOL_ENGLISH_D1
-  englishMatchingTitle: 단어와 뜻을 연결하시오.
-  englishMatchingDescription: 왼쪽 영단어를 드래그해서 알맞은 뜻과 연결하세요.
+  englishMatchingTitle: Match each English word with its correct meaning.
+  englishMatchingDescription: Drag each word to the matching meaning.
+  englishMatchingHint: "퀴즈 1. 단어와 뜻 잇기\nsignificant: 큰 영향이나 가치를 가짐\nreluctant: 마음이 쉽게 움직이지 않는 상태\nevidence: 사실을 판단할 때 필요한 단서\nconsequence: 어떤 일 뒤에 따라오는 변화\nefficient: 시간과 힘을 아끼는 방식\nassume: 확실하지 않아도 그렇다고 여김\ninterrupt: 진행 중인 것을 중간에 끊음"
   englishMatchingPairs:
-  - word: sun
-    meaning: 태양
-  - word: egg
-    meaning: 계란
-  - word: paper
-    meaning: 종이
-  - word: vegetable
-    meaning: 채소
+  - word: significant
+    meaning: "중요한, 상당한"
+  - word: reluctant
+    meaning: "꺼리는, 내키지 않는"
+  - word: evidence
+    meaning: 증거
+  - word: consequence
+    meaning: "결과, 영향"
+  - word: efficient
+    meaning: 효율적인
+  - word: assume
+    meaning: "추정하다, 가정하다"
+  - word: interrupt
+    meaning: "방해하다, 중단시키다"
   englishMatchSuccessDelaySeconds: 0.45
-  englishOrderingTitle: 다음 단어를 올바른 순서로 배열하시오.
+  englishOrderingTitle: Arrange the following words in the correct order.
   englishOrderingQuestion:
-    prompt: 다음 단어를 올바른 순서로 배열하시오.
+    prompt: Arrange the following words in the correct order.
+    hintText: "“만약 ~했다면, ~했을 텐데” 구조."
     shuffledWords:
-    - the problem
-    - difficult
+    - if
     - I
-    - found
+    - had known
+    - the answer
+    - earlier
+    - I
+    - would have told
+    - you
     correctOrder:
+    - If
     - I
-    - found
-    - the problem
-    - difficult
-    answerSentence: I found the problem difficult.
+    - had known
+    - the answer
+    - earlier
+    - I
+    - would have told
+    - you
+    answerSentence: If I had known the answer earlier, I would have told you.
   englishTrueFalseTitle: True or False
   englishTrueFalseQuestion:
-    prompt: 다음 문장이 맞으면 True, 틀리면 False를 고르시오.
-    statement: The sun rises in the west.
-    correctAnswer: 0
-    explanation: False. The sun rises in the east.
-  englishTrueFalseQuestions:
-  - prompt: 다음 문장이 맞으면 True, 틀리면 False를 고르시오.
-    statement: The sun rises in the west.
-    correctAnswer: 0
-    explanation: False. The sun rises in the east.
-  - prompt: 다음 문장이 맞으면 True, 틀리면 False를 고르시오.
-    statement: Birds can swim underwater for an hour.
-    correctAnswer: 0
-    explanation: False.
-  - prompt: 다음 문장이 맞으면 True, 틀리면 False를 고르시오.
-    statement: Winter comes after autumn.
+    prompt: Choose True if the sentence is correct, or False if it is not.
+    statement: Rabbits have long ears that help them hear sounds from many directions.
     correctAnswer: 1
-    explanation: True.
-  englishListeningTitle: 음성을 듣고 빈칸에 들어갈 단어를 고르시오.
+    hintText: "from many directions는 “여러 방향에서”라는 뜻입니다."
+    explanation: "True."
+  englishTrueFalseQuestions:
+  - prompt: Choose True if the sentence is correct, or False if it is not.
+    statement: Rabbits have long ears that help them hear sounds from many directions.
+    correctAnswer: 1
+    hintText: "from many directions는 “여러 방향에서”라는 뜻입니다."
+    explanation: "True."
+  - prompt: Choose True if the sentence is correct, or False if it is not.
+    statement: The Moon is a planet that produces its own light like the Sun.
+    correctAnswer: 0
+    hintText: "produce its own light는 “스스로 빛을 만들어내다”라는 뜻입니다."
+    explanation: "False."
+  - prompt: Choose True if the sentence is correct, or False if it is not.
+    statement: Orcas are black and white animals that live in the ocean.
+    correctAnswer: 1
+    hintText: "Orca는 “범고래”라는 뜻입니다."
+    explanation: "True."
+  englishListeningTitle: Listen and type the missing word.
   englishListeningQuestion:
-    prompt: 음성을 듣고 빈칸에 들어갈 알맞은 단어를 고르시오.
-    sentenceWithBlank: I ____ to school every day.
+    prompt: Listen to the audio and type the missing word.
+    hintText: "망상에 가까울 정도로 나 자신을 믿어라."
+    sentenceWithBlank: Have ________ too much self-belief.
     voiceClip: {fileID: 0}
     choices:
-    - go
-    - goes
-    - going
+    - almost
     correctChoiceIndex: 0
-    completedSentence: I go to school every day.
+    completedSentence: Have almost too much self-belief.
   englishListeningQuestions:
-  - prompt: Listen to the audio and choose the word that best fits the blank.
-    sentenceWithBlank: I ____ to school every day.
+  - prompt: Listen to the audio and type the missing word.
+    hintText: "망상에 가까울 정도로 나 자신을 믿어라."
+    sentenceWithBlank: Have ________ too much self-belief.
     voiceClip: {fileID: 0}
     choices:
-    - go
-    - goes
-    - going
+    - almost
     correctChoiceIndex: 0
-    completedSentence: I go to school every day.
-  - prompt: Listen to the audio and choose the word that best fits the blank.
-    sentenceWithBlank: She ____ breakfast at home.
+    completedSentence: Have almost too much self-belief.
+  - prompt: Listen to the audio and type the missing word.
+    hintText: "학교는 미래를 위한 연습이고, 연습은 완벽을 만든다. 그런데 아무도 완벽하지 않다면, 왜 연습해야 하지?"
+    sentenceWithBlank: School is practice for the future, and practice makes ________, but if nobody’s ________, why practice?
     voiceClip: {fileID: 0}
     choices:
-    - eat
-    - eats
-    - eating
-    correctChoiceIndex: 1
-    completedSentence: She eats breakfast at home.
-  - prompt: Listen to the audio and choose the word that best fits the blank.
-    sentenceWithBlank: They ____ soccer after school.
+    - perfect
+    correctChoiceIndex: 0
+    completedSentence: School is practice for the future, and practice makes perfect, but if nobody’s perfect, why practice?
+  - prompt: Listen to the audio and type the missing word.
+    hintText: "가장 좋은 건 미친 짓을 마음껏 해도 된다는 거고, 게다가 그걸로 돈까지 받는다는 거다."
+    sentenceWithBlank: The best thing is that you can allow your insanities to ________ and get paid for it.
     voiceClip: {fileID: 0}
     choices:
-    - plays
-    - play
-    - playing
-    correctChoiceIndex: 1
-    completedSentence: They play soccer after school.
+    - develop
+    correctChoiceIndex: 0
+    completedSentence: The best thing is that you can allow your insanities to develop and get paid for it.
   drawingTextureSize: {x: 1024, y: 1024}
   brushRadius: 5
   drawingBackgroundColor: {r: 0.98, g: 0.98, b: 0.98, a: 1}
@@ -116,5 +132,6 @@ MonoBehaviour:
   hintPanelColor: {r: 0.91, g: 0.96, b: 1, a: 0.96}
   feedbackSuccessColor: {r: 0.2, g: 0.58, b: 0.28, a: 1}
   feedbackErrorColor: {r: 0.78, g: 0.23, b: 0.18, a: 1}
-  friendBubbleName: 옆 친구
+  friendBubbleName: 친구
   friendBubbleShowSeconds: 3.2
+

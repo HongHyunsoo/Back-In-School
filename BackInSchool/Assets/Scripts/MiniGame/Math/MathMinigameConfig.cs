@@ -20,6 +20,8 @@ public class MathMinigameConfig : ScriptableObject
     {
         [TextArea(2, 5)]
         public string prompt = "다음 단어를 올바른 순서로 배열하시오.";
+        [TextArea(2, 6)]
+        public string hintText = string.Empty;
         public string[] shuffledWords = new string[0];
         public string[] correctOrder = new string[0];
         [TextArea(2, 4)]
@@ -34,6 +36,8 @@ public class MathMinigameConfig : ScriptableObject
         [TextArea(2, 4)]
         public string statement = string.Empty;
         public bool correctAnswer = true;
+        [TextArea(2, 6)]
+        public string hintText = string.Empty;
         [TextArea(2, 4)]
         public string explanation = string.Empty;
     }
@@ -43,7 +47,8 @@ public class MathMinigameConfig : ScriptableObject
     {
         [TextArea(2, 5)]
         public string prompt = "음성을 듣고 빈칸에 들어갈 알맞은 단어를 고르시오.";
-        [TextArea(2, 4)]
+        [TextArea(2, 8)]
+        public string hintText = string.Empty;
         public string sentenceWithBlank = string.Empty;
         public AudioClip voiceClip;
         public string[] choices = new string[0];
@@ -65,6 +70,8 @@ public class MathMinigameConfig : ScriptableObject
     public string englishMatchingTitle = "알맞은 짝을 찾아요";
     [TextArea(2, 5)]
     public string englishMatchingDescription = "영단어와 알맞은 뜻을 찾아 선으로 이어 보세요.";
+    [TextArea(4, 16)]
+    public string englishMatchingHint = string.Empty;
     public List<EnglishMatchingPairDefinition> englishMatchingPairs = new List<EnglishMatchingPairDefinition>();
     public float englishMatchSuccessDelaySeconds = 0.45f;
     public string englishOrderingTitle = "다음 단어를 올바른 순서로 배열하시오.";

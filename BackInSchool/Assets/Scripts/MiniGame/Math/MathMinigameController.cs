@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
@@ -20,7 +20,9 @@ public class MathMinigameController : MonoBehaviour
     public class EnglishOrderingQuestionDefinition
     {
         [TextArea(2, 5)]
-        public string prompt = "다음 단어를 올바른 순서로 배열하시오.";
+        public string prompt = "?ㅼ쓬 ?⑥뼱瑜??щ컮瑜??쒖꽌濡?諛곗뿴?섏떆??";
+        [TextArea(2, 6)]
+        public string hintText = string.Empty;
         public string[] shuffledWords = Array.Empty<string>();
         public string[] correctOrder = Array.Empty<string>();
         [TextArea(2, 4)]
@@ -31,10 +33,12 @@ public class MathMinigameController : MonoBehaviour
     public class EnglishTrueFalseQuestionDefinition
     {
         [TextArea(2, 5)]
-        public string prompt = "다음 문장이 맞으면 True, 틀리면 False를 고르시오.";
+        public string prompt = "?ㅼ쓬 臾몄옣??留욎쑝硫?True, ?由щ㈃ False瑜?怨좊Ⅴ?쒖삤.";
         [TextArea(2, 4)]
         public string statement = string.Empty;
         public bool correctAnswer = true;
+        [TextArea(2, 6)]
+        public string hintText = string.Empty;
         [TextArea(2, 4)]
         public string explanation = string.Empty;
     }
@@ -43,8 +47,9 @@ public class MathMinigameController : MonoBehaviour
     public class EnglishListeningBlankQuestionDefinition
     {
         [TextArea(2, 5)]
-        public string prompt = "음성을 듣고 빈칸에 들어갈 알맞은 단어를 고르시오.";
-        [TextArea(2, 4)]
+        public string prompt = "?뚯꽦???ｊ퀬 鍮덉뭏???ㅼ뼱媛??뚮쭪? ?⑥뼱瑜?怨좊Ⅴ?쒖삤.";
+        [TextArea(2, 8)]
+        public string hintText = string.Empty;
         public string sentenceWithBlank = string.Empty;
         public AudioClip voiceClip;
         public string[] choices = Array.Empty<string>();
@@ -94,18 +99,20 @@ public class MathMinigameController : MonoBehaviour
 
     [Header("AfterSchool English")]
     public string afterSchoolEnglishFlowId = "AFTERSCHOOL_ENGLISH_D1";
-    public string englishMatchingTitle = "알맞은 짝을 찾아요";
+    public string englishMatchingTitle = "Match the Correct Pair";
     [TextArea(2, 5)]
-    public string englishMatchingDescription = "영단어와 알맞은 뜻을 찾아 선으로 이어 보세요.";
+    public string englishMatchingDescription = "?곷떒?댁? ?뚮쭪? ?살쓣 李얠븘 ?좎쑝濡??댁뼱 蹂댁꽭??";
+    [TextArea(4, 16)]
+    public string englishMatchingHint = string.Empty;
     public List<EnglishMatchingPairDefinition> englishMatchingPairs = new List<EnglishMatchingPairDefinition>();
     public float englishMatchSuccessDelaySeconds = 0.45f;
-    public string englishOrderingTitle = "다음 단어를 올바른 순서로 배열하시오.";
+    public string englishOrderingTitle = "?ㅼ쓬 ?⑥뼱瑜??щ컮瑜??쒖꽌濡?諛곗뿴?섏떆??";
     public EnglishOrderingQuestionDefinition englishOrderingQuestion = new EnglishOrderingQuestionDefinition();
     public string englishTrueFalseTitle = "True or False";
     public EnglishTrueFalseQuestionDefinition englishTrueFalseQuestion = new EnglishTrueFalseQuestionDefinition();
     public List<EnglishTrueFalseQuestionDefinition> englishTrueFalseQuestions = new List<EnglishTrueFalseQuestionDefinition>();
     public GameObject englishWordPrefab;
-    public string englishListeningTitle = "듣고 알맞은 단어를 고르시오.";
+    public string englishListeningTitle = "Listen and Type the Missing Word";
     public EnglishListeningBlankQuestionDefinition englishListeningQuestion = new EnglishListeningBlankQuestionDefinition();
     public List<EnglishListeningBlankQuestionDefinition> englishListeningQuestions = new List<EnglishListeningBlankQuestionDefinition>();
 
@@ -125,7 +132,7 @@ public class MathMinigameController : MonoBehaviour
     public Color hintPanelColor = new Color(0.91f, 0.96f, 1f, 0.96f);
     public Color feedbackSuccessColor = new Color(0.20f, 0.58f, 0.28f, 1f);
     public Color feedbackErrorColor = new Color(0.78f, 0.23f, 0.18f, 1f);
-    public string friendBubbleName = "옆 친구";
+    public string friendBubbleName = "??移쒓뎄";
     public float friendBubbleShowSeconds = 3.2f;
 
     private Canvas uiCanvas;
@@ -194,11 +201,13 @@ public class MathMinigameController : MonoBehaviour
     private RectTransform englishQuiz03Root;
     private RectTransform englishQuiz04Root;
     private TextMeshProUGUI englishQuiz01PromptText;
+    private TextMeshProUGUI englishQuiz01QuestionText;
     private TextMeshProUGUI englishQuiz02PromptText;
     private TextMeshProUGUI englishQuiz03PromptText;
     private TextMeshProUGUI englishQuiz03QuestionText;
     private TextMeshProUGUI englishQuiz04PromptText;
     private TextMeshProUGUI englishQuiz04QuestionText;
+    private TMP_InputField englishQuiz04InputField;
     private RectTransform englishQuiz01WordsRoot;
     private RectTransform englishQuiz01MeaningRoot;
     private RectTransform englishQuiz02WordsRoot;
@@ -214,6 +223,7 @@ public class MathMinigameController : MonoBehaviour
     private Button englishQuiz02SceneAgainButton;
     private readonly List<Button> englishSceneChoiceButtons = new List<Button>();
     private GameObject englishSceneHintDrawer;
+    private bool englishSceneHintDrawerIsSceneObject;
     private GameObject englishSceneFeedbackObject;
     private EnglishOrderingCardDragHandle activeEnglishOrderingDragHandle;
 
@@ -515,23 +525,23 @@ public class MathMinigameController : MonoBehaviour
             new MathQuestionDefinition
             {
                 title = "Q1",
-                questionText = "문제 텍스트를 여기에 입력하세요.",
+                questionText = "臾몄젣 ?띿뒪?몃? ?ш린???낅젰?섏꽭??",
                 correctAnswer = "0",
-                hintTexts = new[] { "첫 번째 힌트", "두 번째 힌트", "세 번째 힌트" }
+                hintTexts = new[] { "泥?踰덉㎏ ?뚰듃", "??踰덉㎏ ?뚰듃", "??踰덉㎏ ?뚰듃" }
             },
             new MathQuestionDefinition
             {
                 title = "Q2",
-                questionText = "문제 이미지는 questionSprite에 넣을 수 있습니다.",
+                questionText = "臾몄젣 ?대?吏??questionSprite???ｌ쓣 ???덉뒿?덈떎.",
                 correctAnswer = "0",
-                hintTexts = new[] { "첫 번째 힌트", "두 번째 힌트", "세 번째 힌트" }
+                hintTexts = new[] { "泥?踰덉㎏ ?뚰듃", "??踰덉㎏ ?뚰듃", "??踰덉㎏ ?뚰듃" }
             },
             new MathQuestionDefinition
             {
                 title = "Q3",
-                questionText = "CSV를 붙일 예정이면 questionTextKey / hintTextKeys를 써도 됩니다.",
+                questionText = "CSV瑜?遺숈씪 ?덉젙?대㈃ questionTextKey / hintTextKeys瑜??⑤룄 ?⑸땲??",
                 correctAnswer = "0",
-                hintTexts = new[] { "첫 번째 힌트", "두 번째 힌트", "세 번째 힌트" }
+                hintTexts = new[] { "泥?踰덉㎏ ?뚰듃", "??踰덉㎏ ?뚰듃", "??踰덉㎏ ?뚰듃" }
             }
         };
         englishTrueFalseQuestions = new List<EnglishTrueFalseQuestionDefinition>
@@ -539,14 +549,14 @@ public class MathMinigameController : MonoBehaviour
             englishTrueFalseQuestion,
             new EnglishTrueFalseQuestionDefinition
             {
-                prompt = "?ㅼ쓬 臾몄옣??留욎쑝硫?True, ?由щ㈃ False瑜?怨좊Ⅴ?쒖삤.",
+                prompt = "??쇱벉 ?얜챷???筌띿쉸?앾쭖?True, ???귐됥늺 False???⑥쥓???뽰궎.",
                 statement = "Birds can swim underwater for an hour.",
                 correctAnswer = false,
                 explanation = "False."
             },
             new EnglishTrueFalseQuestionDefinition
             {
-                prompt = "?ㅼ쓬 臾몄옣??留욎쑝硫?True, ?由щ㈃ False瑜?怨좊Ⅴ?쒖삤.",
+                prompt = "??쇱벉 ?얜챷???筌띿쉸?앾쭖?True, ???귐됥늺 False???⑥쥓???뽰궎.",
                 statement = "Winter comes after autumn.",
                 correctAnswer = true,
                 explanation = "True."
@@ -561,10 +571,10 @@ public class MathMinigameController : MonoBehaviour
 
         englishMatchingPairs = new List<EnglishMatchingPairDefinition>
         {
-            new EnglishMatchingPairDefinition { word = "sun", meaning = "태양" },
-            new EnglishMatchingPairDefinition { word = "egg", meaning = "계란" },
-            new EnglishMatchingPairDefinition { word = "paper", meaning = "종이" },
-            new EnglishMatchingPairDefinition { word = "vegetable", meaning = "채소" },
+            new EnglishMatchingPairDefinition { word = "sun", meaning = "?쒖뼇" },
+            new EnglishMatchingPairDefinition { word = "egg", meaning = "怨꾨?" },
+            new EnglishMatchingPairDefinition { word = "paper", meaning = "醫낆씠" },
+            new EnglishMatchingPairDefinition { word = "vegetable", meaning = "梨꾩냼" },
         };
     }
 
@@ -581,7 +591,7 @@ public class MathMinigameController : MonoBehaviour
 
         englishOrderingQuestion = new EnglishOrderingQuestionDefinition
         {
-            prompt = "다음 단어를 올바른 순서로 배열하시오.",
+            prompt = "?ㅼ쓬 ?⑥뼱瑜??щ컮瑜??쒖꽌濡?諛곗뿴?섏떆??",
             shuffledWords = new[] { "the problem", "difficult", "I", "found" },
             correctOrder = new[] { "I", "found", "the problem", "difficult" },
             answerSentence = "I found the problem difficult."
@@ -606,7 +616,7 @@ public class MathMinigameController : MonoBehaviour
 
         englishTrueFalseQuestion = new EnglishTrueFalseQuestionDefinition
         {
-            prompt = "다음 문장이 맞으면 True, 틀리면 False를 고르시오.",
+            prompt = "?ㅼ쓬 臾몄옣??留욎쑝硫?True, ?由щ㈃ False瑜?怨좊Ⅴ?쒖삤.",
             statement = "The sun rises in the west.",
             correctAnswer = false,
             explanation = "False. The sun rises in the east."
@@ -617,14 +627,14 @@ public class MathMinigameController : MonoBehaviour
             englishTrueFalseQuestion,
             new EnglishTrueFalseQuestionDefinition
             {
-                prompt = "다음 문장이 맞으면 True, 틀리면 False를 고르시오.",
+                prompt = "?ㅼ쓬 臾몄옣??留욎쑝硫?True, ?由щ㈃ False瑜?怨좊Ⅴ?쒖삤.",
                 statement = "Birds can swim underwater for an hour.",
                 correctAnswer = false,
                 explanation = "False."
             },
             new EnglishTrueFalseQuestionDefinition
             {
-                prompt = "다음 문장이 맞으면 True, 틀리면 False를 고르시오.",
+                prompt = "?ㅼ쓬 臾몄옣??留욎쑝硫?True, ?由щ㈃ False瑜?怨좊Ⅴ?쒖삤.",
                 statement = "Winter comes after autumn.",
                 correctAnswer = true,
                 explanation = "True."
@@ -657,7 +667,7 @@ public class MathMinigameController : MonoBehaviour
             {
                 englishListeningQuestions.Add(new EnglishListeningBlankQuestionDefinition
                 {
-                    prompt = "Listen to the audio and choose the word that best fits the blank.",
+                    prompt = "Listen to the audio and type the missing word.",
                     sentenceWithBlank = "I ____ to school every day.",
                     choices = new[] { "go", "goes", "going" },
                     correctChoiceIndex = 0,
@@ -722,6 +732,7 @@ public class MathMinigameController : MonoBehaviour
             return false;
 
         englishQuiz01PromptText = FindDeepChild(englishQuiz01Root, "Text (TMP)")?.GetComponent<TextMeshProUGUI>();
+        englishQuiz01QuestionText = FindDeepChild(englishQuiz01Root, "Question")?.GetComponent<TextMeshProUGUI>();
         englishQuiz01WordsRoot = FindDeepChild(englishQuiz01Root, "Words") as RectTransform;
         englishQuiz01MeaningRoot = FindDeepChild(englishQuiz01Root, "Meaning") as RectTransform;
 
@@ -739,11 +750,13 @@ public class MathMinigameController : MonoBehaviour
         englishQuiz04QuestionText = FindDeepChild(englishQuiz04Root, "Quiz_04_Question")?.GetComponent<TextMeshProUGUI>();
         englishQuiz04SoundButton = FindDeepChild(englishQuiz04Root, "SoundButton")?.GetComponent<Button>();
         englishQuiz04SceneSubmitButton = FindDeepChild(englishQuiz04Root, "Btn_Submit")?.GetComponent<Button>();
+        englishQuiz04InputField = englishQuiz04Root.GetComponentInChildren<TMP_InputField>(true);
         englishQuiz04ChoicesRoot = FindDeepChild(englishQuiz04Root, "Words") as RectTransform;
         if (englishQuiz04ChoicesRoot == null)
             englishQuiz04ChoicesRoot = FindDeepChild(englishQuiz04Root, "ChoicesRoot") as RectTransform;
 
         if (englishQuiz01PromptText != null) englishQuiz01PromptText.raycastTarget = false;
+        if (englishQuiz01QuestionText != null) englishQuiz01QuestionText.raycastTarget = false;
         if (englishQuiz02PromptText != null) englishQuiz02PromptText.raycastTarget = false;
         if (englishQuiz03PromptText != null) englishQuiz03PromptText.raycastTarget = false;
         if (englishQuiz03QuestionText != null) englishQuiz03QuestionText.raycastTarget = false;
@@ -829,13 +842,21 @@ public class MathMinigameController : MonoBehaviour
         switch (stageIndex)
         {
             case 0:
-                return "왼쪽 단어를 누른 채 드래그해서 알맞은 뜻 위에 놓아보세요.";
+                return string.IsNullOrWhiteSpace(englishMatchingHint)
+                    ? "Drag each word to the matching meaning."
+                    : englishMatchingHint;
             case 1:
-                return "단어 타일을 마우스로 드래그해 순서를 바꾼 뒤 제출하세요.";
+                return string.IsNullOrWhiteSpace(englishOrderingQuestion?.hintText)
+                    ? "Drag the word cards left and right to arrange the sentence."
+                    : englishOrderingQuestion.hintText;
             case 2:
-                return "문장을 읽고 사실이면 True, 아니면 False를 고르세요.";
+                return string.IsNullOrWhiteSpace(englishTrueFalseQuestion?.hintText)
+                    ? "Read the statement and choose True or False."
+                    : englishTrueFalseQuestion.hintText;
             case 3:
-                return "음성을 듣고 빈칸에 들어갈 단어를 고른 뒤 제출하세요.";
+                return string.IsNullOrWhiteSpace(englishListeningQuestion?.hintText)
+                    ? "Listen to the audio and type the missing word in the blank."
+                    : englishListeningQuestion.hintText;
             default:
                 return string.Empty;
         }
@@ -847,7 +868,7 @@ public class MathMinigameController : MonoBehaviour
         englishMatchingDescription = "Drag each word to the matching meaning.";
         englishOrderingTitle = "Arrange the following words in the correct order.";
         englishTrueFalseTitle = "True or False";
-        englishListeningTitle = "Listen and Choose the Correct Word";
+        englishListeningTitle = "Listen and Type the Missing Word";
 
         if (englishOrderingQuestion != null)
             englishOrderingQuestion.prompt = "Arrange the following words in the correct order.";
@@ -865,13 +886,13 @@ public class MathMinigameController : MonoBehaviour
         }
 
         if (englishListeningQuestion != null)
-            englishListeningQuestion.prompt = "Listen to the audio and choose the word that best fits the blank.";
+            englishListeningQuestion.prompt = "Listen to the audio and type the missing word.";
         if (englishListeningQuestions != null)
         {
             for (int i = 0; i < englishListeningQuestions.Count; i++)
             {
                 if (englishListeningQuestions[i] != null)
-                    englishListeningQuestions[i].prompt = "Listen to the audio and choose the word that best fits the blank.";
+                    englishListeningQuestions[i].prompt = "Listen to the audio and type the missing word.";
             }
         }
     }
@@ -913,8 +934,17 @@ public class MathMinigameController : MonoBehaviour
     {
         if (englishSceneHintDrawer != null)
         {
-            Destroy(englishSceneHintDrawer);
+            if (englishSceneHintDrawerIsSceneObject)
+            {
+                englishSceneHintDrawer.SetActive(false);
+            }
+            else
+            {
+                Destroy(englishSceneHintDrawer);
+            }
+
             englishSceneHintDrawer = null;
+            englishSceneHintDrawerIsSceneObject = false;
         }
 
         if (englishSceneFeedbackObject != null)
@@ -1032,9 +1062,60 @@ public class MathMinigameController : MonoBehaviour
         if (string.IsNullOrWhiteSpace(hint))
             return;
 
+        if (TryBindEnglishSceneHintDrawer(hint, stageIndex))
+            return;
+
         Transform hintParent = englishCanvasRoot != null ? englishCanvasRoot : parent;
         BuildEnglishHintDrawer(hintParent, hint);
         englishSceneHintDrawer = hintParent.Find("HintDrawer")?.gameObject;
+        englishSceneHintDrawerIsSceneObject = false;
+    }
+
+    private bool TryBindEnglishSceneHintDrawer(string hintText, int stageIndex)
+    {
+        if (!englishUseSceneHierarchy)
+            return false;
+
+        RectTransform hintRoot = FindDeepChild(englishCanvasRoot != null ? englishCanvasRoot : englishMinigameRoot, "Hint_Phone") as RectTransform;
+        if (hintRoot == null)
+            return false;
+
+        hintRoot.gameObject.SetActive(true);
+
+        TextMeshProUGUI hintTextTarget = FindDeepChild(hintRoot, "Context")?.GetComponent<TextMeshProUGUI>();
+        if (hintTextTarget == null)
+            hintTextTarget = FindDeepChild(hintRoot, "Text (TMP)")?.GetComponent<TextMeshProUGUI>();
+        if (hintTextTarget == null)
+            hintTextTarget = hintRoot.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (hintTextTarget != null)
+        {
+            hintTextTarget.text = hintText;
+            if (stageIndex == 0)
+                hintTextTarget.fontSize = 24f;
+        }
+
+        RectTransform areaRect = FindDeepChild(hintRoot, "Area") as RectTransform;
+        if (areaRect != null)
+        {
+            var hover = GetOrAddComponent<HoverHintDrawer>(areaRect.gameObject);
+            hover.drawerRect = hintRoot;
+            hover.closedX = 1200f;
+            hover.openX = 620f;
+            hover.slideSpeed = 12f;
+            hover.enabled = true;
+
+            var areaImage = areaRect.GetComponent<Image>();
+            if (areaImage != null)
+                areaImage.raycastTarget = true;
+        }
+
+        Vector2 pos = hintRoot.anchoredPosition;
+        pos.x = 1200f;
+        hintRoot.anchoredPosition = pos;
+
+        englishSceneHintDrawer = hintRoot.gameObject;
+        englishSceneHintDrawerIsSceneObject = true;
+        return true;
     }
 
     private Button CreateEnglishWordInstance(RectTransform parent, string objectName, string text, Vector2? sizeOverride = null, bool preservePrefabLayout = false)
@@ -1079,7 +1160,7 @@ public class MathMinigameController : MonoBehaviour
         if (!(usingPrefab && preservePrefabLayout))
         {
             var layout = GetOrAddComponent<LayoutElement>(wordObject);
-            float preferredWidth = Mathf.Clamp(label.GetPreferredValues(text).x + 56f, 150f, 420f);
+            float preferredWidth = Mathf.Clamp(label.GetPreferredValues(text).x + 40f, 72f, 560f);
             float preferredHeight = sizeOverride?.y ?? (usingPrefab ? Mathf.Max(rect.rect.height, rect.sizeDelta.y, 74f) : 74f);
             Vector2 preferredSize = sizeOverride ?? new Vector2(preferredWidth, preferredHeight);
             layout.preferredWidth = preferredSize.x;
@@ -1095,8 +1176,7 @@ public class MathMinigameController : MonoBehaviour
     private void BuildEnglishMatchingSceneUI()
     {
         SetEnglishSceneStageActive(englishQuiz01Root);
-        if (englishQuiz01PromptText != null)
-            englishQuiz01PromptText.text = englishMatchingDescription;
+        RefreshEnglishQuiz01SceneCopy();
 
         feedbackText = CreateEnglishSceneFeedback(englishQuiz01Root);
         EnsureEnglishSceneHintDrawer(englishQuiz01Root, 0);
@@ -1175,11 +1255,18 @@ public class MathMinigameController : MonoBehaviour
         UpdateEnglishButtonStates();
     }
 
+    private void RefreshEnglishQuiz01SceneCopy()
+    {
+        if (englishQuiz01PromptText != null)
+            englishQuiz01PromptText.text = "Quiz 1. Match each English word with its correct meaning.";
+
+        if (englishQuiz01QuestionText != null)
+            englishQuiz01QuestionText.text = "Drag each word to the matching meaning.";
+    }
+
     private void BuildEnglishOrderingSceneUI()
     {
         SetEnglishSceneStageActive(englishQuiz02Root);
-        if (englishQuiz02PromptText != null)
-            englishQuiz02PromptText.text = englishOrderingTitle;
 
         feedbackText = CreateEnglishSceneFeedback(englishQuiz02Root);
         EnsureEnglishSceneHintDrawer(englishQuiz02Root, 1);
@@ -1189,7 +1276,14 @@ public class MathMinigameController : MonoBehaviour
 
         var layout = englishQuiz02WordsRoot.GetComponent<HorizontalLayoutGroup>();
         if (layout != null)
+        {
+            layout.childControlWidth = false;
+            layout.childControlHeight = false;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+            layout.spacing = 18f;
             layout.enabled = false;
+        }
 
         var fitter = englishQuiz02WordsRoot.GetComponent<ContentSizeFitter>();
         if (fitter != null)
@@ -1206,7 +1300,7 @@ public class MathMinigameController : MonoBehaviour
             : CreateEnglishSceneActionButton(
             englishQuiz02Root,
             "ResetButton_Runtime",
-            "처음 배열",
+            "泥섏쓬 諛곗뿴",
             new Vector2(0.24f, 0.08f),
             new Vector2(0.44f, 0.16f));
         englishQuiz02ResetButton.onClick.RemoveAllListeners();
@@ -1222,11 +1316,31 @@ public class MathMinigameController : MonoBehaviour
             : CreateEnglishSceneActionButton(
             englishQuiz02Root,
             "SubmitButton_Runtime",
-            "제출",
+            "?쒖텧",
             new Vector2(0.56f, 0.08f),
             new Vector2(0.76f, 0.16f));
         englishQuiz02SubmitButton.onClick.RemoveAllListeners();
         englishQuiz02SubmitButton.onClick.AddListener(EvaluateEnglishOrderingAnswer);
+        englishQuiz02SubmitButton.interactable = true;
+        englishQuiz02SubmitButton.gameObject.SetActive(true);
+        var quiz02SubmitLabel = englishQuiz02SubmitButton.GetComponentInChildren<TextMeshProUGUI>(true);
+        if (quiz02SubmitLabel != null)
+        {
+            quiz02SubmitLabel.text = "Submit";
+            quiz02SubmitLabel.raycastTarget = false;
+        }
+
+        if (englishQuiz02ResetButton != null)
+        {
+            englishQuiz02ResetButton.interactable = true;
+            englishQuiz02ResetButton.gameObject.SetActive(true);
+            var quiz02AgainLabel = englishQuiz02ResetButton.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (quiz02AgainLabel != null)
+            {
+                quiz02AgainLabel.text = "Again";
+                quiz02AgainLabel.raycastTarget = false;
+            }
+        }
     }
 
     private void BuildEnglishTrueFalseSceneUI()
@@ -1234,8 +1348,6 @@ public class MathMinigameController : MonoBehaviour
         SyncCurrentEnglishTrueFalseQuestion();
         SetEnglishSceneStageActive(englishQuiz03Root);
 
-        if (englishQuiz03PromptText != null)
-            englishQuiz03PromptText.text = englishTrueFalseTitle;
         if (englishQuiz03QuestionText != null)
             englishQuiz03QuestionText.text = englishTrueFalseQuestion.statement;
 
@@ -1262,14 +1374,44 @@ public class MathMinigameController : MonoBehaviour
 
         currentEnglishListeningQuestionIndex = Mathf.Clamp(currentEnglishListeningQuestionIndex, 0, englishListeningQuestions.Count - 1);
         englishListeningQuestion = englishListeningQuestions[currentEnglishListeningQuestionIndex];
+        EnsureEnglishListeningVoiceClipFallback();
+    }
+
+    private void EnsureEnglishListeningVoiceClipFallback()
+    {
+        if (englishListeningQuestion == null || englishListeningQuestion.voiceClip != null)
+            return;
+
+        string suffix = $"_{currentEnglishListeningQuestionIndex + 1:00}";
+        AudioClip[] clips = Resources.LoadAll<AudioClip>("SFX/MINIGAME/English");
+        if (clips == null || clips.Length == 0)
+            return;
+
+        for (int i = 0; i < clips.Length; i++)
+        {
+            AudioClip clip = clips[i];
+            if (clip == null || string.IsNullOrWhiteSpace(clip.name))
+                continue;
+
+            if (clip.name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+            {
+                englishListeningQuestion.voiceClip = clip;
+                if (englishListeningQuestions != null
+                    && currentEnglishListeningQuestionIndex >= 0
+                    && currentEnglishListeningQuestionIndex < englishListeningQuestions.Count
+                    && englishListeningQuestions[currentEnglishListeningQuestionIndex] != null)
+                {
+                    englishListeningQuestions[currentEnglishListeningQuestionIndex].voiceClip = clip;
+                }
+                return;
+            }
+        }
     }
 
     private void BuildEnglishListeningSceneUI()
     {
         SyncCurrentEnglishListeningQuestion();
         SetEnglishSceneStageActive(englishQuiz04Root);
-        if (englishQuiz04PromptText != null)
-            englishQuiz04PromptText.text = englishListeningTitle;
         if (englishQuiz04QuestionText != null)
             englishQuiz04QuestionText.text = englishListeningQuestion.sentenceWithBlank;
 
@@ -1280,6 +1422,22 @@ public class MathMinigameController : MonoBehaviour
         {
             englishQuiz04SoundButton.onClick.RemoveAllListeners();
             englishQuiz04SoundButton.onClick.AddListener(PlayEnglishListeningAudio);
+        }
+
+        if (englishQuiz04ChoicesRoot != null)
+            englishQuiz04ChoicesRoot.gameObject.SetActive(false);
+
+        if (englishQuiz04InputField != null)
+        {
+            englishQuiz04InputField.gameObject.SetActive(true);
+            englishQuiz04InputField.text = string.Empty;
+            englishQuiz04InputField.onSubmit.RemoveAllListeners();
+            englishQuiz04InputField.onSubmit.AddListener(_ => EvaluateEnglishListeningAnswer());
+            var inputText = englishQuiz04InputField.textComponent;
+            if (inputText != null)
+                inputText.raycastTarget = false;
+            if (englishQuiz04InputField.placeholder is TMP_Text placeholderText)
+                placeholderText.raycastTarget = false;
         }
 
         if (englishQuiz04ChoicesRoot == null)
@@ -1305,7 +1463,7 @@ public class MathMinigameController : MonoBehaviour
 
         englishSceneChoiceButtons.Clear();
         englishListeningSelectedChoiceIndex = -1;
-        for (int i = 0; i < englishListeningQuestion.choices.Length; i++)
+        for (int i = 0; englishQuiz04InputField == null && i < englishListeningQuestion.choices.Length; i++)
         {
             int choiceIndex = i;
             var button = CreateEnglishWordInstance(englishQuiz04ChoicesRoot, $"Choice_{i}", englishListeningQuestion.choices[i], preservePrefabLayout: true);
@@ -1324,7 +1482,7 @@ public class MathMinigameController : MonoBehaviour
         englishQuiz04SubmitButton = CreateEnglishSceneActionButton(
             englishQuiz04Root,
             "SubmitButton_Runtime",
-            "제출",
+            "?쒖텧",
             new Vector2(0.40f, 0.08f),
             new Vector2(0.60f, 0.15f));
         englishQuiz04SubmitButton.onClick.RemoveAllListeners();
@@ -1691,7 +1849,7 @@ public class MathMinigameController : MonoBehaviour
         {
             englishMatchedPairs.Add(selectedLeftPairIndex);
             DrawEnglishMatchLine(selectedLeftPairIndex, selectedRightDisplayIndex);
-            SetFeedback("정답!", true);
+            SetFeedback("Correct!", true);
             selectedLeftPairIndex = -1;
             selectedRightDisplayIndex = -1;
             englishDraggingLeftPairIndex = -1;
@@ -1707,7 +1865,7 @@ public class MathMinigameController : MonoBehaviour
             return;
         }
 
-        SetFeedback("다시 연결해 보자.", false);
+        SetFeedback("Try matching again.", false);
         selectedLeftPairIndex = -1;
         selectedRightDisplayIndex = -1;
         englishDraggingLeftPairIndex = -1;
@@ -1956,8 +2114,8 @@ public class MathMinigameController : MonoBehaviour
         var instructionText = CreateText("OrderingInstruction", wordsPanel.transform, 22f, FontStyles.Normal);
         instructionText.alignment = TextAlignmentOptions.Center;
         instructionText.color = new Color(0.24f, 0.24f, 0.28f, 1f);
-        instructionText.text = "단어를 좌우로 옮겨 순서를 맞춘 뒤 제출하세요.";
-        instructionText.text = "단어 타일을 마우스로 드래그해 올바른 순서로 배열한 뒤 제출하세요.";
+        instructionText.text = "?⑥뼱瑜?醫뚯슦濡???꺼 ?쒖꽌瑜?留욎텣 ???쒖텧?섏꽭??";
+        instructionText.text = "?⑥뼱 ??쇱쓣 留덉슦?ㅻ줈 ?쒕옒洹명빐 ?щ컮瑜??쒖꽌濡?諛곗뿴?????쒖텧?섏꽭??";
         SetPreferredHeight(instructionText.rectTransform, 42f);
 
         var tilesRoot = CreateUIObject("TilesRoot", wordsPanel.transform, typeof(HorizontalLayoutGroup), typeof(ContentSizeFitter));
@@ -1982,7 +2140,7 @@ public class MathMinigameController : MonoBehaviour
         resetRect.offsetMin = Vector2.zero;
         resetRect.offsetMax = Vector2.zero;
         resetLabel.fontSize = 24f;
-        resetLabel.text = "처음 배열";
+        resetLabel.text = "泥섏쓬 諛곗뿴";
         resetButton.onClick.AddListener(ResetEnglishOrderingLayout);
 
         var submitButton = CreateButton("SubmitButton", panel.transform, out var submitLabel);
@@ -1993,7 +2151,7 @@ public class MathMinigameController : MonoBehaviour
         submitRect.offsetMin = Vector2.zero;
         submitRect.offsetMax = Vector2.zero;
         submitLabel.fontSize = 24f;
-        submitLabel.text = "제출";
+        submitLabel.text = "?쒖텧";
         submitButton.onClick.AddListener(EvaluateEnglishOrderingAnswer);
 
         ResetEnglishOrderingLayout();
@@ -2199,8 +2357,6 @@ public class MathMinigameController : MonoBehaviour
         targetIndex = Mathf.Clamp(targetIndex, 0, englishOrderingCurrentOrder.Count - 1);
         int wordIndex = englishOrderingCurrentOrder[currentIndex];
         englishOrderingCurrentOrder.RemoveAt(currentIndex);
-        if (targetIndex > currentIndex)
-            targetIndex--;
         englishOrderingCurrentOrder.Insert(targetIndex, wordIndex);
         UpdateEnglishOrderingUI();
     }
@@ -2214,8 +2370,47 @@ public class MathMinigameController : MonoBehaviour
         for (int i = 0; i < englishOrderingQuestion.shuffledWords.Length; i++)
             englishOrderingCurrentOrder.Add(i);
 
+        ShuffleEnglishOrderingCurrentOrder();
+
         SetFeedback(string.Empty, true);
         UpdateEnglishOrderingUI();
+    }
+
+    private void ShuffleEnglishOrderingCurrentOrder()
+    {
+        if (englishOrderingCurrentOrder.Count <= 1)
+            return;
+
+        bool IsCorrectArrangement()
+        {
+            if (englishOrderingQuestion == null || englishOrderingQuestion.correctOrder == null)
+                return false;
+            if (englishOrderingQuestion.correctOrder.Length != englishOrderingCurrentOrder.Count)
+                return false;
+
+            for (int i = 0; i < englishOrderingCurrentOrder.Count; i++)
+            {
+                string selectedWord = englishOrderingQuestion.shuffledWords[englishOrderingCurrentOrder[i]]?.Trim() ?? string.Empty;
+                string expectedWord = englishOrderingQuestion.correctOrder[i]?.Trim() ?? string.Empty;
+                if (!string.Equals(selectedWord, expectedWord, StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+
+            return true;
+        }
+
+        for (int attempt = 0; attempt < 12; attempt++)
+        {
+            for (int i = englishOrderingCurrentOrder.Count - 1; i > 0; i--)
+            {
+                int j = UnityEngine.Random.Range(0, i + 1);
+                (englishOrderingCurrentOrder[i], englishOrderingCurrentOrder[j]) =
+                    (englishOrderingCurrentOrder[j], englishOrderingCurrentOrder[i]);
+            }
+
+            if (!IsCorrectArrangement())
+                return;
+        }
     }
 
     private void LayoutEnglishOrderingCardsManually()
@@ -2238,6 +2433,10 @@ public class MathMinigameController : MonoBehaviour
                 layout.ignoreLayout = true;
 
             float width = rect.rect.width;
+            if (layout != null && layout.preferredWidth > 1f)
+                width = layout.preferredWidth;
+            if (width <= 1f)
+                width = rect.sizeDelta.x;
             if (width <= 1f && layout != null)
                 width = layout.preferredWidth;
             if (width <= 1f)
@@ -2258,6 +2457,10 @@ public class MathMinigameController : MonoBehaviour
             var rect = handle.RectTransform;
             var layout = handle.LayoutElement;
             float width = rect.rect.width;
+            if (layout != null && layout.preferredWidth > 1f)
+                width = layout.preferredWidth;
+            if (width <= 1f)
+                width = rect.sizeDelta.x;
             if (width <= 1f && layout != null)
                 width = layout.preferredWidth;
             if (width <= 1f)
@@ -2361,8 +2564,9 @@ public class MathMinigameController : MonoBehaviour
         bool correct = englishOrderingCurrentOrder.Count == englishOrderingQuestion.correctOrder.Length;
         for (int i = 0; correct && i < englishOrderingQuestion.correctOrder.Length; i++)
         {
-            string selectedWord = englishOrderingQuestion.shuffledWords[englishOrderingCurrentOrder[i]];
-            if (!string.Equals(selectedWord, englishOrderingQuestion.correctOrder[i], StringComparison.Ordinal))
+            string selectedWord = englishOrderingQuestion.shuffledWords[englishOrderingCurrentOrder[i]]?.Trim() ?? string.Empty;
+            string expectedWord = englishOrderingQuestion.correctOrder[i]?.Trim() ?? string.Empty;
+            if (!string.Equals(selectedWord, expectedWord, StringComparison.OrdinalIgnoreCase))
                 correct = false;
         }
 
@@ -2375,7 +2579,7 @@ public class MathMinigameController : MonoBehaviour
             return;
         }
 
-        SetFeedback("순서를 다시 맞춰보자.", false);
+        SetFeedback("Try the order again.", false);
         ResetEnglishOrderingLayout();
         UpdateEnglishOrderingUI();
     }
@@ -2502,14 +2706,14 @@ public class MathMinigameController : MonoBehaviour
         bool correct = selected == question.correctAnswer;
         if (correct)
         {
-            SetFeedback(string.IsNullOrWhiteSpace(englishTrueFalseQuestion.explanation) ? "정답!" : englishTrueFalseQuestion.explanation, true);
+            SetFeedback(string.IsNullOrWhiteSpace(englishTrueFalseQuestion.explanation) ? "Correct!" : englishTrueFalseQuestion.explanation, true);
             if (advanceRoutine != null)
                 StopCoroutine(advanceRoutine);
             advanceRoutine = StartCoroutine(CoAdvanceAfterEnglishTrueFalseSuccess());
             return;
         }
 
-        SetFeedback("다시 생각해 보자.", false);
+        SetFeedback("Try again.", false);
     }
 
     private IEnumerator CoAdvanceAfterEnglishTrueFalseSuccess()
@@ -2585,7 +2789,7 @@ public class MathMinigameController : MonoBehaviour
         playRect.anchorMin = new Vector2(0.36f, 0.64f);
         playRect.anchorMax = new Vector2(0.64f, 0.72f);
         playLabel.fontSize = 30f;
-        playLabel.text = "음성 재생";
+        playLabel.text = "Play Audio";
         playButton.onClick.AddListener(PlayEnglishListeningAudio);
 
         var sentencePanel = CreateUIObject("SentencePanel", panel.transform, typeof(Image));
@@ -2646,7 +2850,7 @@ public class MathMinigameController : MonoBehaviour
         submitRect.anchorMin = new Vector2(0.38f, 0.08f);
         submitRect.anchorMax = new Vector2(0.62f, 0.14f);
         submitLabel.fontSize = 24f;
-        submitLabel.text = "제출";
+        submitLabel.text = "Submit";
         submitButton.onClick.AddListener(EvaluateEnglishListeningAnswer);
 
         EnsureEnglishAudioSource();
@@ -2731,10 +2935,27 @@ public class MathMinigameController : MonoBehaviour
 
     private void EvaluateEnglishListeningAnswer()
     {
-        if (advancing || englishListeningSelectedChoiceIndex < 0)
+        if (advancing)
             return;
 
-        bool correct = englishListeningSelectedChoiceIndex == englishListeningQuestion.correctChoiceIndex;
+        bool correct;
+        if (englishUseSceneHierarchy && englishQuiz04InputField != null)
+        {
+            string submitted = englishQuiz04InputField.text?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(submitted))
+                return;
+
+            string expected = GetEnglishListeningExpectedAnswer();
+            correct = string.Equals(submitted, expected, StringComparison.OrdinalIgnoreCase);
+        }
+        else
+        {
+            if (englishListeningSelectedChoiceIndex < 0)
+                return;
+
+            correct = englishListeningSelectedChoiceIndex == englishListeningQuestion.correctChoiceIndex;
+        }
+
         if (correct)
         {
             if (englishOrderingAnswerText != null)
@@ -2742,14 +2963,27 @@ public class MathMinigameController : MonoBehaviour
                     ? englishListeningQuestion.sentenceWithBlank
                     : englishListeningQuestion.completedSentence;
 
-            SetFeedback("정답!", true);
+            SetFeedback("Correct!", true);
             if (advanceRoutine != null)
                 StopCoroutine(advanceRoutine);
             advanceRoutine = StartCoroutine(CoAdvanceAfterEnglishListeningSuccess());
             return;
         }
 
-        SetFeedback("다시 들어보고 골라보자.", false);
+        SetFeedback("Listen again and try once more.", false);
+    }
+
+    private string GetEnglishListeningExpectedAnswer()
+    {
+        if (englishListeningQuestion != null
+            && englishListeningQuestion.choices != null
+            && englishListeningQuestion.correctChoiceIndex >= 0
+            && englishListeningQuestion.correctChoiceIndex < englishListeningQuestion.choices.Length)
+        {
+            return englishListeningQuestion.choices[englishListeningQuestion.correctChoiceIndex]?.Trim() ?? string.Empty;
+        }
+
+        return string.Empty;
     }
 
     private IEnumerator CoAdvanceAfterEnglishListeningSuccess()
@@ -2851,7 +3085,7 @@ public class MathMinigameController : MonoBehaviour
         questionImage.color = Color.white;
 
         var answerLabel = CreateText("AnswerLabel", parent, 24f, FontStyles.Bold);
-        answerLabel.text = L("MINIGAME_MATH_ANSWER_SECTION", "정답 제출", "Answer");
+        answerLabel.text = L("MINIGAME_MATH_ANSWER_SECTION", "?뺣떟 ?쒖텧", "Answer");
         answerLabel.color = accentColor;
         answerLabel.rectTransform.anchorMin = new Vector2(0.08f, 0.10f);
         answerLabel.rectTransform.anchorMax = new Vector2(0.92f, 0.16f);
@@ -2880,7 +3114,7 @@ public class MathMinigameController : MonoBehaviour
         var submitButton = CreateButton("SubmitButton", answerRow.transform, out var submitLabel);
         submitButton.onClick.AddListener(SubmitAnswer);
         SetPreferredSize(submitButton.transform as RectTransform, 150f, 66f);
-        submitLabel.text = L("MINIGAME_MATH_SUBMIT", "제출", "Submit");
+        submitLabel.text = L("MINIGAME_MATH_SUBMIT", "?쒖텧", "Submit");
 
         feedbackText = CreateText("FeedbackText", parent, 22f, FontStyles.Bold);
         feedbackText.color = feedbackSuccessColor;
@@ -2985,8 +3219,8 @@ public class MathMinigameController : MonoBehaviour
         hintRect.offsetMax = Vector2.zero;
 
         note.text = L("MINIGAME_MATH_DRAW_TITLE", "풀이 쓰는 곳", "Work Area");
-        hintButtonLabel.text = L("MINIGAME_MATH_HINT_BUTTON_SHORT", "물어보기", "Hint");
-        clearLabel.text = L("MINIGAME_MATH_CLEAR", "지우기", "Clear");
+        hintButtonLabel.text = L("MINIGAME_MATH_HINT_BUTTON_SHORT", "臾쇱뼱蹂닿린", "Hint");
+        clearLabel.text = L("MINIGAME_MATH_CLEAR", "吏?곌린", "Clear");
     }
 
     private void BuildFriendBubble(Transform parent)
@@ -3084,7 +3318,7 @@ public class MathMinigameController : MonoBehaviour
             : question.title;
 
         progressText.text = string.Format(
-            L("MINIGAME_MATH_PROGRESS", "{0}  |  문제 {1}/{2}", "{0}  |  Question {1}/{2}"),
+            L("MINIGAME_MATH_PROGRESS", "{0}  |  臾몄젣 {1}/{2}", "{0}  |  Question {1}/{2}"),
             displayTitle,
             currentQuestionIndex + 1,
             questions.Count);
@@ -3094,7 +3328,7 @@ public class MathMinigameController : MonoBehaviour
         questionImage.enabled = question.questionSprite != null;
 
         hintButtonLabel.text = string.Format(
-            L("MINIGAME_MATH_HINT_BUTTON_FMT", "옆 친구 힌트 ({0}/3)", "Hint ({0}/3)"),
+            L("MINIGAME_MATH_HINT_BUTTON_FMT", "??移쒓뎄 ?뚰듃 ({0}/3)", "Hint ({0}/3)"),
             Mathf.Min(revealedHintCount, 3));
 
         RefreshHints();
@@ -3149,14 +3383,14 @@ public class MathMinigameController : MonoBehaviour
                 builder.Append("\n\n");
 
             builder.Append(string.Format(
-                L("MINIGAME_MATH_HINT_FMT", "옆 친구 {0}: {1}", "Classmate {0}: {1}"),
+                L("MINIGAME_MATH_HINT_FMT", "??移쒓뎄 {0}: {1}", "Classmate {0}: {1}"),
                 shown + 1,
                 hint));
             shown++;
         }
 
         if (builder.Length == 0)
-            builder.Append(L("MINIGAME_MATH_HINT_EMPTY", "아직 힌트를 보지 않았어요.", "No hints revealed yet."));
+            builder.Append(L("MINIGAME_MATH_HINT_EMPTY", "?꾩쭅 ?뚰듃瑜?蹂댁? ?딆븯?댁슂.", "No hints revealed yet."));
 
         hintsText.text = builder.ToString();
         if (hintsScrollRect != null)
@@ -3168,7 +3402,7 @@ public class MathMinigameController : MonoBehaviour
         bool hasMore = FindNextAvailableHintIndex(revealedHintCount) >= 0;
         hintButton.interactable = hasMore;
         hintButtonLabel.text = string.Format(
-            L("MINIGAME_MATH_HINT_BUTTON_FMT", "옆 친구 힌트 ({0}/3)", "Hint ({0}/3)"),
+            L("MINIGAME_MATH_HINT_BUTTON_FMT", "??移쒓뎄 ?뚰듃 ({0}/3)", "Hint ({0}/3)"),
             shown);
     }
 
@@ -3211,14 +3445,14 @@ public class MathMinigameController : MonoBehaviour
         if (string.IsNullOrWhiteSpace(answer))
         {
             SetFeedback(
-                L("MINIGAME_MATH_EMPTY_ANSWER", "정답을 입력해 주세요.", "Please enter an answer."),
+                L("MINIGAME_MATH_EMPTY_ANSWER", "?뺣떟???낅젰??二쇱꽭??", "Please enter an answer."),
                 false);
             return;
         }
 
         if (IsAnswerCorrect(answer, questions[currentQuestionIndex]))
         {
-            SetFeedback(L("MINIGAME_MATH_CORRECT", "정답!", "Correct!"), true);
+            SetFeedback(L("MINIGAME_MATH_CORRECT", "?뺣떟!", "Correct!"), true);
 
             if (advanceRoutine != null)
                 StopCoroutine(advanceRoutine);
@@ -3227,7 +3461,7 @@ public class MathMinigameController : MonoBehaviour
         }
 
         SetFeedback(
-            L("MINIGAME_MATH_WRONG", "앗, 다시 한 번 풀어보자.", "Not quite. Try again."),
+            L("MINIGAME_MATH_WRONG", "?? ?ㅼ떆 ??踰???대낫??", "Not quite. Try again."),
             false);
         RequestAnswerInputFocus();
     }
@@ -3472,13 +3706,25 @@ public class MathMinigameController : MonoBehaviour
             focusRoutine = null;
         }
 
+        StartCoroutine(CoEndAfterFade(success));
+    }
+
+    private IEnumerator CoEndAfterFade(bool success)
+    {
+        var fader = SceneTransitionFader.EnsureInstance();
+        if (fader != null)
+        {
+            fader.PrepareFadeInOnNextScene(SceneTransitionFader.DefaultFadeInDuration);
+            yield return fader.FadeOut(SceneTransitionFader.DefaultFadeOutDuration);
+        }
+
         CleanupRuntimeObjects();
 
         if (FlowManager.Instance != null)
         {
             int delta = success ? 0 : penaltyOnGiveUp;
-            FlowManager.Instance.CompleteCurrentEvent(delta);
-            return;
+            FlowManager.Instance.CompleteCurrentEvent(delta, false);
+            yield break;
         }
 
         var gm = FindAnyObjectByType<GameManager>();
@@ -3706,6 +3952,9 @@ public class MathMinigameController : MonoBehaviour
         englishMatchingDescription = string.IsNullOrWhiteSpace(config.englishMatchingDescription)
             ? englishMatchingDescription
             : config.englishMatchingDescription;
+        englishMatchingHint = string.IsNullOrWhiteSpace(config.englishMatchingHint)
+            ? englishMatchingHint
+            : config.englishMatchingHint;
         englishMatchSuccessDelaySeconds = config.englishMatchSuccessDelaySeconds;
 
         if (config.englishMatchingPairs != null && config.englishMatchingPairs.Count > 0)
@@ -3733,6 +3982,7 @@ public class MathMinigameController : MonoBehaviour
                 prompt = string.IsNullOrWhiteSpace(config.englishOrderingQuestion.prompt)
                     ? englishOrderingQuestion.prompt
                     : config.englishOrderingQuestion.prompt,
+                hintText = config.englishOrderingQuestion.hintText ?? string.Empty,
                 shuffledWords = config.englishOrderingQuestion.shuffledWords != null
                     ? (string[])config.englishOrderingQuestion.shuffledWords.Clone()
                     : Array.Empty<string>(),
@@ -3756,6 +4006,7 @@ public class MathMinigameController : MonoBehaviour
                     : config.englishTrueFalseQuestion.prompt,
                 statement = config.englishTrueFalseQuestion.statement ?? string.Empty,
                 correctAnswer = config.englishTrueFalseQuestion.correctAnswer,
+                hintText = config.englishTrueFalseQuestion.hintText ?? string.Empty,
                 explanation = config.englishTrueFalseQuestion.explanation ?? string.Empty
             };
         }
@@ -3771,6 +4022,7 @@ public class MathMinigameController : MonoBehaviour
                     prompt = source.prompt ?? string.Empty,
                     statement = source.statement ?? string.Empty,
                     correctAnswer = source.correctAnswer,
+                    hintText = source.hintText ?? string.Empty,
                     explanation = source.explanation ?? string.Empty
                 });
             }
@@ -3787,6 +4039,7 @@ public class MathMinigameController : MonoBehaviour
                 prompt = string.IsNullOrWhiteSpace(config.englishListeningQuestion.prompt)
                     ? englishListeningQuestion.prompt
                     : config.englishListeningQuestion.prompt,
+                hintText = config.englishListeningQuestion.hintText ?? string.Empty,
                 sentenceWithBlank = config.englishListeningQuestion.sentenceWithBlank ?? string.Empty,
                 voiceClip = config.englishListeningQuestion.voiceClip,
                 choices = config.englishListeningQuestion.choices != null
@@ -3809,8 +4062,9 @@ public class MathMinigameController : MonoBehaviour
                 englishListeningQuestions.Add(new EnglishListeningBlankQuestionDefinition
                 {
                     prompt = string.IsNullOrWhiteSpace(source.prompt)
-                        ? "Listen to the audio and choose the word that best fits the blank."
+                        ? "Listen to the audio and type the missing word."
                         : source.prompt,
+                    hintText = source.hintText ?? string.Empty,
                     sentenceWithBlank = source.sentenceWithBlank ?? string.Empty,
                     voiceClip = source.voiceClip,
                     choices = source.choices != null ? (string[])source.choices.Clone() : Array.Empty<string>(),
@@ -3951,7 +4205,7 @@ public class MathMinigameController : MonoBehaviour
         var placeholder = CreateText("Placeholder", viewport.transform, 24f, FontStyles.Italic);
         placeholder.color = new Color(0.3f, 0.3f, 0.34f, 0.55f);
         placeholder.alignment = TextAlignmentOptions.MidlineLeft;
-        placeholder.text = L("MINIGAME_MATH_ANSWER_PLACEHOLDER", "정답 입력", "Enter answer");
+        placeholder.text = L("MINIGAME_MATH_ANSWER_PLACEHOLDER", "?뺣떟 ?낅젰", "Enter answer");
         StretchFull(placeholder.rectTransform);
         placeholder.margin = new Vector4(4f, 0f, 4f, 0f);
 
@@ -4001,3 +4255,4 @@ public class MathMinigameController : MonoBehaviour
         layout.preferredHeight = height;
     }
 }
+
