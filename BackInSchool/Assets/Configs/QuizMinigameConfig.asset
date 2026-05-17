@@ -104,7 +104,7 @@ MonoBehaviour:
     correctChoiceIndex: 0
     completedSentence: Have almost too much self-belief.
   - prompt: Listen to the audio and type the missing word.
-    hintText: "학교는 미래를 위한 연습이고, 연습은 완벽을 만든다. 그런데 아무도 완벽하지 않다면, 왜 연습해야 하지?"
+    hintText: "학교는 미래를 위한 연습이라고 연습하면 완벽해진다고들 한다. 그런데 세상에 완벽한 사람은 없다면, 왜 연습을 해야하는 걸까?"
     sentenceWithBlank: School is practice for the future, and practice makes ________, but if nobody’s ________, why practice?
     voiceClip: {fileID: 0}
     choices:
