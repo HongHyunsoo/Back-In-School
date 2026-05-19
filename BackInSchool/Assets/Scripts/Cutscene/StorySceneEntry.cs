@@ -48,6 +48,7 @@ public class StorySceneEntry : MonoBehaviour
             return;
         }
 
+        ApplyPreDialogueVisibilityOverrides(convoId);
         ApplyStoryPresentations(dm, convoId);
         dm.StartDialogue(convoId, null);
     }
@@ -84,6 +85,7 @@ public class StorySceneEntry : MonoBehaviour
 
         DialogueManager.DialogueConversationCompleted -= HandleTemporaryConversationCompleted;
         DialogueManager.DialogueConversationCompleted += HandleTemporaryConversationCompleted;
+        ApplyPreDialogueVisibilityOverrides(temporaryConversationId);
         ApplyStoryPresentations(dm, temporaryConversationId);
         dm.StartDialogue(temporaryConversationId, null);
         return true;
@@ -104,6 +106,38 @@ public class StorySceneEntry : MonoBehaviour
 
         DialogueManager.DialogueConversationCompleted -= HandleTemporaryConversationCompleted;
         StartCoroutine(CoReturnFromTemporaryStory());
+    }
+
+    private void ApplyPreDialogueVisibilityOverrides(string conversationId)
+    {
+        if (string.Equals(conversationId, "DAY1_CLASSOPEN", System.StringComparison.Ordinal) ||
+            string.Equals(conversationId, "DAY1_CLASSEND", System.StringComparison.Ordinal))
+        {
+            SetCharacterVisible("NAME_NUREONG", false);
+        }
+    }
+
+    private static void SetCharacterVisible(string characterId, bool visible)
+    {
+        if (string.IsNullOrWhiteSpace(characterId))
+            return;
+
+        var actors = FindObjectsByType<CharacterActor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int i = 0; i < actors.Length; i++)
+        {
+            CharacterActor actor = actors[i];
+            if (actor == null || !string.Equals(actor.characterId, characterId, System.StringComparison.Ordinal))
+                continue;
+
+            actor.gameObject.SetActive(visible);
+
+            var renderers = actor.GetComponentsInChildren<SpriteRenderer>(true);
+            for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
+            {
+                if (renderers[rendererIndex] != null)
+                    renderers[rendererIndex].enabled = visible;
+            }
+        }
     }
 
     private IEnumerator CoReturnFromTemporaryStory()

@@ -30,7 +30,10 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
     [SerializeField] private float doorCloseDelaySeconds = 0.8f;
     [SerializeField] private float line31SilenceSeconds = 4f;
     [SerializeField] private float line35SilenceSeconds = 2f;
+    [SerializeField] private float line31DoorPassingDelaySeconds = 3f;
+    [SerializeField] private float line31AdvanceDelayAfterPassingSeconds = 3f;
     [SerializeField] private float keyFadeOutSeconds = 1f;
+    [SerializeField] private float autoAdvancedLineInputCooldownSeconds = 0.35f;
 
     [Header("Door Target")]
     [SerializeField] private Transform doorCloseTarget;
@@ -38,6 +41,8 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
     [SerializeField] private string alternateDoorCloseObjectName = "Door_Close";
     [SerializeField] private AnimationClip doorOpenClip;
     [SerializeField] private AnimationClip doorCloseClip;
+    [SerializeField] private AnimationClip doorPassingClip;
+    [SerializeField] [Range(0.05f, 2f)] private float doorPassingSpeed = 0.3f;
     [SerializeField] private string doorSpriteResourcePath = "Object/DoorClose";
     [SerializeField] private float manualDoorFrameSeconds = 0.08f;
 
@@ -156,7 +161,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
             handledMove31 = true;
             if (line31MoveCoroutine != null)
                 StopCoroutine(line31MoveCoroutine);
-            line31MoveCoroutine = StartCoroutine(CoMoveThenAdvance(line31SilenceSeconds, movesAfterLine31, moveCue31LineId, false));
+            line31MoveCoroutine = StartCoroutine(CoLine31Sequence());
             return;
         }
 
@@ -206,6 +211,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
             string.Equals(dialogueManager.CurrentLineId, keyCueLineId, System.StringComparison.OrdinalIgnoreCase))
         {
             dialogueManager.DisplayNextSentence();
+            dialogueManager.BlockAdvanceForSeconds(autoAdvancedLineInputCooldownSeconds, true);
         }
 
         keySequenceCoroutine = null;
@@ -230,12 +236,54 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
             string.Equals(dialogueManager.CurrentLineId, expectedLineId, System.StringComparison.OrdinalIgnoreCase))
         {
             dialogueManager.DisplayNextSentence();
+            dialogueManager.BlockAdvanceForSeconds(autoAdvancedLineInputCooldownSeconds, true);
         }
 
         if (string.Equals(expectedLineId, moveCue31LineId, System.StringComparison.OrdinalIgnoreCase))
             line31MoveCoroutine = null;
         else if (string.Equals(expectedLineId, moveCue35LineId, System.StringComparison.OrdinalIgnoreCase))
             line35MoveCoroutine = null;
+    }
+
+    private IEnumerator CoLine31Sequence()
+    {
+        var dialogueManager = FindAnyObjectByType<DialogueManager>();
+        float passingDuration = doorPassingClip != null
+            ? Mathf.Max(doorPassingClip.length / Mathf.Max(0.01f, doorPassingSpeed), 0f)
+            : 0f;
+        float totalDelay = Mathf.Max(0f, line31DoorPassingDelaySeconds) + passingDuration + Mathf.Max(0f, line31AdvanceDelayAfterPassingSeconds);
+
+        if (dialogueManager != null)
+        {
+            dialogueManager.BlockAdvanceForSeconds(totalDelay + 0.1f);
+            dialogueManager.SetSpeechBubbleVisible(false);
+        }
+
+        StartMoves(movesAfterLine31);
+
+        yield return new WaitForSecondsRealtime(Mathf.Max(0f, line31DoorPassingDelaySeconds));
+
+        Transform target = ResolveDoorCloseTarget();
+        if (target != null && doorPassingClip != null)
+            yield return StartCoroutine(CoSampleClip(target, doorPassingClip, doorPassingSpeed));
+
+        StopKeyLoopImmediate();
+
+        yield return new WaitForSecondsRealtime(Mathf.Max(0f, line31AdvanceDelayAfterPassingSeconds));
+
+        if (dialogueManager != null &&
+            dialogueManager.IsDialogueActive &&
+            string.Equals(dialogueManager.CurrentConversationId, conversationId, System.StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(dialogueManager.CurrentLineId, moveCue31LineId, System.StringComparison.OrdinalIgnoreCase))
+        {
+            dialogueManager.DisplayNextSentence();
+            dialogueManager.BlockAdvanceForSeconds(autoAdvancedLineInputCooldownSeconds, true);
+        }
+
+        if (dialogueManager != null)
+            dialogueManager.SetSpeechBubbleVisible(true);
+
+        line31MoveCoroutine = null;
     }
 
     private IEnumerator CoPlayDoorClose()
@@ -255,7 +303,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         doorCloseCoroutine = null;
     }
 
-    private IEnumerator CoSampleClip(Transform target, AnimationClip clip)
+    private IEnumerator CoSampleClip(Transform target, AnimationClip clip, float playbackSpeed = 1f)
     {
         if (target == null || clip == null)
             yield break;
@@ -267,12 +315,13 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
             animator.enabled = false;
 
         float duration = Mathf.Max(clip.length, 0.0001f);
+        float speed = Mathf.Max(0.01f, playbackSpeed);
         float elapsed = 0f;
 
         while (elapsed < duration)
         {
             clip.SampleAnimation(target.gameObject, elapsed);
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += Time.unscaledDeltaTime * speed;
             yield return null;
         }
 

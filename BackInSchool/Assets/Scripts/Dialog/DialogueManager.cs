@@ -78,6 +78,7 @@ public class DialogueManager : MonoBehaviour
     private readonly Dictionary<Animator, DialogueCharacterPresentation> suspendedDefaultSources = new Dictionary<Animator, DialogueCharacterPresentation>();
     private readonly HashSet<Animator> currentLinePresentationAnimators = new HashSet<Animator>();
     private float advanceBlockedUntilUnscaledTime = 0f;
+    private bool forceHideSpeechBubble = false;
 
     private void StopPlayerMotionImmediate()
     {
@@ -190,6 +191,13 @@ public class DialogueManager : MonoBehaviour
     {
         if (IsDialogueActive && currentBubbleSpeaker != null && speechBubble != null)
         {
+            if (forceHideSpeechBubble)
+            {
+                speechBubble.gameObject.SetActive(false);
+                inputConsumedThisFrame = false;
+                return;
+            }
+
             var cam = Camera.main;
             if (cam == null) return;
 
@@ -746,6 +754,34 @@ public class DialogueManager : MonoBehaviour
             advanceBlockedUntilUnscaledTime = target;
     }
 
+    public void BlockAdvanceForSeconds(float seconds, bool consumeThisFrame)
+    {
+        if (consumeThisFrame)
+        {
+            blockAdvanceInputThisFrame = true;
+            StartCoroutine(ReleaseAdvanceBlockNextFrame());
+        }
+
+        BlockAdvanceForSeconds(seconds);
+    }
+
+    public void SetSpeechBubbleVisible(bool visible)
+    {
+        if (speechBubble == null)
+            return;
+
+        forceHideSpeechBubble = !visible;
+
+        if (!visible)
+        {
+            speechBubble.gameObject.SetActive(false);
+            return;
+        }
+
+        EnsureSpeechBubbleOnRuntimeCanvas();
+        speechBubble.gameObject.SetActive(IsDialogueActive && currentBubbleSpeaker != null);
+    }
+
 
     /*  public void DisplayNextLine()
       {
@@ -1060,6 +1096,7 @@ public class DialogueManager : MonoBehaviour
         isTyping = false;
         isBusy = false;
         blockAdvanceInputThisFrame = false;
+        forceHideSpeechBubble = false;
         pendingLinePresentations.Clear();
         activeLinePresentations.Clear();
         currentLineIndex = -1;
