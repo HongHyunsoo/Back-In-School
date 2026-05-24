@@ -23,6 +23,9 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
     [SerializeField] private string moveCue31LineId = "D1_AfterSchool_D_31";
     [SerializeField] private string moveCue35LineId = "D1_AfterSchool_D_35";
     [SerializeField] private string flipCue37LineId = "D1_AfterSchool_D_37";
+    [SerializeField] private string afterSchoolFConversationId = "D1_AfterSchool_F";
+    [SerializeField] private string subwayAlarmCueLineId = "D1_AfterSchool_F_30";
+    [SerializeField] private string subwayPassingCueLineId = "D1_AfterSchool_F_33";
 
     [Header("Timing")]
     [SerializeField] private float keySoundDelaySeconds = 1f;
@@ -51,6 +54,22 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
     [SerializeField] [Range(0f, 1f)] private float keySoundVolume = 1f;
     [SerializeField] private AudioClip doorCloseSound;
     [SerializeField] [Range(0f, 1f)] private float doorCloseSoundVolume = 0.4f;
+    [SerializeField] private AudioClip subwayApproachAlarmSound;
+    [SerializeField] [Range(0f, 1f)] private float subwayApproachAlarmVolume = 1f;
+    [SerializeField] private AudioClip subwayPassingSound;
+    [SerializeField] [Range(0f, 1f)] private float subwayPassingVolume = 1f;
+    [SerializeField] private float subwayPassingFadeDelaySeconds = 3f;
+    [SerializeField] private float subwayPassingFadeOutSeconds = 1.2f;
+
+    [Header("Subway Approach")]
+    [SerializeField] private Transform subwayApproachTarget;
+    [SerializeField] private string subwayApproachObjectName = "Subway_approach";
+    [SerializeField] private AnimationClip subwayApproachOnceClip;
+    [SerializeField] private AnimationClip subwayApproachLoopClip;
+    [SerializeField] private Sprite[] subwayApproachOnceSprites;
+    [SerializeField] private Sprite[] subwayApproachLoopSprites;
+    [SerializeField] private float subwayApproachFrameSeconds = 0.083333f;
+    [SerializeField] [Range(0.05f, 2f)] private float subwayApproachSpeed = 1f;
 
     [Header("Appearance")]
     [SerializeField] private Transform appearanceActor;
@@ -65,12 +84,15 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
 
     private AudioSource audioSource;
     private AudioSource keyLoopSource;
+    private AudioSource subwayPassingSource;
     private Coroutine keySequenceCoroutine;
     private Coroutine doorCloseCoroutine;
     private Coroutine line31MoveCoroutine;
     private Coroutine line35MoveCoroutine;
     private Coroutine line07MoveCoroutine;
     private Coroutine keyFadeCoroutine;
+    private Coroutine subwayPassingFadeCoroutine;
+    private Coroutine subwayApproachCoroutine;
     private bool handledKeySequence;
     private bool handledDoorClose;
     private bool handledMove31;
@@ -78,8 +100,11 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
     private bool handledMove07;
     private bool handledAppearance;
     private bool handledFlip37;
+    private bool handledSubwayAlarm;
+    private bool handledSubwayPassing;
     private bool initializedDoorOpen;
     private bool conversationPrepared;
+    private bool afterSchoolFPrepared;
     private Sprite[] cachedDoorSprites;
     private Animator cachedDoorAnimator;
     private bool cachedDoorAnimatorState;
@@ -88,6 +113,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
     {
         EnsureAudioSource();
         EnsureDoorStartsOpen();
+        SetSubwayApproachVisible(false);
     }
 
     private void OnEnable()
@@ -113,6 +139,10 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
             StopCoroutine(line07MoveCoroutine);
         if (keyFadeCoroutine != null)
             StopCoroutine(keyFadeCoroutine);
+        if (subwayPassingFadeCoroutine != null)
+            StopCoroutine(subwayPassingFadeCoroutine);
+        if (subwayApproachCoroutine != null)
+            StopCoroutine(subwayApproachCoroutine);
 
         keySequenceCoroutine = null;
         doorCloseCoroutine = null;
@@ -120,16 +150,26 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         line35MoveCoroutine = null;
         line07MoveCoroutine = null;
         keyFadeCoroutine = null;
+        subwayPassingFadeCoroutine = null;
+        subwayApproachCoroutine = null;
+        StopSubwayPassingImmediate();
     }
 
     private void Update()
     {
         ResetIfConversationChanged();
         PrepareConversationStateIfNeeded();
+        PrepareAfterSchoolFStateIfNeeded();
     }
 
     private void HandleDialogueLineShown(string shownConversationId, string lineId)
     {
+        if (string.Equals(shownConversationId, afterSchoolFConversationId, System.StringComparison.OrdinalIgnoreCase))
+        {
+            HandleAfterSchoolFLine(lineId);
+            return;
+        }
+
         if (!string.Equals(shownConversationId, conversationId, System.StringComparison.OrdinalIgnoreCase))
             return;
 
@@ -191,6 +231,26 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         {
             handledFlip37 = true;
             FlipAppearanceActor();
+        }
+    }
+
+    private void HandleAfterSchoolFLine(string lineId)
+    {
+        if (string.Equals(lineId, subwayAlarmCueLineId, System.StringComparison.OrdinalIgnoreCase) && !handledSubwayAlarm)
+        {
+            handledSubwayAlarm = true;
+            PlayOneShot(subwayApproachAlarmSound, subwayApproachAlarmVolume);
+            return;
+        }
+
+        if (string.Equals(lineId, subwayPassingCueLineId, System.StringComparison.OrdinalIgnoreCase) && !handledSubwayPassing)
+        {
+            handledSubwayPassing = true;
+            var dialogueManager = FindAnyObjectByType<DialogueManager>();
+            if (dialogueManager != null)
+                dialogueManager.BlockAdvanceForSeconds(2f);
+            StartSubwayPassingSound();
+            StartSubwayApproachAnimation();
         }
     }
 
@@ -463,6 +523,21 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         return null;
     }
 
+    private Transform ResolveSubwayApproachTarget()
+    {
+        if (subwayApproachTarget != null)
+            return subwayApproachTarget;
+
+        Transform found = FindTransformByName(subwayApproachObjectName);
+        if (found != null)
+        {
+            subwayApproachTarget = found;
+            return subwayApproachTarget;
+        }
+
+        return null;
+    }
+
     private static Transform ResolveRenderableDoorTarget(Transform target)
     {
         if (target == null)
@@ -537,6 +612,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         if (audioSource != null)
         {
             EnsureKeyLoopSource();
+            EnsureSubwayPassingSource();
             return;
         }
 
@@ -551,6 +627,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         audioSource.ignoreListenerPause = true;
 
         EnsureKeyLoopSource();
+        EnsureSubwayPassingSource();
     }
 
     private void EnsureKeyLoopSource()
@@ -567,6 +644,22 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         keyLoopSource.loop = true;
         keyLoopSource.spatialBlend = 0f;
         keyLoopSource.ignoreListenerPause = true;
+    }
+
+    private void EnsureSubwayPassingSource()
+    {
+        if (subwayPassingSource != null)
+            return;
+
+        AudioSource[] sources = GetComponents<AudioSource>();
+        subwayPassingSource = sources.FirstOrDefault(source => source != audioSource && source != keyLoopSource);
+        if (subwayPassingSource == null)
+            subwayPassingSource = gameObject.AddComponent<AudioSource>();
+
+        subwayPassingSource.playOnAwake = false;
+        subwayPassingSource.loop = false;
+        subwayPassingSource.spatialBlend = 0f;
+        subwayPassingSource.ignoreListenerPause = true;
     }
 
     private void StartKeyLoop()
@@ -626,6 +719,141 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         keyLoopSource.Stop();
         keyLoopSource.clip = null;
         keyLoopSource.volume = 0f;
+    }
+
+    private void StartSubwayPassingSound()
+    {
+        EnsureAudioSource();
+        if (subwayPassingSource == null || subwayPassingSound == null)
+            return;
+
+        if (subwayPassingFadeCoroutine != null)
+        {
+            StopCoroutine(subwayPassingFadeCoroutine);
+            subwayPassingFadeCoroutine = null;
+        }
+
+        subwayPassingSource.Stop();
+        subwayPassingSource.clip = subwayPassingSound;
+        subwayPassingSource.volume = AudioSettingsService.ScaleSfx(Mathf.Clamp01(subwayPassingVolume));
+        subwayPassingSource.Play();
+        subwayPassingFadeCoroutine = StartCoroutine(CoFadeOutSubwayPassing());
+    }
+
+    private IEnumerator CoFadeOutSubwayPassing()
+    {
+        yield return new WaitForSecondsRealtime(Mathf.Max(0f, subwayPassingFadeDelaySeconds));
+
+        if (subwayPassingSource == null)
+            yield break;
+
+        float startVolume = subwayPassingSource.volume;
+        float duration = Mathf.Max(0.01f, subwayPassingFadeOutSeconds);
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            subwayPassingSource.volume = Mathf.Lerp(startVolume, 0f, Mathf.Clamp01(elapsed / duration));
+            yield return null;
+        }
+
+        StopSubwayPassingImmediate();
+        subwayPassingFadeCoroutine = null;
+    }
+
+    private void StopSubwayPassingImmediate()
+    {
+        if (subwayPassingSource == null)
+            return;
+
+        subwayPassingSource.Stop();
+        subwayPassingSource.clip = null;
+        subwayPassingSource.volume = 0f;
+    }
+
+    private void StartSubwayApproachAnimation()
+    {
+        Transform target = ResolveSubwayApproachTarget();
+        if (target == null)
+            return;
+
+        SetSubwayApproachVisible(true);
+
+        if (subwayApproachCoroutine != null)
+            StopCoroutine(subwayApproachCoroutine);
+
+        subwayApproachCoroutine = StartCoroutine(CoPlaySubwayApproach(target));
+    }
+
+    private IEnumerator CoPlaySubwayApproach(Transform target)
+    {
+        if (target == null)
+            yield break;
+
+        SpriteRenderer spriteRenderer = target.GetComponent<SpriteRenderer>();
+        if (spriteRenderer == null)
+            spriteRenderer = target.GetComponentInChildren<SpriteRenderer>(true);
+
+        if (spriteRenderer != null && subwayApproachOnceSprites != null && subwayApproachOnceSprites.Length > 0)
+        {
+            for (int i = 0; i < subwayApproachOnceSprites.Length; i++)
+            {
+                if (subwayApproachOnceSprites[i] != null)
+                    spriteRenderer.sprite = subwayApproachOnceSprites[i];
+                yield return new WaitForSecondsRealtime(GetSubwayApproachFrameSeconds());
+            }
+
+            while (target != null && subwayApproachLoopSprites != null && subwayApproachLoopSprites.Length > 0)
+            {
+                for (int i = 0; i < subwayApproachLoopSprites.Length; i++)
+                {
+                    if (subwayApproachLoopSprites[i] != null)
+                        spriteRenderer.sprite = subwayApproachLoopSprites[i];
+                    yield return new WaitForSecondsRealtime(GetSubwayApproachFrameSeconds());
+                }
+            }
+
+            subwayApproachCoroutine = null;
+            yield break;
+        }
+
+        if (subwayApproachOnceClip != null)
+        {
+            float onceDuration = Mathf.Max(subwayApproachOnceClip.length, 0.0001f);
+            float onceElapsed = 0f;
+            float speed = Mathf.Max(0.01f, subwayApproachSpeed);
+
+            while (target != null && onceElapsed < onceDuration)
+            {
+                subwayApproachOnceClip.SampleAnimation(target.gameObject, onceElapsed);
+                onceElapsed += Time.unscaledDeltaTime * speed;
+                yield return null;
+            }
+
+            if (target != null)
+                subwayApproachOnceClip.SampleAnimation(target.gameObject, onceDuration);
+        }
+
+        if (target != null && subwayApproachLoopClip != null)
+            subwayApproachLoopClip.SampleAnimation(target.gameObject, 0f);
+
+        float loopElapsed = 0f;
+        while (target != null && subwayApproachLoopClip != null)
+        {
+            float loopDuration = Mathf.Max(subwayApproachLoopClip.length, 0.0001f);
+            float sampleTime = loopElapsed % loopDuration;
+            subwayApproachLoopClip.SampleAnimation(target.gameObject, sampleTime);
+            loopElapsed += Time.unscaledDeltaTime * Mathf.Max(0.01f, subwayApproachSpeed);
+            yield return null;
+        }
+
+        subwayApproachCoroutine = null;
+    }
+
+    private float GetSubwayApproachFrameSeconds()
+    {
+        return Mathf.Max(0.01f, subwayApproachFrameSeconds / Mathf.Max(0.01f, subwayApproachSpeed));
     }
 
     private void StartMoves(MoveInstruction[] moves)
@@ -806,6 +1034,18 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         conversationPrepared = true;
     }
 
+    private void PrepareAfterSchoolFStateIfNeeded()
+    {
+        if (!string.Equals(FlowContext.CurrentId, afterSchoolFConversationId, System.StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (afterSchoolFPrepared)
+            return;
+
+        SetSubwayApproachVisible(false);
+        afterSchoolFPrepared = true;
+    }
+
     private void SetAppearanceActorVisible(bool visible)
     {
         if (appearanceActor == null)
@@ -825,10 +1065,21 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         appearanceActor.localScale = scale;
     }
 
+    private void SetSubwayApproachVisible(bool visible)
+    {
+        Transform target = ResolveSubwayApproachTarget();
+        if (target == null)
+            return;
+
+        if (target.gameObject.activeSelf != visible)
+            target.gameObject.SetActive(visible);
+    }
+
     private void ResetIfConversationChanged()
     {
         string activeConversationId = FlowContext.CurrentId;
-        if (string.Equals(activeConversationId, conversationId, System.StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(activeConversationId, conversationId, System.StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(activeConversationId, afterSchoolFConversationId, System.StringComparison.OrdinalIgnoreCase))
             return;
 
         handledKeySequence = false;
@@ -838,9 +1089,23 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         handledMove07 = false;
         handledAppearance = false;
         handledFlip37 = false;
+        handledSubwayAlarm = false;
+        handledSubwayPassing = false;
         initializedDoorOpen = false;
         conversationPrepared = false;
+        afterSchoolFPrepared = false;
         StopKeyLoopImmediate();
+        StopSubwayPassingImmediate();
+        if (subwayPassingFadeCoroutine != null)
+        {
+            StopCoroutine(subwayPassingFadeCoroutine);
+            subwayPassingFadeCoroutine = null;
+        }
+        if (subwayApproachCoroutine != null)
+        {
+            StopCoroutine(subwayApproachCoroutine);
+            subwayApproachCoroutine = null;
+        }
         SetAppearanceActorVisible(true);
     }
 }

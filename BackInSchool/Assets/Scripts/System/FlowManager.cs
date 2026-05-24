@@ -97,6 +97,7 @@ public class FlowManager : MonoBehaviour
             list.Add(E(FlowEventType.STORY, "D1_AfterSchool_C", "AfterSchool C"));
             list.Add(E(FlowEventType.STORY, "D1_AfterSchool_D", "AfterSchool D"));
             list.Add(E(FlowEventType.STORY, "D1_AfterSchool_E", "AfterSchool E"));
+            list.Add(E(FlowEventType.STORY, "D1_AfterSchool_F", "AfterSchool F"));
             list.Add(E(FlowEventType.CHAT, "D1_CHAT_TO_HOME", "Chat To Home"));
 
             timeline[1] = list;
