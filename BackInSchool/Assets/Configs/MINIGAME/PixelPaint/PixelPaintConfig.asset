@@ -137,7 +137,7 @@ MonoBehaviour:
   cellSize: 0.8
   boardOrigin: {x: -3.2, y: -2.8}
   numberTextScaleMultiplier: 0.48
-  numberFontAsset: {fileID: 0}
+  numberFontAsset: {fileID: 11400000, guid: f0fd8ed4dff808b47a3664e0ee1293e3, type: 2}
   autoFitToCamera: 1
   fitRatio: 0.92
   enableWheelZoom: 1

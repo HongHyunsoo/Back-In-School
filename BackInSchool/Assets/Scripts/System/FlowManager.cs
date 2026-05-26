@@ -199,6 +199,7 @@ public class FlowManager : MonoBehaviour
     {
         string resolvedId = ResolveFlowId(ev);
         FlowContext.Set(resolvedId, ev.type);
+        Day1TutorialController.SyncToFlowPosition(day, stepIndex, resolvedId, ev.type);
         PhoneGalleryService.NotifyFlowVisited(resolvedId);
 
         // Keep day in sync only. Scene-based state enter is handled by GameManager.OnSceneLoaded.
@@ -287,6 +288,7 @@ public class FlowManager : MonoBehaviour
 
         resolvedId = ResolveFlowId(nextEvent);
         FlowContext.Set(resolvedId, nextEvent.type);
+        Day1TutorialController.SyncToFlowPosition(day, stepIndex, resolvedId, nextEvent.type);
         PhoneGalleryService.NotifyFlowVisited(resolvedId);
 
         var gm = FindAnyObjectByType<GameManager>();

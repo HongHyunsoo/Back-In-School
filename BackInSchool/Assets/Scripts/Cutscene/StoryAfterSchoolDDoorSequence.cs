@@ -83,6 +83,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
     [SerializeField] private Sprite[] playerWalkSprites;
 
     private AudioSource audioSource;
+    private AudioSource doorCloseSource;
     private AudioSource keyLoopSource;
     private AudioSource subwayPassingSource;
     private Coroutine keySequenceCoroutine;
@@ -210,7 +211,11 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
             handledDoorClose = true;
             var dialogueManager = FindAnyObjectByType<DialogueManager>();
             if (dialogueManager != null)
-                dialogueManager.BlockAdvanceForSeconds(doorCloseDelaySeconds + 0.1f);
+            {
+                dialogueManager.BlockAdvanceForSeconds(doorCloseDelaySeconds + 0.6f);
+                dialogueManager.MuteTypingSfxForSeconds(doorCloseDelaySeconds + 0.6f);
+                dialogueManager.SetSpeechBubbleVisible(false);
+            }
             StartKeyFadeOut();
             if (doorCloseCoroutine != null)
                 StopCoroutine(doorCloseCoroutine);
@@ -351,7 +356,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         yield return new WaitForSecondsRealtime(Mathf.Max(0f, doorCloseDelaySeconds));
 
         Transform target = ResolveDoorCloseTarget();
-        PlayOneShot(doorCloseSound, doorCloseSoundVolume);
+        PlayDoorCloseSound();
         if (target != null)
         {
             if (HasManualDoorSprites())
@@ -359,6 +364,10 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
             else if (doorCloseClip != null)
                 yield return StartCoroutine(CoSampleClip(target, doorCloseClip));
         }
+
+        var dialogueManager = FindAnyObjectByType<DialogueManager>();
+        if (dialogueManager != null)
+            dialogueManager.SetSpeechBubbleVisible(true);
 
         doorCloseCoroutine = null;
     }
@@ -607,12 +616,24 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         audioSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(Mathf.Clamp01(volume)));
     }
 
+    private void PlayDoorCloseSound()
+    {
+        EnsureAudioSource();
+        if (doorCloseSource == null || doorCloseSound == null)
+            return;
+
+        doorCloseSource.Stop();
+        doorCloseSource.clip = null;
+        doorCloseSource.PlayOneShot(doorCloseSound, AudioSettingsService.ScaleSfx(Mathf.Clamp01(doorCloseSoundVolume)));
+    }
+
     private void EnsureAudioSource()
     {
         if (audioSource != null)
         {
             EnsureKeyLoopSource();
             EnsureSubwayPassingSource();
+            EnsureDoorCloseSource();
             return;
         }
 
@@ -628,6 +649,23 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
 
         EnsureKeyLoopSource();
         EnsureSubwayPassingSource();
+        EnsureDoorCloseSource();
+    }
+
+    private void EnsureDoorCloseSource()
+    {
+        if (doorCloseSource != null)
+            return;
+
+        AudioSource[] sources = GetComponents<AudioSource>();
+        doorCloseSource = sources.FirstOrDefault(source => source != audioSource && source != keyLoopSource && source != subwayPassingSource);
+        if (doorCloseSource == null)
+            doorCloseSource = gameObject.AddComponent<AudioSource>();
+
+        doorCloseSource.playOnAwake = false;
+        doorCloseSource.loop = false;
+        doorCloseSource.spatialBlend = 0f;
+        doorCloseSource.ignoreListenerPause = true;
     }
 
     private void EnsureKeyLoopSource()

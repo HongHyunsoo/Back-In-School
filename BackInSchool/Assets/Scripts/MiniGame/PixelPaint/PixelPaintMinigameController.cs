@@ -158,6 +158,7 @@ public class PixelPaintMinigameController : MonoBehaviour
         public SpriteRenderer fill;
         public SpriteRenderer edge;
         public TextMeshPro label;
+        public TextMeshPro wrongMark;
     }
 
     private const float RuntimeNumberScale = 0.38f;
@@ -165,6 +166,7 @@ public class PixelPaintMinigameController : MonoBehaviour
     private static readonly Color RuntimeNumberOutlineColor = new Color(0f, 0f, 0f, 1f);
     private const float RuntimeNumberOutlineWidth = 0.0f;
     private const float RuntimeNumberOutlineSoftness = 0.0f;
+    private static readonly Color WrongMarkColor = new Color(0.95f, 0.08f, 0.08f, 0.92f);
 
     private void Awake()
     {
@@ -305,8 +307,6 @@ public class PixelPaintMinigameController : MonoBehaviour
                 RefreshHeader(L("MINIGAME_PIXELPAINT_NOT_SOLVED", "아직 정답이 아닙니다.", "Not solved yet."));
         }
 
-        if (Input.GetKeyDown(KeyCode.Escape))
-            End(false);
     }
 
     private void EnsurePuzzlesOrFallback()
@@ -667,6 +667,20 @@ public class PixelPaintMinigameController : MonoBehaviour
                 float textScale = Mathf.Clamp(cellSize * numberTextScaleMultiplier, 0.08f, 0.65f);
                 textGo.transform.localScale = new Vector3(textScale, textScale, 1f);
 
+                var wrongGo = new GameObject("WrongMark");
+                wrongGo.transform.SetParent(root.transform, false);
+                var wrongMark = wrongGo.AddComponent<TextMeshPro>();
+                wrongMark.text = "X";
+                wrongMark.alignment = TextAlignmentOptions.Center;
+                wrongMark.fontSize = Mathf.Clamp(cellSize * 46f, 8f, 22f);
+                wrongMark.fontStyle = FontStyles.Bold;
+                wrongMark.sortingOrder = 13;
+                wrongMark.color = WrongMarkColor;
+                wrongMark.enabled = false;
+                ApplyRuntimeUIFont(wrongMark);
+                float wrongScale = Mathf.Clamp(cellSize * 0.56f, 0.12f, 0.76f);
+                wrongGo.transform.localScale = new Vector3(wrongScale, wrongScale, 1f);
+
                 var col = root.AddComponent<BoxCollider2D>();
                 col.size = new Vector2(cellSize * 0.96f, cellSize * 0.96f);
 
@@ -674,7 +688,7 @@ public class PixelPaintMinigameController : MonoBehaviour
                 marker.x = x;
                 marker.y = y;
 
-                views[x, y] = new CellView { fill = fill, edge = edge, label = number };
+                views[x, y] = new CellView { fill = fill, edge = edge, label = number, wrongMark = wrongMark };
                 RefreshCellVisual(x, y);
             }
         }
@@ -688,7 +702,7 @@ public class PixelPaintMinigameController : MonoBehaviour
             number.font = numberFontAsset;
 
         number.enableVertexGradient = false;
-        number.enableWordWrapping = false;
+        ApplyRuntimeUIFont(number);
         number.extraPadding = false;
         number.color = RuntimeNumberColor;
         number.outlineColor = RuntimeNumberOutlineColor;
@@ -711,7 +725,7 @@ public class PixelPaintMinigameController : MonoBehaviour
 
         #if UNITY_EDITOR
         numberFontAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(
-            "Assets/Fonts/Galmuri11-Condensed SDF.asset");
+            "Assets/Fonts/Galmuri11 SDF.asset");
         #endif
     }
 
@@ -750,23 +764,35 @@ public class PixelPaintMinigameController : MonoBehaviour
         headerText.alignment = TextAlignmentOptions.Center;
         headerText.fontSize = 30f;
         headerText.color = Color.white;
+        ApplyRuntimeUIFont(headerText);
 
-        var palettePanel = new GameObject("PalettePanel", typeof(RectTransform), typeof(VerticalLayoutGroup));
+        var palettePanel = new GameObject("PalettePanel", typeof(RectTransform), typeof(GridLayoutGroup));
         palettePanel.transform.SetParent(root.transform, false);
         var panelRect = palettePanel.GetComponent<RectTransform>();
         panelRect.anchorMin = new Vector2(0f, 0.5f);
         panelRect.anchorMax = new Vector2(0f, 0.5f);
         panelRect.pivot = new Vector2(0f, 0.5f);
         panelRect.anchoredPosition = palettePanelAnchoredPosition;
-        panelRect.sizeDelta = palettePanelSize;
 
-        var v = palettePanel.GetComponent<VerticalLayoutGroup>();
-        v.spacing = paletteSpacing;
-        v.childForceExpandWidth = false;
-        v.childForceExpandHeight = false;
-        v.childControlWidth = false;
-        v.childControlHeight = false;
-        v.childAlignment = TextAnchor.MiddleCenter;
+        int paletteCount = Mathf.Max(1, palette != null ? palette.Length : 0);
+        int columns = paletteCount > 8 ? 2 : 1;
+        int rows = Mathf.CeilToInt(paletteCount / (float)columns);
+        float availableHeight = Mathf.Max(120f, Mathf.Min(palettePanelSize.y, 920f));
+        float availableWidth = Mathf.Max(80f, palettePanelSize.x * columns);
+        float fittedByHeight = (availableHeight - Mathf.Max(0, rows - 1) * paletteSpacing) / rows;
+        float fittedByWidth = (availableWidth - Mathf.Max(0, columns - 1) * paletteSpacing) / columns;
+        float buttonEdge = Mathf.Clamp(Mathf.Min(paletteButtonSize.x, paletteButtonSize.y, fittedByHeight, fittedByWidth), 38f, Mathf.Max(38f, Mathf.Min(paletteButtonSize.x, paletteButtonSize.y)));
+        Vector2 resolvedButtonSize = new Vector2(buttonEdge, buttonEdge);
+        panelRect.sizeDelta = new Vector2(
+            columns * buttonEdge + Mathf.Max(0, columns - 1) * paletteSpacing,
+            rows * buttonEdge + Mathf.Max(0, rows - 1) * paletteSpacing);
+
+        var grid = palettePanel.GetComponent<GridLayoutGroup>();
+        grid.spacing = new Vector2(paletteSpacing, paletteSpacing);
+        grid.cellSize = resolvedButtonSize;
+        grid.childAlignment = TextAnchor.MiddleCenter;
+        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = columns;
 
         paletteButtons.Clear();
         paletteButtonImages.Clear();
@@ -780,11 +806,11 @@ public class PixelPaintMinigameController : MonoBehaviour
             btnGo.transform.SetParent(palettePanel.transform, false);
 
             var btnRect = btnGo.GetComponent<RectTransform>();
-            btnRect.sizeDelta = paletteButtonSize;
+            btnRect.sizeDelta = resolvedButtonSize;
 
             var layout = btnGo.GetComponent<LayoutElement>();
-            layout.preferredWidth = paletteButtonSize.x;
-            layout.preferredHeight = paletteButtonSize.y;
+            layout.preferredWidth = resolvedButtonSize.x;
+            layout.preferredHeight = resolvedButtonSize.y;
 
             var image = btnGo.GetComponent<Image>();
             image.color = palette[i];
@@ -811,14 +837,27 @@ public class PixelPaintMinigameController : MonoBehaviour
 
             var label = textGo.GetComponent<TextMeshProUGUI>();
             label.text = colorIndex.ToString();
-            label.fontSize = 24f;
+            label.fontSize = Mathf.Clamp(buttonEdge * 0.34f, 14f, 24f);
             label.alignment = TextAlignmentOptions.Center;
             label.color = (palette[i].grayscale < 0.45f) ? Color.white : Color.black;
             label.raycastTarget = false;
+            ApplyRuntimeUIFont(label);
 
             paletteButtons.Add(button);
             paletteButtonImages.Add(image);
         }
+    }
+
+    private void ApplyRuntimeUIFont(TMP_Text text)
+    {
+        if (text == null)
+            return;
+
+        if (numberFontAsset != null)
+            text.font = numberFontAsset;
+
+        text.enableWordWrapping = false;
+        text.extraPadding = true;
     }
 
     private void EnsureEventSystem()
@@ -1123,7 +1162,7 @@ public class PixelPaintMinigameController : MonoBehaviour
         if (headerText == null) return;
 
         string colorLabel = L("MINIGAME_PIXELPAINT_COLOR", "색상", "Color");
-        string controls = L("MINIGAME_PIXELPAINT_CONTROLS", "좌클릭 칠하기 / 우클릭 지우기 / 엔터 제출 / ESC 포기", "LMB Paint / RMB Erase / Enter Submit / Esc Give up");
+        string controls = L("MINIGAME_PIXELPAINT_CONTROLS", "좌클릭 칠하기 / 우클릭 지우기", "LMB Paint / RMB Erase");
         string format = L("MINIGAME_PIXELPAINT_HEADER_FMT", "{0} ({1}/{2})  |  {3} {4}  |  {5}", "{0} ({1}/{2})  |  {3} {4}  |  {5}");
 
         string text =
@@ -1170,6 +1209,7 @@ public class PixelPaintMinigameController : MonoBehaviour
             v.fill.color = new Color(0f, 0f, 0f, emptyCellAlpha);
             if (v.label != null) v.label.text = "";
             if (v.label != null) v.label.enabled = false;
+            if (v.wrongMark != null) v.wrongMark.enabled = false;
             if (v.edge != null) v.edge.enabled = !hideEmptyCellOutline;
             return;
         }
@@ -1183,6 +1223,7 @@ public class PixelPaintMinigameController : MonoBehaviour
                 v.label.enabled = true;
                 v.label.color = new Color(RuntimeNumberColor.r, RuntimeNumberColor.g, RuntimeNumberColor.b, 0.58f);
             }
+            if (v.wrongMark != null) v.wrongMark.enabled = false;
             if (v.edge != null) v.edge.enabled = true;
             return;
         }
@@ -1195,6 +1236,8 @@ public class PixelPaintMinigameController : MonoBehaviour
             v.label.enabled = true;
             v.label.color = new Color(RuntimeNumberColor.r, RuntimeNumberColor.g, RuntimeNumberColor.b, 0.40f);
         }
+        if (v.wrongMark != null)
+            v.wrongMark.enabled = paint != target[x, y];
         if (v.edge != null) v.edge.enabled = true;
     }
 

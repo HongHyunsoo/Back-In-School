@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class PhoneSystem : MonoBehaviour
@@ -42,6 +43,13 @@ public class PhoneSystem : MonoBehaviour
             DontDestroyOnLoad(dm.gameObject);
 
         EnsureDefaultAudioClips();
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
     private void Start()
@@ -79,6 +87,22 @@ public class PhoneSystem : MonoBehaviour
     }
 
     public bool IsOpen => phoneUIInstance != null && phoneUIInstance.activeSelf;
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        ResetPhoneUiScreenState();
+    }
+
+    private void ResetPhoneUiScreenState()
+    {
+        if (phoneUIInstance == null)
+            return;
+
+        EnsureRuntimeComponents();
+        var appManager = phoneUIInstance.GetComponent<PhoneAppManager>();
+        if (appManager != null)
+            appManager.ResetToHomeForSceneChange();
+    }
 
     private void EnsureRuntimeComponents()
     {

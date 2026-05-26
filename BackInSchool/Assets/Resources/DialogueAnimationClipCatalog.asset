@@ -47,6 +47,10 @@ MonoBehaviour:
     clip: {fileID: 7400000, guid: d045489ff62de1c44992ca2963dd6cee, type: 2}
   - key: GONYONG_Idie
     clip: {fileID: 7400000, guid: dd07fb61dd69fbe4a8bee7fd565a7a3e, type: 2}
+  - key: GONYONG_Scared
+    clip: {fileID: 7400000, guid: c19f22d990a3537439d6316b02406ca1, type: 2}
+  - key: GONYONG_Seat
+    clip: {fileID: 7400000, guid: 69c58749c9fc5f142b2a9b79d16a6cd8, type: 2}
   - key: GONYONG_Smile
     clip: {fileID: 7400000, guid: 6c2f7c807f7157549b9c5bd1ffb41dc3, type: 2}
   - key: HWAN_Idle
@@ -91,6 +95,12 @@ MonoBehaviour:
     clip: {fileID: 7400000, guid: 02a18cd14a7ca8547b73d8f8c526db35, type: 2}
   - key: Player_Fall_Shoes
     clip: {fileID: 7400000, guid: 7990e356e5f560848a04a9ad1d770979, type: 2}
+  - key: Player_Back
+    clip: {fileID: 7400000, guid: 42409e4b2ad26e54f9b5e229869a85b1, type: 2}
+  - key: Player_Exited
+    clip: {fileID: 7400000, guid: 3b9570416e4b1de4b8f3870241eb3695, type: 2}
+  - key: Player_Hamberger_Surprise
+    clip: {fileID: 7400000, guid: c8421652c2c9bb046a9b9171f4311db9, type: 2}
   - key: Player_Idle
     clip: {fileID: 7400000, guid: c95439fcb950160459f08d95080755bf, type: 2}
   - key: Player_Idle_Shoes
@@ -103,6 +113,8 @@ MonoBehaviour:
     clip: {fileID: 7400000, guid: 12fc866742123f54783144ff3123958a, type: 2}
   - key: Player_Land_Shoes
     clip: {fileID: 7400000, guid: 54da9c6f1e9b7344f92cdc398ddbdfc4, type: 2}
+  - key: Player_Scared
+    clip: {fileID: 7400000, guid: 7a581916258b02d41b3d83d83f504b11, type: 2}
   - key: Player_Seat
     clip: {fileID: 7400000, guid: e0285b7a66f89554d95fdd05e8a80ecc, type: 2}
   - key: Player_Vomit
@@ -111,6 +123,10 @@ MonoBehaviour:
     clip: {fileID: 7400000, guid: 5b829f0974694424fb14f01817d11b89, type: 2}
   - key: Player_Walk_Shoes
     clip: {fileID: 7400000, guid: b4bb5e4f31c1b6b44b100c83e8adfd6b, type: 2}
+  - key: Player_Walk_BackPack_Angry
+    clip: {fileID: 7400000, guid: bdacc1b0dc614684bb536618dfa04881, type: 2}
+  - key: Player_Walk_BackPack_Natural
+    clip: {fileID: 7400000, guid: 507b1b651b3cd884e9a1f3943df6d164, type: 2}
   - key: PUEPLE_Exited
     clip: {fileID: 7400000, guid: 290042981a4f412469ce843cd29fa3cb, type: 2}
   - key: PUEPLE_Idle

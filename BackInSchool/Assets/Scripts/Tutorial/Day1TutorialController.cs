@@ -43,6 +43,11 @@ public static class Day1TutorialController
         return controller == null || controller.IsMorningSeatInteractionAllowed();
     }
 
+    public static void SyncToFlowPosition(int day, int stepIndex, string flowId, FlowEventType eventType)
+    {
+        EnsureRuntime()?.SyncToFlowPosition(day, stepIndex, flowId, eventType);
+    }
+
     private static Day1TutorialRuntimeController EnsureRuntime()
     {
         if (runtime != null)
@@ -177,6 +182,31 @@ internal sealed class Day1TutorialRuntimeController : MonoBehaviour
         trackedPlayer = null;
         playerMoveAnchorValid = false;
         RefreshVisibility(false);
+    }
+
+    public void SyncToFlowPosition(int flowDay, int flowStepIndex, string flowId, FlowEventType eventType)
+    {
+        if (completed)
+            return;
+
+        if (flowDay != 1)
+        {
+            MarkCompleted();
+            return;
+        }
+
+        if (flowStepIndex >= 3)
+        {
+            MarkCompleted();
+            return;
+        }
+
+        if (eventType == FlowEventType.FREEROAM &&
+            string.Equals(flowId, "D1_BEFORE_ASSEMBLY", StringComparison.OrdinalIgnoreCase) &&
+            stage < (int)TutorialStage.MorningMove)
+        {
+            SetStage((int)TutorialStage.MorningMove);
+        }
     }
 
     public bool IsPhoneAppAllowed(PhoneAppId appId)

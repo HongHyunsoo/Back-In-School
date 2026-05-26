@@ -142,6 +142,19 @@ public class PhoneAppManager : MonoBehaviour
         ShowHome();
     }
 
+    public void ResetToHomeForSceneChange()
+    {
+        if (openRoutine != null)
+        {
+            StopCoroutine(openRoutine);
+            openRoutine = null;
+        }
+
+        HideAllSplashPanels();
+        ShowHome();
+        SetLocked(false);
+    }
+
     private bool TryHandleCurrentAppBack()
     {
         switch (CurrentApp)

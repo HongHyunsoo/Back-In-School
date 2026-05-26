@@ -79,6 +79,7 @@ public class DialogueManager : MonoBehaviour
     private readonly HashSet<Animator> currentLinePresentationAnimators = new HashSet<Animator>();
     private float advanceBlockedUntilUnscaledTime = 0f;
     private bool forceHideSpeechBubble = false;
+    private float typingSfxMutedUntilUnscaledTime = 0f;
 
     private void StopPlayerMotionImmediate()
     {
@@ -765,6 +766,16 @@ public class DialogueManager : MonoBehaviour
         BlockAdvanceForSeconds(seconds);
     }
 
+    public void MuteTypingSfxForSeconds(float seconds)
+    {
+        if (seconds <= 0f)
+            return;
+
+        float target = Time.unscaledTime + seconds;
+        if (target > typingSfxMutedUntilUnscaledTime)
+            typingSfxMutedUntilUnscaledTime = target;
+    }
+
     public void SetSpeechBubbleVisible(bool visible)
     {
         if (speechBubble == null)
@@ -967,6 +978,9 @@ public class DialogueManager : MonoBehaviour
     private bool ShouldPlayTypingSfx(char letter, ref int audibleCharacterCount)
     {
         if (typingSfx == null || audioSource == null)
+            return false;
+
+        if (Time.unscaledTime < typingSfxMutedUntilUnscaledTime)
             return false;
 
         if (typingSfxIgnoreWhitespace && (char.IsWhiteSpace(letter) || char.IsPunctuation(letter)))

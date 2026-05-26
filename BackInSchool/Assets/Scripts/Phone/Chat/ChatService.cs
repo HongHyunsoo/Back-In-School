@@ -201,6 +201,7 @@ public class ChatService : MonoBehaviour
     {
         string activeFlowId = PlayerPrefs.GetString("FLOW_ID", "");
         var segs = ChatSegmentCatalog.Instance.GetSegments(day, state, activeFlowId);
+        PruneUnfinishedSessionsOutsideActiveSubwayFlow(day, state, activeFlowId, segs);
         if (segs == null || segs.Count == 0)
             return;
 
@@ -232,8 +233,8 @@ public class ChatService : MonoBehaviour
                 session.roomId = seg.RoomId;
             }
 
-            if (isNewSession && seg.Notify)
-                AddUnread(seg.RoomId, 1);
+            if (seg.Notify && !session.completed && session.progressIndex <= 0)
+                EnsureUnreadAtLeast(seg.RoomId, 1);
         }
 
         Save();
@@ -243,6 +244,96 @@ public class ChatService : MonoBehaviour
         foreach (var seg in segs)
             Debug.Log($"[Chat] + room={seg.RoomId} conv={seg.ConversationId} notify={seg.Notify}");
 
+    }
+
+    private void EnsureUnreadAtLeast(string roomId, int amount)
+    {
+        var room = GetRoom(roomId);
+        if (room == null)
+            return;
+
+        int targetAmount = Mathf.Max(0, amount);
+        if (targetAmount <= 0 || room.unreadCount >= targetAmount)
+            return;
+
+        room.unreadCount = targetAmount;
+        Save();
+        OnChanged?.Invoke();
+        OnUnreadAdded?.Invoke(roomId, targetAmount);
+    }
+
+    private void PruneUnfinishedSessionsOutsideActiveSubwayFlow(int day, GameState state, string activeFlowId, List<ChatSegmentCatalog.Entry> activeSegments)
+    {
+        if (state != GameState.Subway || Data == null || Data.sessions == null)
+            return;
+
+        var activeConversationIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (activeSegments != null)
+        {
+            for (int i = 0; i < activeSegments.Count; i++)
+            {
+                var segment = activeSegments[i];
+                if (segment != null && !string.IsNullOrEmpty(segment.ConversationId))
+                    activeConversationIds.Add(segment.ConversationId);
+            }
+        }
+
+        bool changed = false;
+        var roomsToClearUnread = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (int i = Data.sessions.Count - 1; i >= 0; i--)
+        {
+            ChatSessionState session = Data.sessions[i];
+            if (session == null)
+            {
+                Data.sessions.RemoveAt(i);
+                changed = true;
+                continue;
+            }
+
+            if (session.completed)
+                continue;
+
+            if (activeConversationIds.Contains(session.sessionId))
+                continue;
+
+            if (!string.IsNullOrEmpty(session.roomId))
+                roomsToClearUnread.Add(session.roomId);
+
+            if (string.Equals(Data.activeSessionId, session.sessionId, StringComparison.OrdinalIgnoreCase))
+                Data.activeSessionId = null;
+
+            Data.sessions.RemoveAt(i);
+            changed = true;
+        }
+
+        if (!string.IsNullOrEmpty(Data.activeSessionId) && !activeConversationIds.Contains(Data.activeSessionId))
+        {
+            Data.activeSessionId = null;
+            changed = true;
+        }
+
+        if (Data.rooms != null)
+        {
+            for (int i = 0; i < Data.rooms.Count; i++)
+            {
+                ChatRoomState room = Data.rooms[i];
+                if (room == null || !roomsToClearUnread.Contains(room.roomId))
+                    continue;
+
+                if (room.unreadCount != 0)
+                {
+                    room.unreadCount = 0;
+                    changed = true;
+                }
+            }
+        }
+
+        if (!changed)
+            return;
+
+        Save();
+        OnChanged?.Invoke();
+        Debug.Log($"[Chat] Cleared unfinished sessions outside flow '{activeFlowId}' for day={day}, state={state}.");
     }
     private void EnsureRoomExists(string roomId)
     {

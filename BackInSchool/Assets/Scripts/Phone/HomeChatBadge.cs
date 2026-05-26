@@ -1,36 +1,80 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 using TMPro;
+using UnityEngine;
 
 public class HomeChatBadge : MonoBehaviour
 {
-    [SerializeField] private GameObject badgeRoot;      // 뱃지 동그라미(배경) 오브젝트
-    [SerializeField] private TMP_Text badgeText;        // 숫자 텍스트(TMP)
+    [SerializeField] private GameObject badgeRoot;
+    [SerializeField] private TMP_Text badgeText;
+
+    private ChatService subscribedService;
+    private CanvasGroup selfCanvasGroup;
 
     private void OnEnable()
     {
+        SubscribeIfNeeded();
         Refresh();
-        if (ChatService.Instance != null)
-            ChatService.Instance.OnChanged += Refresh;
+    }
+
+    private void Update()
+    {
+        SubscribeIfNeeded();
+        Refresh();
     }
 
     private void OnDisable()
     {
-        if (ChatService.Instance != null)
-            ChatService.Instance.OnChanged -= Refresh;
+        Unsubscribe();
+    }
+
+    private void SubscribeIfNeeded()
+    {
+        if (subscribedService == ChatService.Instance)
+            return;
+
+        Unsubscribe();
+        subscribedService = ChatService.Instance;
+        if (subscribedService != null)
+            subscribedService.OnChanged += Refresh;
+    }
+
+    private void Unsubscribe()
+    {
+        if (subscribedService != null)
+            subscribedService.OnChanged -= Refresh;
+        subscribedService = null;
     }
 
     private void Refresh()
     {
-        if (ChatService.Instance == null) return;
+        if (ChatService.Instance == null)
+            return;
 
         int total = ChatService.Instance.GetTotalUnread();
         bool show = total > 0;
 
-        if (badgeRoot) badgeRoot.SetActive(show);
-        if (badgeText) badgeText.text = total.ToString();
+        SetBadgeVisible(show);
+        if (badgeText != null)
+            badgeText.text = total.ToString();
+    }
+
+    private void SetBadgeVisible(bool show)
+    {
+        if (badgeRoot == null)
+            return;
+
+        if (badgeRoot != gameObject)
+        {
+            badgeRoot.SetActive(show);
+            return;
+        }
+
+        if (selfCanvasGroup == null)
+            selfCanvasGroup = badgeRoot.GetComponent<CanvasGroup>();
+        if (selfCanvasGroup == null)
+            selfCanvasGroup = badgeRoot.AddComponent<CanvasGroup>();
+
+        selfCanvasGroup.alpha = show ? 1f : 0f;
+        selfCanvasGroup.interactable = false;
+        selfCanvasGroup.blocksRaycasts = false;
     }
 }
-
-
