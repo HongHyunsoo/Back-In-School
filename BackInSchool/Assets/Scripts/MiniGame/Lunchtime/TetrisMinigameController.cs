@@ -24,7 +24,7 @@ public class TetrisMinigameController : MonoBehaviour
     public bool applyBoardLayoutFromConfig;
 
     [Header("Goal")]
-    public int targetLockedPieces = 15;
+    public int targetLockedPieces = 12;
 
     [Header("Audio")]
     public AudioSource audioSource;
@@ -869,7 +869,6 @@ public class TetrisMinigameController : MonoBehaviour
             return;
         }
 
-        bool overflow = LocksAboveTop(active.cells, active.position);
         GameObject lockedPrefab = null;
         if (useCompositePieceVisuals)
         {
@@ -896,12 +895,6 @@ public class TetrisMinigameController : MonoBehaviour
         lockPending = false;
         lockPendingTimer = 0f;
         RefreshHud();
-
-        if (overflow)
-        {
-            End(false);
-            return;
-        }
 
         if (lockedCount >= targetLockedPieces)
         {

@@ -211,7 +211,7 @@ public class TetrisMinigameConfig : ScriptableObject
     }
 
     [Header("Goal")]
-    public int targetLockedPieces = 15;
+    public int targetLockedPieces = 12;
 
     [Header("Difficulty")]
     public float fallInterval = 0.75f;

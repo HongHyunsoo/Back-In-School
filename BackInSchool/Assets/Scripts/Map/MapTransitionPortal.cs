@@ -491,7 +491,8 @@ public class MapTransitionPortal : MonoBehaviour
 
         return portalName == "Portal"
             || portalName == "Portal_L"
-            || portalName == "Portal_R";
+            || portalName == "Portal_R"
+            || portalName.IndexOf("Portal", System.StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private bool IsDoorPortal()
@@ -508,10 +509,44 @@ public class MapTransitionPortal : MonoBehaviour
         EnsureAudioSource();
         EnsureDefaultAudio();
 
-        if (audioSource == null || transitionSfx == null)
+        AudioClip clip = ResolveRuntimeTransitionSfx();
+        if (audioSource == null || clip == null)
             return;
 
-        audioSource.PlayOneShot(transitionSfx, AudioSettingsService.ScaleSfx(transitionSfxVolume));
+        audioSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(ResolveRuntimeTransitionSfxVolume()));
+    }
+
+    private AudioClip ResolveRuntimeTransitionSfx()
+    {
+        if (IsDoorPortal())
+        {
+            string path = FlowContext.IsLunchFreeRoam()
+                ? "SFX/FREEROAM_SFX/Transition_Door_02Sfx"
+                : "SFX/FREEROAM_SFX/Transition_Door_01Sfx";
+            AudioClip doorClip = AudioSettingsService.LoadResourceClip(path);
+            if (doorClip != null)
+                return doorClip;
+        }
+
+        if (IsCorridorPortal())
+        {
+            AudioClip corridorClip = AudioSettingsService.LoadResourceClip("SFX/FREEROAM_SFX/Transition_Corrider_Sfx");
+            if (corridorClip != null)
+                return corridorClip;
+        }
+
+        return transitionSfx;
+    }
+
+    private float ResolveRuntimeTransitionSfxVolume()
+    {
+        if (IsDoorPortal())
+            return FlowContext.IsLunchFreeRoam() ? 0.3f : 0.3f;
+
+        if (IsCorridorPortal())
+            return 0.25f;
+
+        return transitionSfxVolume;
     }
 
     private void ApplyPromptFont(TMP_Text text)

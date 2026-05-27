@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55af1ce3d869b474bbe76794a5a584dd, type: 3}
   m_Name: TetrisConfig
   m_EditorClassIdentifier: 
-  targetLockedPieces: 15
+  targetLockedPieces: 12
   fallInterval: 0.75
   softDropInterval: 0.06
   penaltyOnFail: 1

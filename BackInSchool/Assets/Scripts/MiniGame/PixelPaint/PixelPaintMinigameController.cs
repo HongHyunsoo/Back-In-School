@@ -962,13 +962,15 @@ public class PixelPaintMinigameController : MonoBehaviour
 
         bool isLeftHold = Input.GetMouseButton(0);
         bool isRightHold = Input.GetMouseButton(1);
+        if (IsPointerOverRuntimeUI())
+        {
+            ResetStrokeAnchors();
+            return;
+        }
+
         if (!isLeftHold && !isRightHold)
         {
-            // Important: reset stroke anchors on release so the next click doesn't connect from old points.
-            lastLeftPaintedX = -1;
-            lastLeftPaintedY = -1;
-            lastRightPaintedX = -1;
-            lastRightPaintedY = -1;
+            ResetStrokeAnchors();
             return;
         }
 
@@ -1001,6 +1003,19 @@ public class PixelPaintMinigameController : MonoBehaviour
 
         if (!tutorialActive && IsSolved())
             OnSolved();
+    }
+
+    private bool IsPointerOverRuntimeUI()
+    {
+        return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+    }
+
+    private void ResetStrokeAnchors()
+    {
+        lastLeftPaintedX = -1;
+        lastLeftPaintedY = -1;
+        lastRightPaintedX = -1;
+        lastRightPaintedY = -1;
     }
 
     private bool TryGetHoveredCellInBounds(out int x, out int y)
@@ -1085,7 +1100,7 @@ public class PixelPaintMinigameController : MonoBehaviour
 
     private bool ShouldShowTutorial()
     {
-        if (PlayerPrefs.GetInt(TutorialCompletedPrefKey, 0) == 1)
+        if (PlayerPrefs.GetInt(GetTutorialPrefKey(), 0) == 1)
             return false;
 
         if (FlowManager.Instance != null)
@@ -1127,14 +1142,23 @@ public class PixelPaintMinigameController : MonoBehaviour
     private void CompleteTutorial()
     {
         tutorialActive = false;
-        PlayerPrefs.SetInt(TutorialCompletedPrefKey, 1);
+        PlayerPrefs.SetInt(GetTutorialPrefKey(), 1);
         PlayerPrefs.Save();
 
         if (tutorialOverlay != null)
             tutorialOverlay.Hide();
 
-        ClearPaintedBoard();
+        ResetStrokeAnchors();
         RefreshHeader();
+    }
+
+    private static string GetTutorialPrefKey()
+    {
+        string flowId = PlayerPrefs.GetString("FLOW_ID", string.Empty);
+        if (string.IsNullOrEmpty(flowId))
+            return TutorialCompletedPrefKey;
+
+        return TutorialCompletedPrefKey + "_" + flowId;
     }
 
     private void ClearPaintedBoard()
@@ -1151,10 +1175,7 @@ public class PixelPaintMinigameController : MonoBehaviour
             }
         }
 
-        lastLeftPaintedX = -1;
-        lastLeftPaintedY = -1;
-        lastRightPaintedX = -1;
-        lastRightPaintedY = -1;
+        ResetStrokeAnchors();
     }
 
     private void RefreshHeader(string suffix = null)

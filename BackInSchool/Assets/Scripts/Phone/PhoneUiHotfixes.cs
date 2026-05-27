@@ -34,6 +34,9 @@ public class PhoneUiHotfixes : MonoBehaviour
             if (all[i] == null)
                 continue;
 
+            if (IsInAppTabButton(all[i]))
+                continue;
+
             string target = ResolveTargetPanelForButton(all[i]);
             if (!string.IsNullOrEmpty(target))
                 appButtons.Add(all[i]);
@@ -80,6 +83,31 @@ public class PhoneUiHotfixes : MonoBehaviour
                 appManager.OpenApp(PhoneAppId.Settings);
                 break;
         }
+    }
+
+    private static bool IsInAppTabButton(Button button)
+    {
+        if (button == null)
+            return false;
+
+        string name = button.name ?? string.Empty;
+        if (name == "Btn_Rule" || name == "Btn_SchoolMeal" || name == "Btn_Penalty")
+            return true;
+
+        return HasParentNamed(button.transform, "App_Rules") && name.StartsWith("Btn_");
+    }
+
+    private static bool HasParentNamed(Transform transform, string parentName)
+    {
+        while (transform != null)
+        {
+            if (transform.name == parentName)
+                return true;
+
+            transform = transform.parent;
+        }
+
+        return false;
     }
 
     private void SetupExclusiveQuestionToggles()

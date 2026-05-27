@@ -57,7 +57,12 @@ public class PlayerController : MonoBehaviour
     private bool isFacingRight = true;
     private bool isGrounded;
     private bool animGrounded;
+    private bool isPressingIntoWall;
+    private bool touchingWallLeft;
+    private bool touchingWallRight;
     private float groundedStableTimer;
+    private readonly RaycastHit2D[] horizontalMoveHits = new RaycastHit2D[4];
+    private readonly ContactPoint2D[] wallContacts = new ContactPoint2D[8];
     private static readonly int HashMoveSpeed = Animator.StringToHash("moveSpeed");
     private static readonly int HashIsGrounded = Animator.StringToHash("isGrounded");
     private static readonly int HashYVelocity = Animator.StringToHash("yVelocity");
@@ -91,7 +96,7 @@ public class PlayerController : MonoBehaviour
         if (rb == null || groundCheck == null)
             return;
 
-        bool rawGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        bool rawGrounded = CheckGroundedOnFloor();
         isGrounded = rawGrounded;
 
         // Debounce animator grounding so Fall does not end from one-frame overlap flicker.
@@ -114,7 +119,9 @@ public class PlayerController : MonoBehaviour
             if (Input.GetKey(rightKey)) horizontal += 1f;
             isRunning = Input.GetKey(sprintKey);
 
-            if (Input.GetKeyDown(jumpKey) && isGrounded && currentStamina >= staminaCostForJump && Mathf.Abs(rb.velocity.y) < 0.1f)
+            RefreshWallContacts();
+            bool pressingIntoWallNow = IsMovingIntoTouchedWall(horizontal) || IsHorizontalMoveBlocked(horizontal * walkSpeed);
+            if (Input.GetKeyDown(jumpKey) && isGrounded && !pressingIntoWallNow && currentStamina >= staminaCostForJump && Mathf.Abs(rb.velocity.y) < 0.1f)
             {
                 rb.velocity = new Vector2(rb.velocity.x, jumpForce);
                 currentStamina -= staminaCostForJump;
@@ -129,6 +136,7 @@ public class PlayerController : MonoBehaviour
         }
 
         moveInput = Mathf.Clamp(horizontal, -1f, 1f);
+        isPressingIntoWall = IsMovingIntoTouchedWall(moveInput) || IsHorizontalMoveBlocked(moveInput * walkSpeed);
 
         HandleStamina();
         FlipSprite();
@@ -142,8 +150,81 @@ public class PlayerController : MonoBehaviour
         if (rb == null)
             return;
 
+        RefreshWallContacts();
         float currentSpeed = (isRunning && moveInput != 0f && currentStamina > 0f) ? runSpeed : walkSpeed;
-        rb.velocity = new Vector2(moveInput * currentSpeed, rb.velocity.y);
+        float targetVelocityX = moveInput * currentSpeed;
+        bool movingIntoWall = IsMovingIntoTouchedWall(moveInput) || isPressingIntoWall || IsHorizontalMoveBlocked(targetVelocityX);
+        if (movingIntoWall)
+            targetVelocityX = 0f;
+
+        rb.velocity = new Vector2(targetVelocityX, rb.velocity.y);
+    }
+
+    private bool CheckGroundedOnFloor()
+    {
+        Vector2 origin = groundCheck.position;
+        float radius = Mathf.Max(0.01f, groundCheckRadius);
+        float distance = Mathf.Max(0.02f, radius * 0.5f);
+        RaycastHit2D hit = Physics2D.CircleCast(origin + (Vector2.up * 0.03f), radius, Vector2.down, distance, groundLayer);
+        return hit.collider != null && hit.normal.y >= 0.55f;
+    }
+
+    private void RefreshWallContacts()
+    {
+        touchingWallLeft = false;
+        touchingWallRight = false;
+
+        if (rb == null)
+            return;
+
+        int count = rb.GetContacts(wallContacts);
+        for (int i = 0; i < count; i++)
+        {
+            Vector2 normal = wallContacts[i].normal;
+            if (normal.y >= 0.55f)
+                continue;
+
+            if (normal.x > 0.45f)
+                touchingWallLeft = true;
+            else if (normal.x < -0.45f)
+                touchingWallRight = true;
+        }
+    }
+
+    private bool IsMovingIntoTouchedWall(float horizontal)
+    {
+        if (horizontal > 0f)
+            return touchingWallRight;
+
+        if (horizontal < 0f)
+            return touchingWallLeft;
+
+        return false;
+    }
+
+    private bool IsHorizontalMoveBlocked(float targetVelocityX)
+    {
+        if (rb == null || Mathf.Approximately(targetVelocityX, 0f))
+            return false;
+
+        float direction = Mathf.Sign(targetVelocityX);
+        var filter = new ContactFilter2D();
+        filter.SetLayerMask(groundLayer);
+        filter.useTriggers = false;
+
+        float castDistance = Mathf.Abs(targetVelocityX) * Time.fixedDeltaTime + 0.04f;
+        int count = rb.Cast(new Vector2(direction, 0f), filter, horizontalMoveHits, castDistance);
+        for (int i = 0; i < count; i++)
+        {
+            var hit = horizontalMoveHits[i];
+            if (hit.collider == null)
+                continue;
+
+            if (Mathf.Abs(hit.normal.x) >= 0.45f && hit.normal.y < 0.55f)
+                return true;
+        }
+
+        return false;
     }
 
     private void HandleStamina()

@@ -118,6 +118,9 @@ public class PhoneAppManager : MonoBehaviour
             return;
         }
 
+        if (CurrentApp == appId)
+            return;
+
         if (openRoutine != null)
             StopCoroutine(openRoutine);
 
