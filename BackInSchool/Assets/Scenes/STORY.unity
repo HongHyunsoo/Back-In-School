@@ -10490,7 +10490,7 @@ Transform:
   m_GameObject: {fileID: 655788510}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 2.7470002, y: 0.469, z: 0.058601268}
+  m_LocalPosition: {x: -0.945519, y: 0.44341674, z: 0.058601268}
   m_LocalScale: {x: -1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -14462,7 +14462,7 @@ Transform:
   m_GameObject: {fileID: 935239911}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.958, y: 0.474, z: 0.058601268}
+  m_LocalPosition: {x: 2.717464, y: 0.474, z: 0.058601268}
   m_LocalScale: {x: -1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -35814,7 +35814,7 @@ Transform:
   m_GameObject: {fileID: 2035392907}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.413, y: 0.494, z: 0.058601268}
+  m_LocalPosition: {x: -2.189, y: 0.494, z: 0.058601268}
   m_LocalScale: {x: -1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -35874,7 +35874,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 2
+  m_SortingOrder: 3
   m_Sprite: {fileID: -584991688, guid: 3367b3c0dfd68b64c9a6e5f6d8f45afd, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -36081,7 +36081,7 @@ Transform:
   m_GameObject: {fileID: 2044881313}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -2.2079997, y: 0.47399998, z: 0.058601268}
+  m_LocalPosition: {x: 1.454, y: 0.47399998, z: 0.058601268}
   m_LocalScale: {x: -1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -38389,7 +38389,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &2141686712999622415
 GameObject:
   m_ObjectHideFlags: 0
@@ -40389,6 +40389,14 @@ PrefabInstance:
     - target: {fileID: 2905027889652054541, guid: ed78b9119a4164a43b5e24836d0cf435, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8098532859322316939, guid: ed78b9119a4164a43b5e24836d0cf435, type: 3}
+      propertyPath: m_SortingOrder
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 8820722180869300420, guid: ed78b9119a4164a43b5e24836d0cf435, type: 3}
+      propertyPath: m_SortingOrder
+      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
