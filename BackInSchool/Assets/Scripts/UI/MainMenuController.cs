@@ -8,11 +8,13 @@ public class MainMenuController : MonoBehaviour
     [Header("Panels")]
     public GameObject mainPanel;
     public GameObject settingsPanel;
+    public GameObject creditsPanel;
 
     [Header("Main Buttons")]
     public Button startButton;
     public Button settingsButton;
     public Button challengeButton;
+    public Button creditsButton;
     public Button quitButton;
 
     [Header("Start Transition")]
@@ -28,6 +30,9 @@ public class MainMenuController : MonoBehaviour
     [Header("Settings Buttons")]
     public Button backButton;
     public Button languageButton;
+
+    [Header("Credits Buttons")]
+    public Button creditsBackButton;
 
     [Header("Settings Controls")]
     public ScrollRect settingsScrollRect;
@@ -107,15 +112,18 @@ public class MainMenuController : MonoBehaviour
 
     private void WireButtons()
     {
+        ResolveCreditsReferences();
         ResolveBindingButtons();
 
         if (startButton != null) startButton.onClick.AddListener(OnStartGame);
         if (settingsButton != null) settingsButton.onClick.AddListener(OpenSettings);
         if (challengeButton != null) challengeButton.onClick.AddListener(OnChallenges);
+        if (creditsButton != null) creditsButton.onClick.AddListener(OpenCredits);
         if (quitButton != null) quitButton.onClick.AddListener(OnQuit);
 
         if (backButton != null) backButton.onClick.AddListener(CloseSettings);
         if (languageButton != null) languageButton.onClick.AddListener(ToggleLanguage);
+        if (creditsBackButton != null) creditsBackButton.onClick.AddListener(CloseCredits);
 
         if (bindLeftButton != null) bindLeftButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.LeftKey));
         if (bindRightButton != null) bindRightButton.onClick.AddListener(() => StartRebind(KeyBindingConfig.RightKey));
@@ -131,6 +139,7 @@ public class MainMenuController : MonoBehaviour
     {
         if (mainPanel != null) mainPanel.SetActive(true);
         if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (creditsPanel != null) creditsPanel.SetActive(false);
 
         ResolveVolumeSliders();
 
@@ -241,6 +250,7 @@ public class MainMenuController : MonoBehaviour
         if (startButton != null) startButton.interactable = interactable;
         if (settingsButton != null) settingsButton.interactable = interactable;
         if (challengeButton != null) challengeButton.interactable = interactable;
+        if (creditsButton != null) creditsButton.interactable = interactable;
         if (quitButton != null) quitButton.interactable = interactable;
     }
 
@@ -256,6 +266,22 @@ public class MainMenuController : MonoBehaviour
     private void CloseSettings()
     {
         if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (mainPanel != null) mainPanel.SetActive(true);
+        SetInfo("");
+    }
+
+    private void OpenCredits()
+    {
+        if (creditsPanel != null) creditsPanel.SetActive(true);
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (ShouldToggleMainPanelForCredits() && mainPanel != null)
+            mainPanel.SetActive(false);
+        SetInfo("");
+    }
+
+    private void CloseCredits()
+    {
+        if (creditsPanel != null) creditsPanel.SetActive(false);
         if (mainPanel != null) mainPanel.SetActive(true);
         SetInfo("");
     }
@@ -357,8 +383,10 @@ public class MainMenuController : MonoBehaviour
         SetButtonText(startButton, LK("UI_START", "시작하기", "Start"));
         SetButtonText(settingsButton, LK("UI_SETTING", "설정", "Settings"));
         SetButtonText(challengeButton, LK("UI_ACHIEVE", "도전과제", "Achievements"));
+        SetButtonText(creditsButton, LK("UI_CREDITS", "크레딧", "Credits"));
         SetButtonText(quitButton, LK("UI_QUIT", "나가기", "Quit"));
         SetButtonText(backButton, LK("UI_BACK", "뒤로가기", "Back"));
+        SetButtonText(creditsBackButton, LK("UI_BACK", "뒤로가기", "Back"));
     }
 
     private string L(string ko, string en)
@@ -393,6 +421,32 @@ public class MainMenuController : MonoBehaviour
             return false;
 
         return true;
+    }
+
+    private bool ShouldToggleMainPanelForCredits()
+    {
+        if (mainPanel == null || creditsPanel == null)
+            return false;
+
+        if (mainPanel == creditsPanel)
+            return false;
+
+        if (creditsPanel.transform.IsChildOf(mainPanel.transform))
+            return false;
+
+        return true;
+    }
+
+    private void ResolveCreditsReferences()
+    {
+        if (creditsPanel == null)
+            creditsPanel = FindObjectByExactName("CreditsPanel", "CreditPanel");
+
+        if (creditsButton == null)
+            creditsButton = FindButtonByNameOrText(transform, "Credits", "Credit", "크레딧");
+
+        if (creditsBackButton == null && creditsPanel != null)
+            creditsBackButton = FindButtonByNameOrText(creditsPanel.transform, "Back", "뒤로가기");
     }
 
     private void ResolveBindingButtons()
@@ -497,7 +551,15 @@ public class MainMenuController : MonoBehaviour
         if (settingsPanel == null || tokens == null || tokens.Length == 0)
             return null;
 
-        var buttons = settingsPanel.GetComponentsInChildren<Button>(true);
+        return FindButtonByNameOrText(settingsPanel.transform, tokens);
+    }
+
+    private Button FindButtonByNameOrText(Transform root, params string[] tokens)
+    {
+        if (root == null || tokens == null || tokens.Length == 0)
+            return null;
+
+        var buttons = root.GetComponentsInChildren<Button>(true);
         for (int i = 0; i < buttons.Length; i++)
         {
             if (HasAnyToken(buttons[i].name, tokens))
@@ -556,6 +618,28 @@ public class MainMenuController : MonoBehaviour
                     continue;
 
                 if (n.IndexOf(tokens[j], System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    return all[i].gameObject;
+            }
+        }
+
+        return null;
+    }
+
+    private GameObject FindObjectByExactName(params string[] names)
+    {
+        if (names == null || names.Length == 0)
+            return null;
+
+        var all = GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < all.Length; i++)
+        {
+            string n = all[i].name;
+            for (int j = 0; j < names.Length; j++)
+            {
+                if (string.IsNullOrEmpty(names[j]))
+                    continue;
+
+                if (string.Equals(n, names[j], System.StringComparison.OrdinalIgnoreCase))
                     return all[i].gameObject;
             }
         }

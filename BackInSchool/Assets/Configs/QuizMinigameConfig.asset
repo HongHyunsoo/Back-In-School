@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!114 &11400000
 MonoBehaviour:
@@ -21,27 +21,35 @@ MonoBehaviour:
   afterSchoolEnglishFlowId: AFTERSCHOOL_ENGLISH_D1
   englishMatchingTitle: Match each English word with its correct meaning.
   englishMatchingDescription: Drag each word to the matching meaning.
-  englishMatchingHint: "퀴즈 1. 단어와 뜻 잇기\nsignificant: 큰 영향이나 가치를 가짐\nreluctant: 마음이 쉽게 움직이지 않는 상태\nevidence: 사실을 판단할 때 필요한 단서\nconsequence: 어떤 일 뒤에 따라오는 변화\nefficient: 시간과 힘을 아끼는 방식\nassume: 확실하지 않아도 그렇다고 여김\ninterrupt: 진행 중인 것을 중간에 끊음"
+  englishMatchingHint: "\uD034\uC988 1. \uB2E8\uC5B4\uC640 \uB73B \uC787\uAE30\nsignificant:
+    \uD070 \uC601\uD5A5\uC774\uB098 \uAC00\uCE58\uB97C \uAC00\uC9D0\nreluctant: \uB9C8\uC74C\uC774
+    \uC27D\uAC8C \uC6C0\uC9C1\uC774\uC9C0 \uC54A\uB294 \uC0C1\uD0DC\nevidence: \uC0AC\uC2E4\uC744
+    \uD310\uB2E8\uD560 \uB54C \uD544\uC694\uD55C \uB2E8\uC11C\nconsequence: \uC5B4\uB5A4
+    \uC77C \uB4A4\uC5D0 \uB530\uB77C\uC624\uB294 \uBCC0\uD654\nefficient: \uC2DC\uAC04\uACFC
+    \uD798\uC744 \uC544\uB07C\uB294 \uBC29\uC2DD\nassume: \uD655\uC2E4\uD558\uC9C0
+    \uC54A\uC544\uB3C4 \uADF8\uB807\uB2E4\uACE0 \uC5EC\uAE40\ninterrupt: \uC9C4\uD589
+    \uC911\uC778 \uAC83\uC744 \uC911\uAC04\uC5D0 \uB04A\uC74C"
   englishMatchingPairs:
   - word: significant
-    meaning: "중요한, 상당한"
+    meaning: "\uC911\uC694\uD55C, \uC0C1\uB2F9\uD55C"
   - word: reluctant
-    meaning: "꺼리는, 내키지 않는"
+    meaning: "\uAEBC\uB9AC\uB294, \uB0B4\uD0A4\uC9C0 \uC54A\uB294"
   - word: evidence
-    meaning: 증거
+    meaning: "\uC99D\uAC70"
   - word: consequence
-    meaning: "결과, 영향"
+    meaning: "\uACB0\uACFC, \uC601\uD5A5"
   - word: efficient
-    meaning: 효율적인
+    meaning: "\uD6A8\uC728\uC801\uC778"
   - word: assume
-    meaning: "추정하다, 가정하다"
+    meaning: "\uCD94\uC815\uD558\uB2E4, \uAC00\uC815\uD558\uB2E4"
   - word: interrupt
-    meaning: "방해하다, 중단시키다"
+    meaning: "\uBC29\uD574\uD558\uB2E4, \uC911\uB2E8\uC2DC\uD0A4\uB2E4"
   englishMatchSuccessDelaySeconds: 0.45
   englishOrderingTitle: Arrange the following words in the correct order.
   englishOrderingQuestion:
     prompt: Arrange the following words in the correct order.
-    hintText: "“만약 ~했다면, ~했을 텐데” 구조."
+    hintText: "\u201C\uB9CC\uC57D ~\uD588\uB2E4\uBA74, ~\uD588\uC744 \uD150\uB370\u201D
+      \uAD6C\uC870."
     shuffledWords:
     - if
     - I
@@ -66,28 +74,32 @@ MonoBehaviour:
     prompt: Choose True if the sentence is correct, or False if it is not.
     statement: Rabbits have long ears that help them hear sounds from many directions.
     correctAnswer: 1
-    hintText: "from many directions는 “여러 방향에서”라는 뜻입니다."
-    explanation: "True."
+    hintText: "from many directions\uB294 \u201C\uC5EC\uB7EC \uBC29\uD5A5\uC5D0\uC11C\u201D\uB77C\uB294
+      \uB73B\uC785\uB2C8\uB2E4."
+    explanation: True.
   englishTrueFalseQuestions:
   - prompt: Choose True if the sentence is correct, or False if it is not.
     statement: Rabbits have long ears that help them hear sounds from many directions.
     correctAnswer: 1
-    hintText: "from many directions는 “여러 방향에서”라는 뜻입니다."
-    explanation: "True."
+    hintText: "from many directions\uB294 \u201C\uC5EC\uB7EC \uBC29\uD5A5\uC5D0\uC11C\u201D\uB77C\uB294
+      \uB73B\uC785\uB2C8\uB2E4."
+    explanation: True.
   - prompt: Choose True if the sentence is correct, or False if it is not.
     statement: The Moon is a planet that produces its own light like the Sun.
     correctAnswer: 0
-    hintText: "produce its own light는 “스스로 빛을 만들어내다”라는 뜻입니다."
-    explanation: "False."
+    hintText: "produce its own light\uB294 \u201C\uC2A4\uC2A4\uB85C \uBE5B\uC744
+      \uB9CC\uB4E4\uC5B4\uB0B4\uB2E4\u201D\uB77C\uB294 \uB73B\uC785\uB2C8\uB2E4."
+    explanation: False.
   - prompt: Choose True if the sentence is correct, or False if it is not.
     statement: Orcas are black and white animals that live in the ocean.
     correctAnswer: 1
-    hintText: "Orca는 “범고래”라는 뜻입니다."
-    explanation: "True."
+    hintText: "Orca\uB294 \u201C\uBC94\uACE0\uB798\u201D\uB77C\uB294 \uB73B\uC785\uB2C8\uB2E4."
+    explanation: True.
   englishListeningTitle: Listen and type the missing word.
   englishListeningQuestion:
     prompt: Listen to the audio and type the missing word.
-    hintText: "망상에 가까울 정도로 나 자신을 믿어라."
+    hintText: "\uB9DD\uC0C1\uC5D0 \uAC00\uAE4C\uC6B8 \uC815\uB3C4\uB85C \uB098 \uC790\uC2E0\uC744
+      \uBBFF\uC5B4\uB77C."
     sentenceWithBlank: Have ________ too much self-belief.
     voiceClip: {fileID: 0}
     choices:
@@ -96,7 +108,8 @@ MonoBehaviour:
     completedSentence: Have almost too much self-belief.
   englishListeningQuestions:
   - prompt: Listen to the audio and type the missing word.
-    hintText: "망상에 가까울 정도로 나 자신을 믿어라."
+    hintText: "\uB9DD\uC0C1\uC5D0 \uAC00\uAE4C\uC6B8 \uC815\uB3C4\uB85C \uB098 \uC790\uC2E0\uC744
+      \uBBFF\uC5B4\uB77C."
     sentenceWithBlank: Have ________ too much self-belief.
     voiceClip: {fileID: 0}
     choices:
@@ -104,21 +117,30 @@ MonoBehaviour:
     correctChoiceIndex: 0
     completedSentence: Have almost too much self-belief.
   - prompt: Listen to the audio and type the missing word.
-    hintText: "학교는 미래를 위한 연습이라고 연습하면 완벽해진다고들 한다. 그런데 세상에 완벽한 사람은 없다면, 왜 연습을 해야하는 걸까?"
-    sentenceWithBlank: School is practice for the future, and practice makes ________, but if nobody’s ________, why practice?
+    hintText: "\uD559\uAD50\uB294 \uBBF8\uB798\uB97C \uC704\uD55C \uC5F0\uC2B5\uC774\uB77C\uACE0
+      \uC5F0\uC2B5\uD558\uBA74 \uC644\uBCBD\uD574\uC9C4\uB2E4\uACE0\uB4E4 \uD55C\uB2E4.
+      \uADF8\uB7F0\uB370 \uC138\uC0C1\uC5D0 \uC644\uBCBD\uD55C \uC0AC\uB78C\uC740
+      \uC5C6\uB2E4\uBA74, \uC65C \uC5F0\uC2B5\uC744 \uD574\uC57C\uD558\uB294 \uAC78\uAE4C?"
+    sentenceWithBlank: "School is practice for the future, and practice makes ________,
+      but if nobody\u2019s ________, why practice?"
     voiceClip: {fileID: 0}
     choices:
     - perfect
     correctChoiceIndex: 0
-    completedSentence: School is practice for the future, and practice makes perfect, but if nobody’s perfect, why practice?
+    completedSentence: "School is practice for the future, and practice makes perfect,
+      but if nobody\u2019s perfect, why practice?"
   - prompt: Listen to the audio and type the missing word.
-    hintText: "가장 좋은 건 미친 짓을 마음껏 해도 된다는 거고, 게다가 그걸로 돈까지 받는다는 거다."
-    sentenceWithBlank: The best thing is that you can allow your insanities to ________ and get paid for it.
+    hintText: "\uAC00\uC7A5 \uC88B\uC740 \uAC74 \uBBF8\uCE5C \uC9D3\uC744 \uB9C8\uC74C\uAECF
+      \uD574\uB3C4 \uB41C\uB2E4\uB294 \uAC70\uACE0, \uAC8C\uB2E4\uAC00 \uADF8\uAC78\uB85C
+      \uB3C8\uAE4C\uC9C0 \uBC1B\uB294\uB2E4\uB294 \uAC70\uB2E4."
+    sentenceWithBlank: The best thing is that you can allow your insanities to ________
+      and get paid for it.
     voiceClip: {fileID: 0}
     choices:
     - develop
     correctChoiceIndex: 0
-    completedSentence: The best thing is that you can allow your insanities to develop and get paid for it.
+    completedSentence: The best thing is that you can allow your insanities to develop
+      and get paid for it.
   drawingTextureSize: {x: 1024, y: 1024}
   brushRadius: 5
   drawingBackgroundColor: {r: 0.98, g: 0.98, b: 0.98, a: 1}
@@ -132,6 +154,5 @@ MonoBehaviour:
   hintPanelColor: {r: 0.91, g: 0.96, b: 1, a: 0.96}
   feedbackSuccessColor: {r: 0.2, g: 0.58, b: 0.28, a: 1}
   feedbackErrorColor: {r: 0.78, g: 0.23, b: 0.18, a: 1}
-  friendBubbleName: 친구
+  friendBubbleName: "\uCE5C\uAD6C"
   friendBubbleShowSeconds: 3.2
-
