@@ -36,7 +36,7 @@ public class PhoneGalleryService : MonoBehaviour
 
     public static void NotifyFlowVisited(string flowId)
     {
-        EnsureExists().EvaluateFlow(flowId);
+        EnsureExists().EvaluateFlow(flowId, playSfx: false);
     }
 
     public static bool UnlockStatic(string entryId)
@@ -96,7 +96,7 @@ public class PhoneGalleryService : MonoBehaviour
 
     private void Start()
     {
-        EvaluateFlow(FlowContext.CurrentId);
+        EvaluateFlow(FlowContext.CurrentId, playSfx: false);
     }
 
     public IReadOnlyList<PhoneGalleryEntry> GetEntries()
@@ -124,10 +124,11 @@ public class PhoneGalleryService : MonoBehaviour
 
         Save();
         OnChanged?.Invoke();
+        PlayUnlockSfx();
         return true;
     }
 
-    public void EvaluateFlow(string flowId)
+    public void EvaluateFlow(string flowId, bool playSfx = true)
     {
         if (string.IsNullOrEmpty(flowId))
             return;
@@ -151,6 +152,8 @@ public class PhoneGalleryService : MonoBehaviour
 
         Save();
         OnChanged?.Invoke();
+        if (playSfx)
+            PlayUnlockSfx();
     }
 
     public void ResetForNewGame()
@@ -194,6 +197,7 @@ public class PhoneGalleryService : MonoBehaviour
 
         Save();
         OnChanged?.Invoke();
+        PlayUnlockSfx();
     }
 
     private void UnlockAllImmediateEntries()
@@ -230,6 +234,7 @@ public class PhoneGalleryService : MonoBehaviour
 
         Save();
         OnChanged?.Invoke();
+        PlayUnlockSfx();
     }
 
     private void EvaluatePersistentUnlocks()
@@ -268,6 +273,11 @@ public class PhoneGalleryService : MonoBehaviour
         saveData.unlockedEntryIds.AddRange(unlockedEntryIds);
         PlayerPrefs.SetString(PrefKey, JsonUtility.ToJson(saveData));
         PlayerPrefs.Save();
+    }
+
+    private static void PlayUnlockSfx()
+    {
+        PhoneSystem.Instance?.PlayPhoneApplySfx();
     }
 
     private void Load()

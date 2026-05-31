@@ -80,6 +80,7 @@ public class PhoneSettingsAppController : MonoBehaviour
             rebindStartFrame = -1;
             SetInfo(L("키가 변경되었습니다.", "Key binding updated."));
             RefreshBindingLabels();
+            PlaySettingsChangeSfx();
             break;
         }
     }
@@ -202,8 +203,12 @@ public class PhoneSettingsAppController : MonoBehaviour
             masterVolumeSlider.interactable = true;
             masterVolumeSlider.SetValueWithoutNotify(AudioSettingsService.MasterVolume);
             if (forceRebind)
+            {
                 masterVolumeSlider.onValueChanged.RemoveListener(AudioSettingsService.SetMasterVolume);
+                masterVolumeSlider.onValueChanged.RemoveListener(PlaySettingsChangeSfx);
+            }
             masterVolumeSlider.onValueChanged.AddListener(AudioSettingsService.SetMasterVolume);
+            masterVolumeSlider.onValueChanged.AddListener(PlaySettingsChangeSfx);
         }
 
         if (bgmVolumeSlider != null)
@@ -211,8 +216,12 @@ public class PhoneSettingsAppController : MonoBehaviour
             bgmVolumeSlider.interactable = true;
             bgmVolumeSlider.SetValueWithoutNotify(AudioSettingsService.BgmVolume);
             if (forceRebind)
+            {
                 bgmVolumeSlider.onValueChanged.RemoveListener(AudioSettingsService.SetBgmVolume);
+                bgmVolumeSlider.onValueChanged.RemoveListener(PlaySettingsChangeSfx);
+            }
             bgmVolumeSlider.onValueChanged.AddListener(AudioSettingsService.SetBgmVolume);
+            bgmVolumeSlider.onValueChanged.AddListener(PlaySettingsChangeSfx);
         }
 
         if (sfxVolumeSlider != null)
@@ -220,9 +229,23 @@ public class PhoneSettingsAppController : MonoBehaviour
             sfxVolumeSlider.interactable = true;
             sfxVolumeSlider.SetValueWithoutNotify(AudioSettingsService.SfxVolume);
             if (forceRebind)
+            {
                 sfxVolumeSlider.onValueChanged.RemoveListener(AudioSettingsService.SetSfxVolume);
+                sfxVolumeSlider.onValueChanged.RemoveListener(PlaySettingsChangeSfx);
+            }
             sfxVolumeSlider.onValueChanged.AddListener(AudioSettingsService.SetSfxVolume);
+            sfxVolumeSlider.onValueChanged.AddListener(PlaySettingsChangeSfx);
         }
+    }
+
+    private void PlaySettingsChangeSfx(float _)
+    {
+        PlaySettingsChangeSfx();
+    }
+
+    private void PlaySettingsChangeSfx()
+    {
+        PhoneSystem.Instance?.PlayPhoneToggleSfx();
     }
 
     public void RefreshBindingsNow()

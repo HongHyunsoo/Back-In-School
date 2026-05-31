@@ -9,9 +9,9 @@ public enum FlowEventType { CHAT, FREEROAM, STORY, MINIGAME }
 public class FlowEvent
 {
     public FlowEventType type;
-    public string id;            // STORY硫?conversationId, MINIGAME硫?minigameId, CHAT?대㈃ chatId, FREEROAM?대㈃ contextId
-    public string note;          // ?붾쾭洹몄슜(?좏깮)
-    public Func<FlowManager, bool> condition; // 遺꾧린 議곌굔(?좏깮)
+    public string id;            // STORY: conversationId, MINIGAME: minigameId, CHAT: chatId, FREEROAM: contextId
+    public string note;          // 디버그용 메모
+    public Func<FlowManager, bool> condition; // 선택적 분기 조건
 }
 
 public class FlowManager : MonoBehaviour
@@ -26,7 +26,7 @@ public class FlowManager : MonoBehaviour
     public int day = 1;               // 1~5
     public int stepIndex = 0;
     public int penaltyPoints = 0;
-    public int penaltyThreshold = 3;  // ?꾩떆 3??
+    public int penaltyThreshold = 3;  // 임시 기준값
 
     [Header("Debug")]
     public bool autoStartOnPlay = false;
@@ -103,36 +103,36 @@ public class FlowManager : MonoBehaviour
             timeline[1] = list;
         }
 
-        // ========== Day 2~4 怨듯넻 ==========
+        // ========== Day 2~4 공통 ==========
         for (int d = 2; d <= 4; d++)
         {
             var list = new List<FlowEvent>();
 
-            list.Add(E(FlowEventType.CHAT, $"D{d}_CHAT_TO_SCHOOL", "?깃탳 吏?섏쿋"));
+            list.Add(E(FlowEventType.CHAT, $"D{d}_CHAT_TO_SCHOOL", "등교 지하철"));
             list.Add(E(FlowEventType.MINIGAME, $"ARRIVAL_SPACE_D{d}", "Arrival Space Mash"));
-            list.Add(E(FlowEventType.FREEROAM, $"D{d}_BEFORE_ASSEMBLY", "議고쉶 ???먯쑀?대룞"));
-            list.Add(E(FlowEventType.STORY, $"DAY{d}_CLASSOPEN", "?꾩묠 議고쉶"));
+            list.Add(E(FlowEventType.FREEROAM, $"D{d}_BEFORE_ASSEMBLY", "조회 전 자유 이동"));
+            list.Add(E(FlowEventType.STORY, $"DAY{d}_CLASSOPEN", "아침 조회"));
 
             list.Add(E(FlowEventType.STORY, $"D{d}_CLASS1_START", "Class1 Start"));
-            list.Add(E(FlowEventType.MINIGAME, $"CLASS1_D{d}", "?섏뾽1 誘몃땲寃뚯엫"));
-            list.Add(E(FlowEventType.STORY, $"D{d}_CLASS1_END", "?섏뾽1 醫낅즺"));
+            list.Add(E(FlowEventType.MINIGAME, $"CLASS1_D{d}", "수업 1 미니게임"));
+            list.Add(E(FlowEventType.STORY, $"D{d}_CLASS1_END", "수업 1 종료"));
 
-            list.Add(E(FlowEventType.MINIGAME, $"LUNCH_Tetris{d}", "?먯떖 誘몃땲寃뚯엫"));
-            list.Add(E(FlowEventType.FREEROAM, $"D{d}_LUNCH_FREEROAM", "?먯떖 ?먯쑀?대룞"));
+            list.Add(E(FlowEventType.MINIGAME, $"LUNCH_Tetris{d}", "점심 미니게임"));
+            list.Add(E(FlowEventType.FREEROAM, $"D{d}_LUNCH_FREEROAM", "점심 자유 이동"));
 
             list.Add(E(FlowEventType.STORY, $"D{d}_CLASS2_START", "Class2 Start"));
-            list.Add(E(FlowEventType.MINIGAME, $"CLASS2_D{d}", "?섏뾽2 誘몃땲寃뚯엫"));
-            list.Add(E(FlowEventType.STORY, $"D{d}_CLASS2_END", "?섏뾽2 醫낅즺"));
+            list.Add(E(FlowEventType.MINIGAME, $"CLASS2_D{d}", "수업 2 미니게임"));
+            list.Add(E(FlowEventType.STORY, $"D{d}_CLASS2_END", "수업 2 종료"));
 
-            list.Add(E(FlowEventType.STORY, $"D{d}_DISMISSAL", "醫낅?"));
+            list.Add(E(FlowEventType.STORY, $"D{d}_DISMISSAL", "종례"));
             list.Add(E(FlowEventType.STORY, $"D{d}_AFTERSCHOOL", "AfterSchool"));
             list.Add(E(FlowEventType.FREEROAM, $"D{d}_AFTERSCHOOL_FREEROAM", "AfterSchool FreeRoam"));
 
-            // 遺꾧린: 踰뚯젏 >= threshold硫?泥?냼 而룹뵮
-            list.Add(E(FlowEventType.STORY, $"D{d}_CLEANING", "踰뚯젏 泥?냼")
+            // 분기: 벌점이 기준값 이상이면 청소 컷신 재생
+            list.Add(E(FlowEventType.STORY, $"D{d}_CLEANING", "벌점 청소")
                 .WithCondition(gm => gm.penaltyPoints >= gm.penaltyThreshold));
 
-            list.Add(E(FlowEventType.CHAT, $"D{d}_CHAT_TO_HOME", "?섍탳 吏?섏쿋"));
+            list.Add(E(FlowEventType.CHAT, $"D{d}_CHAT_TO_HOME", "하교 지하철"));
 
             timeline[d] = list;
         }
@@ -142,18 +142,18 @@ public class FlowManager : MonoBehaviour
             int d = 5;
             var list = new List<FlowEvent>();
 
-            list.Add(E(FlowEventType.CHAT, $"D{d}_CHAT_TO_SCHOOL", "?깃탳 吏?섏쿋"));
+            list.Add(E(FlowEventType.CHAT, $"D{d}_CHAT_TO_SCHOOL", "등교 지하철"));
             list.Add(E(FlowEventType.MINIGAME, $"ARRIVAL_SPACE_D{d}", "Arrival Space Mash"));
-            list.Add(E(FlowEventType.FREEROAM, $"D{d}_BEFORE_ASSEMBLY", "議고쉶 ???먯쑀?대룞"));
-            list.Add(E(FlowEventType.STORY, $"D{d}_ASSEMBLY", "?꾩묠 議고쉶"));
+            list.Add(E(FlowEventType.FREEROAM, $"D{d}_BEFORE_ASSEMBLY", "조회 전 자유 이동"));
+            list.Add(E(FlowEventType.STORY, $"D{d}_ASSEMBLY", "아침 조회"));
 
-            list.Add(E(FlowEventType.MINIGAME, $"BIG_CLEANING_D{d}", "?泥?냼 誘몃땲寃뚯엫"));
+            list.Add(E(FlowEventType.MINIGAME, $"BIG_CLEANING_D{d}", "대청소 미니게임"));
             list.Add(E(FlowEventType.STORY, $"D{d}_BIG_CLEANING_AFTER", "BigCleaning After"));
 
-            list.Add(E(FlowEventType.STORY, $"D{d}_DISMISSAL", "醫낅?"));
-            list.Add(E(FlowEventType.STORY, $"D{d}_LUNCH_WITH_FRIENDS", "移쒓뎄?ㅼ씠???먯떖"));
+            list.Add(E(FlowEventType.STORY, $"D{d}_DISMISSAL", "종례"));
+            list.Add(E(FlowEventType.STORY, $"D{d}_LUNCH_WITH_FRIENDS", "친구들과의 점심"));
 
-            list.Add(E(FlowEventType.CHAT, $"D{d}_CHAT_TO_HOME", "?섍탳 吏?섏쿋"));
+            list.Add(E(FlowEventType.CHAT, $"D{d}_CHAT_TO_HOME", "하교 지하철"));
 
             timeline[d] = list;
         }
@@ -171,13 +171,13 @@ public class FlowManager : MonoBehaviour
 
         if (!timeline.ContainsKey(day))
         {
-            Debug.LogError($"[FlowManager] Day {day} ??꾨씪???놁쓬");
+            Debug.LogError($"[FlowManager] Day {day} 타임라인이 없습니다.");
             return;
         }
 
         var list = timeline[day];
 
-        // 議곌굔 ?덈뒗 ?대깽?몃뒗 ?ㅽ궢 媛?ν븯寃?泥섎━
+        // 조건을 만족하지 않는 이벤트는 연속으로 건너뛴다.
         while (stepIndex < list.Count && list[stepIndex].condition != null && !list[stepIndex].condition(this))
         {
             stepIndex++;
@@ -185,7 +185,7 @@ public class FlowManager : MonoBehaviour
 
         if (stepIndex >= list.Count)
         {
-            Debug.Log($"[FlowManager] Day {day} ?꾨즺");
+            Debug.Log($"[FlowManager] Day {day} 완료");
             return;
         }
 
@@ -232,7 +232,7 @@ public class FlowManager : MonoBehaviour
 
 
 
-    // 媛?紐⑤뱶媛 ?앸굹硫??닿구 ?몄텧?섎㈃ ??
+    // 현재 이벤트를 완료하고 다음 이벤트로 이동한다.
     public void CompleteCurrentEvent(int penaltyDelta = 0, bool useSceneFade = true)
     {
         if (timeline.TryGetValue(day, out var list) && stepIndex < list.Count)
@@ -243,7 +243,7 @@ public class FlowManager : MonoBehaviour
                 !isWearingSlippers)
             {
                 ForceWearSlippers();
-                Debug.Log("[FlowManager] 議고쉶 吏???댄썑 ?먮룞?쇰줈 ?ㅻ궡??李⑹슜 泥섎━");
+                Debug.Log("[FlowManager] 조회 종료 후 자동으로 실내화 착용 처리");
             }
         }
 
@@ -321,13 +321,13 @@ public class FlowManager : MonoBehaviour
         penaltyPoints += penaltyDelta;
         PenaltyReasonLog.Add(reasonId, penaltyDelta, day);
     }
-    // 吏湲??대깽??媛뺤젣 ?꾨즺(媛쒕컻??
+    // 현재 이벤트 강제 완료(개발용)
     public void DebugSkip(int penaltyDelta = 0)
     {
         CompleteCurrentEvent(penaltyDelta);
     }
 
-    // ?뱀젙 Day/Step?쇰줈 ?쒓컙?대룞(媛쒕컻??
+    // 지정 Day/Step으로 이동(개발용)
     public void DebugJump(int targetDay, int targetStep, int penalty = 0)
     {
         day = targetDay;
@@ -406,7 +406,7 @@ public class FlowManager : MonoBehaviour
 
         if (HasConversation(altId))
         {
-            // 誘몄갑??吏???????湲곗〈 議고쉶 ??щ? ?댁뼱???ъ깮
+            // 미착용 분기 대사 뒤에 기존 조회 대사를 이어서 재생한다.
             PlayerPrefs.SetString(StoryAppendConversationPrefKey, ev.id);
             return altId;
         }

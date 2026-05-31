@@ -1613,7 +1613,7 @@ MonoBehaviour:
   englishOrderingQuestion:
     prompt: "\uB2E4\uC74C \uB2E8\uC5B4\uB97C \uC62C\uBC14\uB978 \uC21C\uC11C\uB85C
       \uBC30\uC5F4\uD558\uC2DC\uC624."
-    hintText: 
+    hintText:
     shuffledWords: []
     correctOrder: []
     answerSentence: 
@@ -1623,7 +1623,7 @@ MonoBehaviour:
       False\uB97C \uACE0\uB974\uC2DC\uC624."
     statement: 
     correctAnswer: 1
-    hintText: 
+    hintText:
     explanation: 
   englishTrueFalseQuestions: []
   englishWordPrefab: {fileID: 6882495544148585503, guid: 98bf9144315125d45b27fd40520fb244, type: 3}
@@ -1631,13 +1631,41 @@ MonoBehaviour:
   englishListeningQuestion:
     prompt: "\uC74C\uC131\uC744 \uB4E3\uACE0 \uBE48\uCE78\uC5D0 \uB4E4\uC5B4\uAC08
       \uC54C\uB9DE\uC740 \uB2E8\uC5B4\uB97C \uACE0\uB974\uC2DC\uC624."
-    hintText: 
+    hintText:
     sentenceWithBlank: 
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: ebbe05ca3cce0184ea119027708322fe, type: 3}
     choices: []
     correctChoiceIndex: 0
     completedSentence: 
-  englishListeningQuestions: []
+  englishListeningQuestions:
+  - prompt: Listen to the audio and type the missing word.
+    hintText:
+    sentenceWithBlank: Have ________ too much self-belief.
+    voiceClip: {fileID: 8300000, guid: ebbe05ca3cce0184ea119027708322fe, type: 3}
+    choices:
+    - almost
+    correctChoiceIndex: 0
+    completedSentence: Have almost too much self-belief.
+  - prompt: Listen to the audio and type the missing word.
+    hintText:
+    sentenceWithBlank: "School is practice for the future, and practice makes ________,
+      but if nobody\u2019s ________, why practice?"
+    voiceClip: {fileID: 8300000, guid: 558589de127fe20488d5d105f41df5ea, type: 3}
+    choices:
+    - perfect
+    correctChoiceIndex: 0
+    completedSentence: "School is practice for the future, and practice makes perfect,
+      but if nobody\u2019s perfect, why practice?"
+  - prompt: Listen to the audio and type the missing word.
+    hintText:
+    sentenceWithBlank: The best thing is that you can allow your insanities to ________
+      and get paid for it.
+    voiceClip: {fileID: 8300000, guid: f6c6496e5b0785749af9622b2743f7e7, type: 3}
+    choices:
+    - develop
+    correctChoiceIndex: 0
+    completedSentence: The best thing is that you can allow your insanities to develop
+      and get paid for it.
   drawingTextureSize: {x: 1024, y: 1024}
   brushRadius: 5
   drawingBackgroundColor: {r: 0.98, g: 0.98, b: 0.98, a: 1}

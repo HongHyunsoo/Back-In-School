@@ -74,6 +74,8 @@ public class MapTransitionPortal : MonoBehaviour
     [Header("Audio")]
     [SerializeField] private AudioClip transitionSfx;
     [SerializeField] [Range(0f, 1f)] private float transitionSfxVolume = 0.9f;
+    [SerializeField] private AudioClip stairTransitionSfx;
+    [SerializeField] [Range(0f, 1f)] private float stairTransitionSfxVolume = 0.8f;
 
     private bool playerInRange;
     private bool isTransitioning;
@@ -291,7 +293,11 @@ public class MapTransitionPortal : MonoBehaviour
         if (isTransitioning)
             return;
 
-        PlayTransitionSfx();
+        if (mode == TransitionMode.TeleportInSameScene ||
+            mode == TransitionMode.InteractInSameScene)
+        {
+            PlayTransitionSfx();
+        }
 
         switch (mode)
         {
@@ -480,7 +486,7 @@ public class MapTransitionPortal : MonoBehaviour
             return;
         }
 
-        transitionSfx = AudioSettingsService.LoadResourceClip("SFX/UI/UI_confirm");
+        transitionSfx = null;
     }
 
     private bool IsCorridorPortal()
@@ -623,6 +629,8 @@ public class MapTransitionPortal : MonoBehaviour
         if (destination == null)
             return;
 
+        PlayStairTransitionSfx();
+
         if (string.IsNullOrWhiteSpace(destination.targetSceneName) ||
             destination.targetSceneName == SceneManager.GetActiveScene().name)
         {
@@ -638,6 +646,16 @@ public class MapTransitionPortal : MonoBehaviour
         }
 
         StartCoroutine(CoLoadScene(destination.targetSceneName, destination.destinationId));
+    }
+
+    private void PlayStairTransitionSfx()
+    {
+        EnsureAudioSource();
+        if (stairTransitionSfx == null)
+            stairTransitionSfx = AudioSettingsService.LoadResourceClip("SFX/Char/Stair");
+
+        if (audioSource != null && stairTransitionSfx != null)
+            audioSource.PlayOneShot(stairTransitionSfx, AudioSettingsService.ScaleSfx(stairTransitionSfxVolume));
     }
 
     private void TeleportInSameScene()

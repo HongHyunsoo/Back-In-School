@@ -121,6 +121,8 @@ public class PhoneAppManager : MonoBehaviour
         if (CurrentApp == appId)
             return;
 
+        PhoneSystem.Instance?.PlayPhoneFocusSfx();
+
         if (openRoutine != null)
             StopCoroutine(openRoutine);
 

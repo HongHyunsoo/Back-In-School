@@ -38,8 +38,8 @@ public class ChatRoomDetailUI : MonoBehaviour
 
 
     // === CSV 기반 매핑 ===
-    // roomId -> conversationID (Conversations.csv??Conversation_ID)
-    // ?�단 Inspector?�서 ?�기 ?�게 간단 배열�?구현
+    // roomId -> conversationID (Conversations.csv의 Conversation_ID)
+    // Inspector에서 연결하기 쉬운 간단 배열로 구현
     [System.Serializable]
     public class RoomConversationMap
     {
@@ -57,8 +57,8 @@ public class ChatRoomDetailUI : MonoBehaviour
     private Coroutine routine;
     private Coroutine scrollRoutine;
 
-    // ChatLineMeta.csv??Order가 0-based(0..N-1)?��? 1-based(1..N)?��? ?�동 감�?
-    // (?�재 ?�로?�트??ChatLineMeta.csv??DAY1_CHAT_M??0..21�??�성?�어 ?�어 0-based가 기본)
+    // ChatLineMeta.csv의 Order가 0-based인지 1-based인지 자동 감지
+    // 현재 프로젝트의 DAY1_CHAT_M은 0..21로 구성되어 있어 0-based가 기본
     private bool metaOrderIsZeroBased = true;
 
     private void Awake()
@@ -111,19 +111,19 @@ public class ChatRoomDetailUI : MonoBehaviour
 
         if (LocalizationManager.Instance == null)
         {
-            Debug.LogError("[ChatRoomDetailUI] LocalizationManager.Instance 가 ?�습?�다. 채팅 ?�?��? 불러?????�습?�다. (roomId=" + roomId + ")");
+            Debug.LogError("[ChatRoomDetailUI] LocalizationManager.Instance가 없습니다. 채팅 내용을 불러올 수 없습니다. (roomId=" + roomId + ")");
             return;
         }
 
         if (contentRoot == null)
         {
-            Debug.LogError("[ChatRoomDetailUI] contentRoot 가 ?�스?�터???�결?��? ?�았?�니??");
+            Debug.LogError("[ChatRoomDetailUI] contentRoot가 Inspector에 연결되지 않았습니다.");
             return;
         }
 
         if (msgOtherPrefab == null || msgMePrefab == null)
         {
-            Debug.LogError("[ChatRoomDetailUI] msgOtherPrefab ?�는 msgMePrefab ???�스?�터???�결?��? ?�았?�니??");
+            Debug.LogError("[ChatRoomDetailUI] msgOtherPrefab 또는 msgMePrefab이 Inspector에 연결되지 않았습니다.");
             return;
         }
 
@@ -132,41 +132,41 @@ public class ChatRoomDetailUI : MonoBehaviour
 
         currentRoomId = roomId;
 
-        // ?�음 처리
+        // 읽음 처리
         if (ChatService.Instance != null)
             ChatService.Instance.MarkRoomRead(roomId);
 
-        // ?�면 ?�단 �??�름
+        // 화면 상단 방 이름
         if (roomTitleText) roomTitleText.text = title;
 
         // roomId -> conversationID 매핑
         currentConversationId = ResolveConversationId(roomId);
         if (string.IsNullOrEmpty(currentConversationId))
         {
-            Debug.LogWarning($"[ChatRoomDetailUI] roomId '{roomId}'??매핑??conversationID가 ?�음");
+            Debug.LogWarning($"[ChatRoomDetailUI] roomId '{roomId}'에 매핑된 conversationID가 없습니다.");
             if (btnSendNext) btnSendNext.gameObject.SetActive(false);
             return;
         }
 
-        // CSV?�서 ?�??불러?�기
+        // CSV에서 대화 불러오기
         currentLines = LocalizationManager.Instance.GetConversation(currentConversationId);
         if (currentLines == null || currentLines.Count == 0)
         {
-            Debug.LogWarning($"[ChatRoomDetailUI] conversation '{currentConversationId}' ?�?��? 비어?�음");
+            Debug.LogWarning($"[ChatRoomDetailUI] conversation '{currentConversationId}'의 내용이 비어 있습니다.");
             if (btnSendNext) btnSendNext.gameObject.SetActive(false);
             return;
         }
 
-        // ??ChatLineMeta Order base ?�동 감�?
-        // - meta?? Order=0??존재?�면 0-based�?간주
-        // - ?�으�?1-based�?간주
+        // ChatLineMeta Order 기준 자동 감지
+        // - Order=0이 존재하면 0-based로 간주
+        // - 없으면 1-based로 간주
         if (LocalizationManager.Instance != null)
         {
             ChatLineMetaDef _tmp;
             metaOrderIsZeroBased = LocalizationManager.Instance.TryGetChatLineMeta(currentConversationId, 0, out _tmp);
         }
 
-        // ChatService ?�션 ?�태?�서 진행 ?�덱???�료 ?��? 복원
+        // ChatService 세션 상태에서 진행 인덱스와 완료 여부 복원
         int restoredIndex = 0;
         bool isCompleted = false;
         ChatSessionState st = null;
@@ -193,27 +193,27 @@ public class ChatRoomDetailUI : MonoBehaviour
         {
             var pastLine = currentLines[i];
             bool isMePast = IsPlayerSpeaker(pastLine.speakerID);
-            SpawnMessage(pastLine, isMePast);
+            SpawnMessage(pastLine, isMePast, playSfx: false);
         }
 
         lineIndex = restoredIndex;
 
-        // ????방에??"?�직 진행???�용???�아?�는지" 먼�? 계산
+        // 이 방에 아직 진행할 내용이 남아 있는지 먼저 계산
         bool shouldContinue = (!isCompleted && lineIndex < currentLines.Count);
 
         var appMgr = FindAnyObjectByType<PhoneAppManager>();
         if (appMgr) appMgr.SetLocked(shouldContinue);
 
-        // 버튼 기본 ?�태
+        // 버튼 기본 상태
         if (btnSendNext) btnSendNext.gameObject.SetActive(shouldContinue);
         if (btnSendNext) btnSendNext.interactable = true;
 
         RequestScrollToBottom();
 
-        // ???�료(?�는 ?��? ?�까지 �??�면 ?�기???? ?�금?� ?��? shouldContinue=false�?꺼짐.
+        // 이미 완료했거나 끝까지 읽었다면 잠금을 풀고 버튼을 숨긴다.
         if (!shouldContinue)
         {
-            // ?�시 progressIndex가 ?�까지 갔는??completed ?�래그�? ??찍힌 경우???�리
+            // 끝까지 읽었지만 completed 플래그가 남지 않은 경우를 정리한다.
             if (ChatService.Instance != null && !isCompleted)
                 ChatService.Instance.CompleteSession(currentConversationId);
 
@@ -221,11 +221,11 @@ public class ChatRoomDetailUI : MonoBehaviour
         }
 
 
-        // ?�션 ?�작 (?��? 존재?�는 ?�션?�면 StartSession ?��??�서 무시)
+        // 세션 시작. 이미 존재하는 세션이면 ChatService 내부에서 무시한다.
         if (ChatService.Instance != null)
             ChatService.Instance.StartSession(currentConversationId);
 
-        // ???�기???��? 부분�????�생 ?�작
+        // 이어 읽어야 하는 부분부터 재생 시작
         if (routine != null) StopCoroutine(routine);
         routine = StartCoroutine(PlayFromIndex());
 
@@ -237,7 +237,7 @@ public class ChatRoomDetailUI : MonoBehaviour
 
     private int GetOrder(DialogueLine line)
     {
-        // lineID: DAY1_CHAT_M_22 같�? ?�태?�서 ???�자 ?�싱
+        // lineID: DAY1_CHAT_M_22 같은 형태에서 끝 숫자를 파싱
         if (!string.IsNullOrEmpty(line.lineID))
         {
             int us = line.lineID.LastIndexOf('_');
@@ -247,7 +247,7 @@ public class ChatRoomDetailUI : MonoBehaviour
                     return parsed;
             }
         }
-        // fallback: ?�덱??기반(1-based)
+        // fallback: 인덱스 기반(1-based)
         return lineIndex + 1;
     }
 
@@ -279,7 +279,7 @@ public class ChatRoomDetailUI : MonoBehaviour
             var line = currentLines[lineIndex];
             bool isMe = IsPlayerSpeaker(line.speakerID);
 
-            // ??ChatLineMeta Order 기�?(0-based/1-based)??맞춰 조회
+            // ChatLineMeta Order 기준(0-based/1-based)에 맞춰 조회
             int order = metaOrderIsZeroBased ? lineIndex : (lineIndex + 1);
 
             ChatLineMetaDef meta = null;
@@ -289,13 +289,13 @@ public class ChatRoomDetailUI : MonoBehaviour
             bool waitTap = hasMeta && meta != null && meta.waitTap;
             float delay = (hasMeta && meta != null && meta.delay > 0f) ? meta.delay : 0.6f;
 
-            // ??WaitTap?�면 "??줄을 보내�?버튼?�로 출력"?�도�?멈춤
+            // WaitTap이면 해당 줄을 보내기 버튼으로 출력하도록 멈춘다.
             if (waitTap)
             {
                 if (queuedTap)
                 {
                     queuedTap = false;
-                    // ?�약???�릭???�으�?즉시 보내버리�?                    // (pendingLine ?�팅 ??바로 Spawn)
+                    // 미리 클릭했다면 pendingLine 설정 없이 즉시 출력한다.
                     waitingTap = false;
 
                     SpawnMessage(line, isMe);
@@ -303,7 +303,7 @@ public class ChatRoomDetailUI : MonoBehaviour
                         ChatService.Instance.AdvanceSession(currentConversationId);
                     lineIndex++;
 
-                    continue; // ?�음 ?�인 계속
+                    continue; // 다음 라인 계속
                 }
 
                 waitingTap = true;
@@ -315,13 +315,13 @@ public class ChatRoomDetailUI : MonoBehaviour
                 yield break;
             }
 
-            // ?�동 진행 ?�인
-            // ???�동 진행 중에??버튼???��?????"?�음 �?�?밀리�? ?�게,
-            //    ?�재 ?�레?��? ?�킵(=즉시 출력)?�도�?처리?�다.
+            // 자동 진행 라인
+            // 자동 진행 중 버튼을 눌러도 다음 탭으로 밀리지 않도록
+            // 현재 딜레이만 스킵해서 즉시 출력한다.
             if (btnSendNext) btnSendNext.interactable = true;
             if (btnSendNextText) btnSendNextText.text = "...";
 
-            // delay ?�안 ?�기하?? ?��?가 버튼???�르�?queuedTap???�비?�고 즉시 진행
+            // delay 동안 기다리되 버튼을 누르면 즉시 진행
             float t = 0f;
             while (t < delay)
             {
@@ -349,10 +349,10 @@ public class ChatRoomDetailUI : MonoBehaviour
 
     private IEnumerator DeferredStart()
     {
-        // ?�면???�성?�된 ?�태�????�레???�어�????�작
+        // 화면이 활성화된 다음 프레임부터 시작
         yield return null;
 
-        // 그래???�시 비활?�이?�면 ??�???방어
+        // 여전히 비활성 상태라면 중단
         if (!gameObject.activeInHierarchy)
             yield break;
 
@@ -389,13 +389,13 @@ public class ChatRoomDetailUI : MonoBehaviour
         pendingLine = null;
 
         if (routine != null) StopCoroutine(routine);
-        routine = StartCoroutine(PlayFromIndex()); // ?????�레???��? 말고 즉시 ?�음 ?�단
+        routine = StartCoroutine(PlayFromIndex()); // 다음 라인을 즉시 판단
 
     }
 
 
 
-    private void SpawnMessage(DialogueLine line, bool isMe)
+    private void SpawnMessage(DialogueLine line, bool isMe, bool playSfx = true)
     {
         EnsureContentRootBinding();
 
@@ -409,7 +409,7 @@ public class ChatRoomDetailUI : MonoBehaviour
         var avatar = SpeakerAvatarProvider.GetAvatar(line.speakerID);
 
         var item = Instantiate(prefab, contentRoot);
-        item.transform.SetParent(contentRoot, false); // ??좌표 꼬임 방�?
+        item.transform.SetParent(contentRoot, false); // 좌표 꼬임 방지
         item.Set(displayName, avatar, body, true);
         ForceLeftAlignTexts(item.transform);
         EnsureMessageItemVisibleHeight(item);
@@ -425,6 +425,9 @@ public class ChatRoomDetailUI : MonoBehaviour
             LayoutRebuilder.ForceRebuildLayoutImmediate(contentRect);
         // Force layout before scrolling to bottom.
         RequestScrollToBottom();
+
+        if (playSfx)
+            PhoneSystem.Instance?.PlayPhoneBlipSfx();
     }
 
 
@@ -447,7 +450,7 @@ public class ChatRoomDetailUI : MonoBehaviour
 
     private void OnBack()
     {
-        // ?�션 중이�?�??�감
+        // 세션 중에는 뒤로 가기 잠금
         if (ChatService.Instance != null && ChatService.Instance.HasActiveSession) return;
         ShowList();
     }
@@ -457,7 +460,7 @@ public class ChatRoomDetailUI : MonoBehaviour
         if (screenRoomList) screenRoomList.SetActive(true);
         if (screenRoomDetail) screenRoomDetail.SetActive(false);
 
-        // 메시지/진행 ?�태???��? (같�? 방으�??�아?�을 ??그�?�?보이?�록)
+        // 메시지와 진행 상태는 유지한다. 같은 방으로 돌아오면 그대로 보인다.
         if (routine != null) StopCoroutine(routine);
         routine = null;
 

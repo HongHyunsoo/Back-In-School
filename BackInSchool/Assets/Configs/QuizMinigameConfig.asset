@@ -101,7 +101,7 @@ MonoBehaviour:
     hintText: "\uB9DD\uC0C1\uC5D0 \uAC00\uAE4C\uC6B8 \uC815\uB3C4\uB85C \uB098 \uC790\uC2E0\uC744
       \uBBFF\uC5B4\uB77C."
     sentenceWithBlank: Have ________ too much self-belief.
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: ebbe05ca3cce0184ea119027708322fe, type: 3}
     choices:
     - almost
     correctChoiceIndex: 0
@@ -111,7 +111,7 @@ MonoBehaviour:
     hintText: "\uB9DD\uC0C1\uC5D0 \uAC00\uAE4C\uC6B8 \uC815\uB3C4\uB85C \uB098 \uC790\uC2E0\uC744
       \uBBFF\uC5B4\uB77C."
     sentenceWithBlank: Have ________ too much self-belief.
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: ebbe05ca3cce0184ea119027708322fe, type: 3}
     choices:
     - almost
     correctChoiceIndex: 0
@@ -123,7 +123,7 @@ MonoBehaviour:
       \uC5C6\uB2E4\uBA74, \uC65C \uC5F0\uC2B5\uC744 \uD574\uC57C\uD558\uB294 \uAC78\uAE4C?"
     sentenceWithBlank: "School is practice for the future, and practice makes ________,
       but if nobody\u2019s ________, why practice?"
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: 558589de127fe20488d5d105f41df5ea, type: 3}
     choices:
     - perfect
     correctChoiceIndex: 0
@@ -135,7 +135,7 @@ MonoBehaviour:
       \uB3C8\uAE4C\uC9C0 \uBC1B\uB294\uB2E4\uB294 \uAC70\uB2E4."
     sentenceWithBlank: The best thing is that you can allow your insanities to ________
       and get paid for it.
-    voiceClip: {fileID: 0}
+    voiceClip: {fileID: 8300000, guid: f6c6496e5b0785749af9622b2743f7e7, type: 3}
     choices:
     - develop
     correctChoiceIndex: 0

@@ -181370,7 +181370,7 @@ MonoBehaviour:
   fadeOutSeconds: 0.45
   fadeInSeconds: 0.35
   timeoutPenaltyDelta: 0
-  bellClip: {fileID: 8300000, guid: 22f44d3417428c54ebb98bf68d3cd84a, type: 3}
+  bellClip: {fileID: 8300000, guid: 62a0dac1465d6c340967df48aaeb1d6e, type: 3}
   bellVolume: 0.4
   showTimerUI: 1
   uiPrefab: {fileID: 1360405121658300028, guid: f9efa9bffe496964c98a6414b3d64129, type: 3}
@@ -181410,16 +181410,16 @@ MonoBehaviour:
   enableMorningBeforeAssemblyAudio: 1
   enableLunchFreeTimeAudio: 1
   walkFootstepClips:
-  - {fileID: 8300000, guid: a46fe86d44d1020479038a0678d656b7, type: 3}
-  - {fileID: 8300000, guid: 20880d8fc38a9b84085cfaebc2dd7794, type: 3}
-  - {fileID: 8300000, guid: f725464959c920049a750368d4cebe1c, type: 3}
-  - {fileID: 8300000, guid: a06777a2d3036ce4cbc8fe8f70dc7cfa, type: 3}
-  - {fileID: 8300000, guid: 36755d1e04bae8c4b964e6441328c30c, type: 3}
-  - {fileID: 8300000, guid: 5e0619cf343387c41bb0b2847d398323, type: 3}
-  - {fileID: 8300000, guid: 7d71488d2b43db745af9010103dad286, type: 3}
-  - {fileID: 8300000, guid: 21a32175981458041b138d6e0706989c, type: 3}
-  - {fileID: 8300000, guid: f5cdec69b66722644b0f61b7d6b0ae7f, type: 3}
-  - {fileID: 8300000, guid: 763ded2781536574197c6ac7254fa06c, type: 3}
+  - {fileID: 8300000, guid: b01bf80092311ec4ab8a712cc843f889, type: 3}
+  - {fileID: 8300000, guid: f0ba7bf0b31c9a94a930f9a5062f511c, type: 3}
+  - {fileID: 8300000, guid: 56b7062a1df324f41970c633072a4617, type: 3}
+  - {fileID: 8300000, guid: c66802aae72ef5c4abd8800e6677d35e, type: 3}
+  - {fileID: 8300000, guid: bdd67cbdf2880c84faad532a9e0e93c3, type: 3}
+  - {fileID: 8300000, guid: 9da0914e1e8900644ad051e10338e3a2, type: 3}
+  - {fileID: 8300000, guid: f5e49b2f98832e341967da4c06ef940d, type: 3}
+  - {fileID: 8300000, guid: d3de1625c671a5340bae5f06286eac60, type: 3}
+  - {fileID: 8300000, guid: ed050776f294ced48b8e9689a80668b1, type: 3}
+  - {fileID: 8300000, guid: 023d69e83d651e2449befda50b720690, type: 3}
   runFootstepClips: []
   walkStepInterval: 0.42
   runStepInterval: 0.28
@@ -181440,7 +181440,7 @@ MonoBehaviour:
   playgroundAmbientClip: {fileID: 8300000, guid: 516047937cf77c24d96eed891d011b17, type: 3}
   playgroundAmbientVolume: 0.62
   ambientFadeSpeed: 3.25
-  phoneNotificationClip: {fileID: 8300000, guid: 8b5566429ad6cc24392758586de04b48, type: 3}
+  phoneNotificationClip: {fileID: 8300000, guid: c500b891d25a8fa4f8b4b41947936399, type: 3}
   phoneNotificationVolume: 1
   toastFontAsset: {fileID: 11400000, guid: 0c79719180d600243baa2aa429aff767, type: 2}
   phoneNotificationToastKo: "\uBB38\uC790\uAC00 \uC654\uC2B5\uB2C8\uB2E4."

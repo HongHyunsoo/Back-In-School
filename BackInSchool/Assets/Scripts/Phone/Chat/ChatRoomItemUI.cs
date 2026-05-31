@@ -42,7 +42,10 @@ public class ChatRoomItemUI : MonoBehaviour
             ChatService.Instance.MarkRoomRead(roomId);
 
         if (detailUI != null)
+        {
+            PhoneSystem.Instance?.PlayPhoneFocusSfx();
             detailUI.OpenRoom(roomId, title);
+        }
         else
             Debug.LogWarning("[ChatRoomItemUI] detailUI가 null (ChatRoomListUI에서 인스펙터 연결 필요)");
     }

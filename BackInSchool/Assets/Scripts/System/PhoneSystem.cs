@@ -17,9 +17,16 @@ public class PhoneSystem : MonoBehaviour
     [Header("Phone Audio")]
     [SerializeField] private AudioClip phoneButtonClickClip;
     [SerializeField] [Range(0f, 1f)] private float phoneButtonClickVolume = 0.85f;
+    [SerializeField] private AudioClip phoneToggleClip;
+    [SerializeField] private AudioClip phoneFocusClip;
+    [SerializeField] private AudioClip phoneBackClip;
+    [SerializeField] private AudioClip phoneApplyClip;
+    [SerializeField] private AudioClip phoneBlipClip;
+    [SerializeField] [Range(0f, 1f)] private float phoneUiSfxVolume = 0.85f;
 
     public AudioClip PhoneButtonClickClip => phoneButtonClickClip;
     public float PhoneButtonClickVolume => phoneButtonClickVolume;
+    private AudioSource phoneAudioSource;
 
     private void Awake()
     {
@@ -43,6 +50,7 @@ public class PhoneSystem : MonoBehaviour
             DontDestroyOnLoad(dm.gameObject);
 
         EnsureDefaultAudioClips();
+        EnsurePhoneAudioSource();
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
@@ -63,6 +71,8 @@ public class PhoneSystem : MonoBehaviour
 
     public void Open()
     {
+        bool wasOpen = IsOpen;
+
         if (phoneUIInstance == null)
         {
             if (phoneUIPrefab == null)
@@ -78,18 +88,27 @@ public class PhoneSystem : MonoBehaviour
 
         EnsureRuntimeComponents();
         phoneUIInstance.SetActive(true);
+
+        if (!wasOpen)
+            PlayPhoneToggleSfx();
     }
 
     public void Close()
     {
-        if (phoneUIInstance != null)
+        if (phoneUIInstance != null && phoneUIInstance.activeSelf)
+        {
             phoneUIInstance.SetActive(false);
+            PlayPhoneToggleSfx();
+        }
     }
 
     public bool IsOpen => phoneUIInstance != null && phoneUIInstance.activeSelf;
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        if (phoneAudioSource != null)
+            phoneAudioSource.Stop();
+
         ResetPhoneUiScreenState();
     }
 
@@ -173,5 +192,75 @@ public class PhoneSystem : MonoBehaviour
     {
         if (phoneButtonClickClip == null)
             phoneButtonClickClip = AudioSettingsService.LoadResourceClip("SFX/UI/UI_confirm");
+        if (phoneToggleClip == null)
+            phoneToggleClip = AudioSettingsService.LoadResourceClip("SFX/UI/SFX_Beib");
+        if (phoneFocusClip == null)
+            phoneFocusClip = AudioSettingsService.LoadResourceClip("SFX/UI/UI_focus");
+        if (phoneBackClip == null)
+            phoneBackClip = AudioSettingsService.LoadResourceClip("SFX/UI/UI_back");
+        if (phoneApplyClip == null)
+            phoneApplyClip = AudioSettingsService.LoadResourceClip("SFX/UI/UI_apply");
+        if (phoneBlipClip == null)
+            phoneBlipClip = AudioSettingsService.LoadResourceClip("SFX/UI/Blip");
+    }
+
+    private void EnsurePhoneAudioSource()
+    {
+        if (phoneAudioSource != null)
+            return;
+
+        phoneAudioSource = GetComponent<AudioSource>();
+        if (phoneAudioSource == null)
+            phoneAudioSource = gameObject.AddComponent<AudioSource>();
+
+        phoneAudioSource.playOnAwake = false;
+        phoneAudioSource.loop = false;
+        phoneAudioSource.spatialBlend = 0f;
+        phoneAudioSource.ignoreListenerPause = true;
+    }
+
+    private void PlayPhoneUiSfx(AudioClip clip, float volume)
+    {
+        EnsurePhoneAudioSource();
+        if (phoneAudioSource == null || clip == null)
+            return;
+
+        phoneAudioSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(volume));
+    }
+
+    public void PlayPhoneButtonClickSfx()
+    {
+        EnsureDefaultAudioClips();
+        PlayPhoneUiSfx(phoneButtonClickClip, phoneButtonClickVolume);
+    }
+
+    public void PlayPhoneToggleSfx()
+    {
+        EnsureDefaultAudioClips();
+        PlayPhoneUiSfx(phoneToggleClip, phoneUiSfxVolume);
+    }
+
+    public void PlayPhoneFocusSfx()
+    {
+        EnsureDefaultAudioClips();
+        PlayPhoneUiSfx(phoneFocusClip, phoneUiSfxVolume);
+    }
+
+    public void PlayPhoneBackSfx()
+    {
+        EnsureDefaultAudioClips();
+        PlayPhoneUiSfx(phoneBackClip, phoneUiSfxVolume);
+    }
+
+    public void PlayPhoneApplySfx()
+    {
+        EnsureDefaultAudioClips();
+        PlayPhoneUiSfx(phoneApplyClip, phoneUiSfxVolume);
+    }
+
+    public void PlayPhoneBlipSfx()
+    {
+        EnsureDefaultAudioClips();
+        PlayPhoneUiSfx(phoneBlipClip, phoneUiSfxVolume);
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,19 +9,15 @@ public class PhoneUIButtonAudioController : MonoBehaviour
     [SerializeField] [Min(0.1f)] private float rebindIntervalSeconds = 0.5f;
 
     private readonly Dictionary<Button, UnityEngine.Events.UnityAction> callbacksByButton = new();
-    private AudioSource audioSource;
     private float nextRebindTime;
 
     private void OnEnable()
     {
-        EnsureAudioSource();
         RebindButtons(forceRefresh: true);
     }
 
     private void Update()
     {
-        EnsureAudioSource();
-
         if (Time.unscaledTime >= nextRebindTime)
             RebindButtons(forceRefresh: false);
     }
@@ -28,21 +25,6 @@ public class PhoneUIButtonAudioController : MonoBehaviour
     private void OnDisable()
     {
         nextRebindTime = 0f;
-    }
-
-    private void EnsureAudioSource()
-    {
-        if (audioSource != null)
-            return;
-
-        audioSource = GetComponent<AudioSource>();
-        if (audioSource == null)
-            audioSource = gameObject.AddComponent<AudioSource>();
-
-        audioSource.playOnAwake = false;
-        audioSource.loop = false;
-        audioSource.spatialBlend = 0f;
-        audioSource.ignoreListenerPause = true;
     }
 
     private void RebindButtons(bool forceRefresh)
@@ -94,15 +76,56 @@ public class PhoneUIButtonAudioController : MonoBehaviour
         if (sourceButton == null || !sourceButton.IsActive() || !sourceButton.interactable)
             return;
 
-        EnsureAudioSource();
-        if (audioSource == null || PhoneSystem.Instance == null)
+        var phone = PhoneSystem.Instance;
+        if (phone == null)
             return;
 
-        var clip = PhoneSystem.Instance.PhoneButtonClickClip;
-        if (clip == null)
+        string buttonName = sourceButton.name ?? string.Empty;
+        if (IsPhoneCloseButton(buttonName))
             return;
 
-        audioSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(PhoneSystem.Instance.PhoneButtonClickVolume));
+        if (IsBackButton(buttonName))
+        {
+            phone.PlayPhoneBackSfx();
+            return;
+        }
+
+        if (sourceButton.GetComponentInParent<ChatRoomItemUI>() != null)
+            return;
+
+        // The new message itself plays Blip. Avoid an extra confirm sound from the send button.
+        if (sourceButton.GetComponentInParent<ChatRoomDetailUI>() != null)
+            return;
+
+        if (IsRuleTabButton(buttonName))
+        {
+            phone.PlayPhoneFocusSfx();
+            return;
+        }
+
+        phone.PlayPhoneButtonClickSfx();
+    }
+
+    private static bool IsPhoneCloseButton(string buttonName)
+    {
+        return Contains(buttonName, "ClosePhone") || Contains(buttonName, "Power");
+    }
+
+    private static bool IsBackButton(string buttonName)
+    {
+        return Contains(buttonName, "Back");
+    }
+
+    private static bool IsRuleTabButton(string buttonName)
+    {
+        return Contains(buttonName, "Btn_Rule")
+            || Contains(buttonName, "Btn_SchoolMeal")
+            || Contains(buttonName, "Btn_Penalty");
+    }
+
+    private static bool Contains(string value, string token)
+    {
+        return value.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private static class ListPool<T>

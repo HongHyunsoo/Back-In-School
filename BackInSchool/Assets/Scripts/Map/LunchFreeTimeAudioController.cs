@@ -18,6 +18,13 @@ public class LunchFreeTimeAudioController : MonoBehaviour
     [SerializeField] [Range(0f, 1f)] private float footstepVolume = 0.75f;
     [SerializeField] private Vector2 footstepPitchRange = new Vector2(0.96f, 1.04f);
 
+    [Header("Movement Feedback")]
+    [SerializeField] private AudioClip jumpSfx;
+    [SerializeField] private AudioClip landSfx;
+    [SerializeField] [Range(0f, 1f)] private float jumpSfxVolume = 1f;
+    [SerializeField] [Range(0f, 1f)] private float landSfxVolume = 0.8f;
+    [SerializeField] [Min(0f)] private float landSfxDelaySeconds = 0.08f;
+
     [Header("Ambient Zones")]
     [SerializeField] private Collider2D classroomZone;
     [SerializeField] private Collider2D[] classroomExtraZones;
@@ -53,6 +60,7 @@ public class LunchFreeTimeAudioController : MonoBehaviour
     private AudioSource footstepSource;
     private AudioSource ambientSource;
     private AudioSource notificationSource;
+    private AudioSource movementSource;
     private ChatService subscribedChatService;
     private float nextFootstepTime;
     private AmbientZoneKind currentAmbientZone = AmbientZoneKind.None;
@@ -64,10 +72,14 @@ public class LunchFreeTimeAudioController : MonoBehaviour
     private TextMeshProUGUI toastText;
     private CanvasGroup toastCanvasGroup;
     private Coroutine toastRoutine;
+    private bool movementStateInitialized;
+    private bool wasGrounded;
+    private Coroutine landSfxRoutine;
 
     private void OnEnable()
     {
         EnsureAudioSources();
+        EnsureDefaultMovementClips();
         SubscribeChatService();
     }
 
@@ -84,10 +96,12 @@ public class LunchFreeTimeAudioController : MonoBehaviour
         if (!IsFreeRoamAudioActive())
         {
             ResetFootsteps();
+            movementStateInitialized = false;
             FadeOutAmbient();
             return;
         }
 
+        UpdateMovementFeedback();
         UpdateFootsteps();
         UpdateAmbient();
     }
@@ -111,6 +125,62 @@ public class LunchFreeTimeAudioController : MonoBehaviour
             notificationSource = CreateChildSource("__LunchPhoneNotification", loop: false);
             notificationSource.ignoreListenerPause = true;
         }
+
+        if (movementSource == null)
+            movementSource = CreateChildSource("__LunchMovement", loop: false);
+    }
+
+    private void EnsureDefaultMovementClips()
+    {
+        if (jumpSfx == null)
+            jumpSfx = AudioSettingsService.LoadResourceClip("SFX/Char/Jump");
+        if (landSfx == null)
+            landSfx = AudioSettingsService.LoadResourceClip("SFX/Char/Land");
+    }
+
+    private void UpdateMovementFeedback()
+    {
+        if (playerController == null || movementSource == null)
+            return;
+
+        bool grounded = playerController.IsGroundedStable;
+        if (!movementStateInitialized)
+        {
+            wasGrounded = grounded;
+            movementStateInitialized = true;
+            return;
+        }
+
+        if (wasGrounded && !grounded && playerController.VerticalVelocity > 0.1f)
+            PlayMovementSfx(jumpSfx, jumpSfxVolume);
+        else if (!wasGrounded && grounded && playerController.VerticalVelocity <= 0.05f)
+            QueueLandSfx();
+
+        wasGrounded = grounded;
+    }
+
+    private void PlayMovementSfx(AudioClip clip, float volume)
+    {
+        if (movementSource != null && clip != null)
+            movementSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(volume));
+    }
+
+    private void QueueLandSfx()
+    {
+        if (landSfxRoutine != null)
+            StopCoroutine(landSfxRoutine);
+
+        landSfxRoutine = StartCoroutine(CoPlayLandSfx());
+    }
+
+    private System.Collections.IEnumerator CoPlayLandSfx()
+    {
+        float delay = Mathf.Max(0f, landSfxDelaySeconds);
+        if (delay > 0f)
+            yield return new WaitForSeconds(delay);
+
+        PlayMovementSfx(landSfx, landSfxVolume);
+        landSfxRoutine = null;
     }
 
     private AudioSource CreateChildSource(string name, bool loop)

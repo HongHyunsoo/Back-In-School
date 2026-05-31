@@ -71,6 +71,8 @@ public class PlayerController : MonoBehaviour
     public bool IsActivelyRunning => isRunning && moveInput != 0f && isGrounded && currentStamina > 0f;
     public float HorizontalInput => moveInput;
     public bool IsGrounded => isGrounded;
+    public bool IsGroundedStable => animGrounded;
+    public float VerticalVelocity => rb != null ? rb.velocity.y : 0f;
     public bool ExternalInputLocked { get; set; }
 
     private void Start()

@@ -13,20 +13,20 @@ public class ContextualDialogue
     [Tooltip("Optional completed conversation required before this dialogue can be selected.")]
     public string requiredCompletedConversationID;
 
-    [Tooltip("?⑥씪 ???ID (Repeatable, PlayOnce ?ъ슜 ??")]
-    public string conversationID; // ?? "ROBOT_CONVO_DAY1"
+    [Tooltip("단일 대화 ID (Repeatable, PlayOnce 동작에서 사용)")]
+    public string conversationID; // 예: "ROBOT_CONVO_DAY1"
 
-    [Tooltip("?쒕뜡 ???ID 紐⑸줉 (Random ?ъ슜 ?? ??以묒뿉???쒕뜡 ?좏깮)")]
+    [Tooltip("랜덤 대화 ID 목록 (Random 동작에서 목록 중 하나를 선택)")]
     public List<string> randomConversationIDs = new List<string>();
 
-    [Header("???而ㅼ뒪?곕쭏?댁쭠 (媛???щ쭏??媛쒕퀎 ?ㅼ젙)")]
-    [Tooltip("??붿쓽 紐?踰덉㎏ ??ъ뿉 ?ㅼ젙???곸슜?좎? (0遺???쒖옉, -1?대㈃ 紐⑤뱺 ??ъ뿉 ?곸슜 ????")]
+    [Header("대화 커스터마이징 (대사별 개별 설정)")]
+    [Tooltip("몇 번째 대사에 설정을 적용할지 지정합니다. (0부터 시작, -1이면 적용하지 않음)")]
     public int customLineIndex = -1;
 
-    [Tooltip("?대떦 ??ъ뿉 ?곸슜???좊땲硫붿씠???몃━嫄??대쫫")]
+    [Tooltip("해당 대사에 적용할 애니메이션 트리거 이름")]
     public string animationTrigger;
 
-    [Tooltip("?대떦 ??ъ뿉 ?ъ깮???뚮━ ?댄럺???대쫫 (Resources/Sounds?먯꽌 濡쒕뱶)")]
+    [Tooltip("해당 대사에 재생할 사운드 이펙트 이름 (Resources/Sounds에서 로드)")]
     public string soundEffectName;
 
     [Header("Line Presentations")]
@@ -48,11 +48,11 @@ public enum DialogueBehavior { Repeatable, PlayOnce, Random }
 
 /*
  * ===================================================================================
- * DialogueTrigger (v4.0 - Random ?숈옉 援ы쁽)
+ * DialogueTrigger (v4.0 - Random 동작 구현)
  * ===================================================================================
- * - [v4.0 異붽? 湲곕뒫]
- * - 1. Random ?숈옉 援ы쁽 ?꾨즺
- * - 2. ?쒕뜡 ???紐⑸줉?먯꽌 ?좏깮
+ * - [v4.0 추가 기능]
+ * - 1. Random 동작 구현 완료
+ * - 2. 랜덤 대화 목록에서 선택
  * ===================================================================================
  */
 public class DialogueTrigger : MonoBehaviour
@@ -313,23 +313,23 @@ public class DialogueTrigger : MonoBehaviour
 
             return cd;
         }
-        return null; // ?대떦 ?곹솴???놁쓬
+        return null; // 해당 상황에 맞는 대화가 없음
     }
 
-    // ????숈옉???곕씪 ????쒖옉
+    // 대화 동작에 따라 대화 시작
     private void StartDialogueBasedOnBehavior(ContextualDialogue cd)
     {
         string conversationID_ToPlay;
 
-        // 1. ?대떦 ?곹솴??留욌뒗 ??붽? ?놁쑝硫?'湲곕낯 ???ID'瑜??ъ슜
+        // 1. 해당 상황에 맞는 대화가 없으면 기본 대화 ID를 사용
         if (cd == null)
         {
             conversationID_ToPlay = defaultConversationID;
         }
-        // 2. ?대떦 ?곹솴??留욌뒗 '???ID'瑜??ъ슜
+        // 2. 해당 상황에 맞는 대화 ID를 사용
         else
         {
-            // Random ?숈옉: ?쒕뜡 ???紐⑸줉?먯꽌 ?좏깮
+            // Random 동작: 랜덤 대화 목록에서 선택
             if (cd.behavior == DialogueBehavior.Random)
             {
                 if (cd.randomConversationIDs != null && cd.randomConversationIDs.Count > 0)
@@ -339,7 +339,7 @@ public class DialogueTrigger : MonoBehaviour
                 }
                 else if (!string.IsNullOrEmpty(cd.conversationID))
                 {
-                    // ?쒕뜡 紐⑸줉???놁쑝硫?湲곕낯 ???ID ?ъ슜
+                    // 랜덤 목록이 없으면 기본 대화 ID 사용
                     conversationID_ToPlay = cd.conversationID;
                 }
                 else
@@ -347,14 +347,14 @@ public class DialogueTrigger : MonoBehaviour
                     conversationID_ToPlay = defaultConversationID;
                 }
             }
-            // Repeatable, PlayOnce ?숈옉: ?⑥씪 ???ID ?ъ슜
+            // Repeatable, PlayOnce 동작: 단일 대화 ID 사용
             else
             {
                 conversationID_ToPlay = cd.conversationID;
             }
         }
 
-        // 3. '???ID'? '???二쇱씤 NPC(transform)'瑜?DialogueManager???꾨떖
+        // 3. 대화 ID와 대화 주인 NPC(transform)를 DialogueManager에 전달
         if (!string.IsNullOrEmpty(conversationID_ToPlay))
         {
             if (facePlayerOnDialogueStart)
@@ -380,7 +380,7 @@ public class DialogueTrigger : MonoBehaviour
         }
         else
         {
-            UnityEngine.Debug.LogWarning("???ID媛 鍮꾩뼱?덉뒿?덈떎!");
+            UnityEngine.Debug.LogWarning("대화 ID가 비어 있습니다!");
         }
     }
 

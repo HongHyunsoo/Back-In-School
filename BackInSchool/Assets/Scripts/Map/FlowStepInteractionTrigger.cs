@@ -257,7 +257,6 @@ public class FlowStepInteractionTrigger : MonoBehaviour
 
     private void EnsureDefaultAudio()
     {
-        if (completeSfx == null)
-            completeSfx = AudioSettingsService.LoadResourceClip("SFX/UI/UI_apply");
+        // Flow completion often loads the next scene. Keep it silent unless a clip is assigned explicitly.
     }
 }

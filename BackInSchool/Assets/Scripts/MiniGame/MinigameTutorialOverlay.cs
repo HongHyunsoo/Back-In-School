@@ -12,6 +12,8 @@ public sealed class MinigameTutorialOverlay : MonoBehaviour
     private TextMeshProUGUI titleText;
     private TextMeshProUGUI bodyText;
     private TextMeshProUGUI progressText;
+    private AudioSource audioSource;
+    private AudioClip successSfx;
 
     public bool IsVisible => canvas != null && canvas.enabled;
 
@@ -54,6 +56,25 @@ public sealed class MinigameTutorialOverlay : MonoBehaviour
             canvas.enabled = false;
         if (canvasGroup != null)
             canvasGroup.alpha = 0f;
+    }
+
+    public void PlaySuccess()
+    {
+        if (successSfx == null)
+            successSfx = AudioSettingsService.LoadResourceClip("SFX/Tutorial_Success");
+
+        if (successSfx == null)
+            return;
+
+        if (audioSource == null)
+            audioSource = gameObject.GetComponent<AudioSource>();
+        if (audioSource == null)
+            audioSource = gameObject.AddComponent<AudioSource>();
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.spatialBlend = 0f;
+        audioSource.PlayOneShot(successSfx, AudioSettingsService.ScaleSfx(1f));
     }
 
     private void Awake()

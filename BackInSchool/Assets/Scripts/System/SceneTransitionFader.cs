@@ -20,6 +20,9 @@ public class SceneTransitionFader : MonoBehaviour
 
     private bool fadeInOnNextScene;
     private float nextSceneFadeInDuration = 0.35f;
+    private bool transitionAudioMuted;
+    private bool audioListenerWasPaused;
+    private float audioListenerVolumeBeforeMute = 1f;
 
     public static SceneTransitionFader EnsureInstance()
     {
@@ -73,6 +76,7 @@ public class SceneTransitionFader : MonoBehaviour
 
     private void OnDestroy()
     {
+        RestoreTransitionAudio();
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
@@ -109,6 +113,8 @@ public class SceneTransitionFader : MonoBehaviour
 
     public IEnumerator FadeOut(float duration)
     {
+        MuteTransitionAudio();
+
         if (running != null)
         {
             StopCoroutine(running);
@@ -127,6 +133,47 @@ public class SceneTransitionFader : MonoBehaviour
         }
 
         yield return Fade(1f, 0f, duration);
+        RestoreTransitionAudio();
+    }
+
+    private void MuteTransitionAudio()
+    {
+        if (transitionAudioMuted)
+            return;
+
+        audioListenerWasPaused = AudioListener.pause;
+        audioListenerVolumeBeforeMute = AudioListener.volume;
+        AudioListener.pause = true;
+        AudioListener.volume = 0f;
+        StopTransientAudioSources();
+        transitionAudioMuted = true;
+    }
+
+    private void RestoreTransitionAudio()
+    {
+        if (!transitionAudioMuted)
+            return;
+
+        StopTransientAudioSources();
+        AudioListener.pause = audioListenerWasPaused;
+        AudioListener.volume = Mathf.Clamp01(audioListenerVolumeBeforeMute);
+        transitionAudioMuted = false;
+    }
+
+    private static void StopTransientAudioSources()
+    {
+        AudioSource[] sources = FindObjectsByType<AudioSource>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+        for (int i = 0; i < sources.Length; i++)
+        {
+            AudioSource source = sources[i];
+            if (source == null || source.loop)
+                continue;
+
+            source.Stop();
+        }
     }
 
     private IEnumerator Fade(float from, float to, float duration)

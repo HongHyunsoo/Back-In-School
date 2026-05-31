@@ -315,6 +315,7 @@ public class PhoneGalleryAppController : MonoBehaviour
         if (detailOverlay == null || entry == null)
             return;
 
+        bool wasDetailVisible = detailOverlay.activeSelf;
         Language language = GetLanguage();
         bool unlocked = IsEntryUnlocked(entry);
 
@@ -343,6 +344,9 @@ public class PhoneGalleryAppController : MonoBehaviour
             galleryListPanel.SetActive(false);
         detailOverlay.transform.SetAsLastSibling();
         detailOverlay.SetActive(true);
+
+        if (!wasDetailVisible)
+            PhoneSystem.Instance?.PlayPhoneFocusSfx();
     }
 
     private Sprite LoadSprite(string resourcePath)

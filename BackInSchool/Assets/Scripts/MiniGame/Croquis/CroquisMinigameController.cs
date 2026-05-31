@@ -443,7 +443,10 @@ public class CroquisMinigameController : MonoBehaviour
         PlayerPrefs.Save();
 
         if (tutorialOverlay != null)
+        {
+            tutorialOverlay.PlaySuccess();
             tutorialOverlay.Hide();
+        }
 
         SpawnNextPrompt();
         RefreshStatus();
@@ -1022,6 +1025,9 @@ public class CroquisMinigameController : MonoBehaviour
 
     private void EnsureAudioSource()
     {
+        if (loopClip == null)
+            loopClip = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/Croquis/Croquis_BGM");
+
         if (audioSource == null)
             audioSource = GetComponent<AudioSource>();
         if (audioSource == null)

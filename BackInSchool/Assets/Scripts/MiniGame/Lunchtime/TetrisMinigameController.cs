@@ -627,7 +627,10 @@ public class TetrisMinigameController : MonoBehaviour
         PlayerPrefs.Save();
 
         if (tutorialOverlay != null)
+        {
+            tutorialOverlay.PlaySuccess();
             tutorialOverlay.Hide();
+        }
 
         fallTimer = 0f;
         lockPending = false;
@@ -1196,6 +1199,12 @@ public class TetrisMinigameController : MonoBehaviour
 
     private void EnsureAudioSource()
     {
+        if (loopClip == null)
+            loopClip = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/Tetris/Tetris_BGM");
+
+        if (failSfx == null)
+            failSfx = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/Tetris/GameOver");
+
         if (audioSource == null)
             audioSource = GetComponent<AudioSource>();
         if (audioSource == null)

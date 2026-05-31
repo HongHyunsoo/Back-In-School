@@ -1146,7 +1146,10 @@ public class PixelPaintMinigameController : MonoBehaviour
         PlayerPrefs.Save();
 
         if (tutorialOverlay != null)
+        {
+            tutorialOverlay.PlaySuccess();
             tutorialOverlay.Hide();
+        }
 
         ResetStrokeAnchors();
         RefreshHeader();
@@ -1419,6 +1422,9 @@ public class PixelPaintMinigameController : MonoBehaviour
 
     private void EnsureAudioSource()
     {
+        if (loopClip == null)
+            loopClip = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/PixelPaint/BGM_PixelPaint");
+
         if (audioSource == null)
             audioSource = GetComponent<AudioSource>();
         if (audioSource == null)

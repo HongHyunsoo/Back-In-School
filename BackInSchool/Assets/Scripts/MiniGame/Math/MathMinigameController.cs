@@ -20,7 +20,7 @@ public class MathMinigameController : MonoBehaviour
     public class EnglishOrderingQuestionDefinition
     {
         [TextArea(2, 5)]
-        public string prompt = "?ㅼ쓬 ?⑥뼱瑜??щ컮瑜??쒖꽌濡?諛곗뿴?섏떆??";
+        public string prompt = "다음 단어를 올바른 순서로 배열하세요.";
         [TextArea(2, 6)]
         public string hintText = string.Empty;
         public string[] shuffledWords = Array.Empty<string>();
@@ -33,7 +33,7 @@ public class MathMinigameController : MonoBehaviour
     public class EnglishTrueFalseQuestionDefinition
     {
         [TextArea(2, 5)]
-        public string prompt = "?ㅼ쓬 臾몄옣??留욎쑝硫?True, ?由щ㈃ False瑜?怨좊Ⅴ?쒖삤.";
+        public string prompt = "다음 문장이 맞으면 True, 틀리면 False를 고르세요.";
         [TextArea(2, 4)]
         public string statement = string.Empty;
         public bool correctAnswer = true;
@@ -47,7 +47,7 @@ public class MathMinigameController : MonoBehaviour
     public class EnglishListeningBlankQuestionDefinition
     {
         [TextArea(2, 5)]
-        public string prompt = "?뚯꽦???ｊ퀬 鍮덉뭏???ㅼ뼱媛??뚮쭪? ?⑥뼱瑜?怨좊Ⅴ?쒖삤.";
+        public string prompt = "음성을 듣고 빈칸에 들어갈 단어를 고르세요.";
         [TextArea(2, 8)]
         public string hintText = string.Empty;
         public string sentenceWithBlank = string.Empty;
@@ -101,12 +101,12 @@ public class MathMinigameController : MonoBehaviour
     public string afterSchoolEnglishFlowId = "AFTERSCHOOL_ENGLISH_D1";
     public string englishMatchingTitle = "Match the Correct Pair";
     [TextArea(2, 5)]
-    public string englishMatchingDescription = "?곷떒?댁? ?뚮쭪? ?살쓣 李얠븘 ?좎쑝濡??댁뼱 蹂댁꽭??";
+    public string englishMatchingDescription = "단어와 뜻이 맞는 짝을 찾아 선으로 이어 보세요.";
     [TextArea(4, 16)]
     public string englishMatchingHint = string.Empty;
     public List<EnglishMatchingPairDefinition> englishMatchingPairs = new List<EnglishMatchingPairDefinition>();
     public float englishMatchSuccessDelaySeconds = 0.45f;
-    public string englishOrderingTitle = "?ㅼ쓬 ?⑥뼱瑜??щ컮瑜??쒖꽌濡?諛곗뿴?섏떆??";
+    public string englishOrderingTitle = "다음 단어를 올바른 순서로 배열하세요.";
     public EnglishOrderingQuestionDefinition englishOrderingQuestion = new EnglishOrderingQuestionDefinition();
     public string englishTrueFalseTitle = "True or False";
     public EnglishTrueFalseQuestionDefinition englishTrueFalseQuestion = new EnglishTrueFalseQuestionDefinition();
@@ -115,6 +115,16 @@ public class MathMinigameController : MonoBehaviour
     public string englishListeningTitle = "Listen and Type the Missing Word";
     public EnglishListeningBlankQuestionDefinition englishListeningQuestion = new EnglishListeningBlankQuestionDefinition();
     public List<EnglishListeningBlankQuestionDefinition> englishListeningQuestions = new List<EnglishListeningBlankQuestionDefinition>();
+
+    [Header("AfterSchool English Audio")]
+    public AudioSource englishBgmSource;
+    public AudioSource englishFeedbackSource;
+    public AudioClip englishLoopClip;
+    [Range(0f, 1f)] public float englishLoopVolume = 0.35f;
+    public AudioClip englishSuccessSfx;
+    [Range(0f, 1f)] public float englishSuccessSfxVolume = 1f;
+    public AudioClip englishFailSfx;
+    [Range(0f, 1f)] public float englishFailSfxVolume = 1f;
 
     [Header("Drawing Pad")]
     public Vector2Int drawingTextureSize = new Vector2Int(1024, 1024);
@@ -132,7 +142,7 @@ public class MathMinigameController : MonoBehaviour
     public Color hintPanelColor = new Color(0.91f, 0.96f, 1f, 0.96f);
     public Color feedbackSuccessColor = new Color(0.20f, 0.58f, 0.28f, 1f);
     public Color feedbackErrorColor = new Color(0.78f, 0.23f, 0.18f, 1f);
-    public string friendBubbleName = "??移쒓뎄";
+    public string friendBubbleName = "반 친구";
     public float friendBubbleShowSeconds = 3.2f;
 
     private Canvas uiCanvas;
@@ -399,6 +409,8 @@ public class MathMinigameController : MonoBehaviour
 
         if (isAfterSchoolEnglishMode)
         {
+            EnsureEnglishAudio();
+            StartEnglishLoopIfNeeded();
             EnsureEnglishMatchingPairsOrFallback();
             EnsureEnglishOrderingQuestionOrFallback();
             EnsureEnglishTrueFalseQuestionOrFallback();
@@ -525,23 +537,23 @@ public class MathMinigameController : MonoBehaviour
             new MathQuestionDefinition
             {
                 title = "Q1",
-                questionText = "臾몄젣 ?띿뒪?몃? ?ш린???낅젰?섏꽭??",
+                questionText = "문제 텍스트를 여기에 입력하세요.",
                 correctAnswer = "0",
-                hintTexts = new[] { "泥?踰덉㎏ ?뚰듃", "??踰덉㎏ ?뚰듃", "??踰덉㎏ ?뚰듃" }
+                hintTexts = new[] { "첫 번째 힌트", "두 번째 힌트", "세 번째 힌트" }
             },
             new MathQuestionDefinition
             {
                 title = "Q2",
-                questionText = "臾몄젣 ?대?吏??questionSprite???ｌ쓣 ???덉뒿?덈떎.",
+                questionText = "문제 이미지는 questionSprite에 넣을 수 있습니다.",
                 correctAnswer = "0",
-                hintTexts = new[] { "泥?踰덉㎏ ?뚰듃", "??踰덉㎏ ?뚰듃", "??踰덉㎏ ?뚰듃" }
+                hintTexts = new[] { "첫 번째 힌트", "두 번째 힌트", "세 번째 힌트" }
             },
             new MathQuestionDefinition
             {
                 title = "Q3",
-                questionText = "CSV瑜?遺숈씪 ?덉젙?대㈃ questionTextKey / hintTextKeys瑜??⑤룄 ?⑸땲??",
+                questionText = "CSV를 연결할 예정이라면 questionTextKey / hintTextKeys를 사용합니다.",
                 correctAnswer = "0",
-                hintTexts = new[] { "泥?踰덉㎏ ?뚰듃", "??踰덉㎏ ?뚰듃", "??踰덉㎏ ?뚰듃" }
+                hintTexts = new[] { "첫 번째 힌트", "두 번째 힌트", "세 번째 힌트" }
             }
         };
         englishTrueFalseQuestions = new List<EnglishTrueFalseQuestionDefinition>
@@ -549,14 +561,14 @@ public class MathMinigameController : MonoBehaviour
             englishTrueFalseQuestion,
             new EnglishTrueFalseQuestionDefinition
             {
-                prompt = "??쇱벉 ?얜챷???筌띿쉸?앾쭖?True, ???귐됥늺 False???⑥쥓???뽰궎.",
+                prompt = "다음 문장이 맞으면 True, 틀리면 False를 고르세요.",
                 statement = "Birds can swim underwater for an hour.",
                 correctAnswer = false,
                 explanation = "False."
             },
             new EnglishTrueFalseQuestionDefinition
             {
-                prompt = "??쇱벉 ?얜챷???筌띿쉸?앾쭖?True, ???귐됥늺 False???⑥쥓???뽰궎.",
+                prompt = "다음 문장이 맞으면 True, 틀리면 False를 고르세요.",
                 statement = "Winter comes after autumn.",
                 correctAnswer = true,
                 explanation = "True."
@@ -571,10 +583,10 @@ public class MathMinigameController : MonoBehaviour
 
         englishMatchingPairs = new List<EnglishMatchingPairDefinition>
         {
-            new EnglishMatchingPairDefinition { word = "sun", meaning = "?쒖뼇" },
-            new EnglishMatchingPairDefinition { word = "egg", meaning = "怨꾨?" },
-            new EnglishMatchingPairDefinition { word = "paper", meaning = "醫낆씠" },
-            new EnglishMatchingPairDefinition { word = "vegetable", meaning = "梨꾩냼" },
+            new EnglishMatchingPairDefinition { word = "sun", meaning = "태양" },
+            new EnglishMatchingPairDefinition { word = "egg", meaning = "계란" },
+            new EnglishMatchingPairDefinition { word = "paper", meaning = "종이" },
+            new EnglishMatchingPairDefinition { word = "vegetable", meaning = "채소" },
         };
     }
 
@@ -591,7 +603,7 @@ public class MathMinigameController : MonoBehaviour
 
         englishOrderingQuestion = new EnglishOrderingQuestionDefinition
         {
-            prompt = "?ㅼ쓬 ?⑥뼱瑜??щ컮瑜??쒖꽌濡?諛곗뿴?섏떆??",
+            prompt = "다음 단어를 올바른 순서로 배열하세요.",
             shuffledWords = new[] { "the problem", "difficult", "I", "found" },
             correctOrder = new[] { "I", "found", "the problem", "difficult" },
             answerSentence = "I found the problem difficult."
@@ -616,7 +628,7 @@ public class MathMinigameController : MonoBehaviour
 
         englishTrueFalseQuestion = new EnglishTrueFalseQuestionDefinition
         {
-            prompt = "?ㅼ쓬 臾몄옣??留욎쑝硫?True, ?由щ㈃ False瑜?怨좊Ⅴ?쒖삤.",
+            prompt = "다음 문장이 맞으면 True, 틀리면 False를 고르세요.",
             statement = "The sun rises in the west.",
             correctAnswer = false,
             explanation = "False. The sun rises in the east."
@@ -627,14 +639,14 @@ public class MathMinigameController : MonoBehaviour
             englishTrueFalseQuestion,
             new EnglishTrueFalseQuestionDefinition
             {
-                prompt = "?ㅼ쓬 臾몄옣??留욎쑝硫?True, ?由щ㈃ False瑜?怨좊Ⅴ?쒖삤.",
+                prompt = "다음 문장이 맞으면 True, 틀리면 False를 고르세요.",
                 statement = "Birds can swim underwater for an hour.",
                 correctAnswer = false,
                 explanation = "False."
             },
             new EnglishTrueFalseQuestionDefinition
             {
-                prompt = "?ㅼ쓬 臾몄옣??留욎쑝硫?True, ?由щ㈃ False瑜?怨좊Ⅴ?쒖삤.",
+                prompt = "다음 문장이 맞으면 True, 틀리면 False를 고르세요.",
                 statement = "Winter comes after autumn.",
                 correctAnswer = true,
                 explanation = "True."
@@ -1300,7 +1312,7 @@ public class MathMinigameController : MonoBehaviour
             : CreateEnglishSceneActionButton(
             englishQuiz02Root,
             "ResetButton_Runtime",
-            "泥섏쓬 諛곗뿴",
+            "처음 배열",
             new Vector2(0.24f, 0.08f),
             new Vector2(0.44f, 0.16f));
         englishQuiz02ResetButton.onClick.RemoveAllListeners();
@@ -1316,7 +1328,7 @@ public class MathMinigameController : MonoBehaviour
             : CreateEnglishSceneActionButton(
             englishQuiz02Root,
             "SubmitButton_Runtime",
-            "?쒖텧",
+            "제출",
             new Vector2(0.56f, 0.08f),
             new Vector2(0.76f, 0.16f));
         englishQuiz02SubmitButton.onClick.RemoveAllListeners();
@@ -1482,7 +1494,7 @@ public class MathMinigameController : MonoBehaviour
         englishQuiz04SubmitButton = CreateEnglishSceneActionButton(
             englishQuiz04Root,
             "SubmitButton_Runtime",
-            "?쒖텧",
+            "제출",
             new Vector2(0.40f, 0.08f),
             new Vector2(0.60f, 0.15f));
         englishQuiz04SubmitButton.onClick.RemoveAllListeners();
@@ -2114,8 +2126,7 @@ public class MathMinigameController : MonoBehaviour
         var instructionText = CreateText("OrderingInstruction", wordsPanel.transform, 22f, FontStyles.Normal);
         instructionText.alignment = TextAlignmentOptions.Center;
         instructionText.color = new Color(0.24f, 0.24f, 0.28f, 1f);
-        instructionText.text = "?⑥뼱瑜?醫뚯슦濡???꺼 ?쒖꽌瑜?留욎텣 ???쒖텧?섏꽭??";
-        instructionText.text = "?⑥뼱 ??쇱쓣 留덉슦?ㅻ줈 ?쒕옒洹명빐 ?щ컮瑜??쒖꽌濡?諛곗뿴?????쒖텧?섏꽭??";
+        instructionText.text = "단어 카드를 좌우로 드래그해 올바른 순서로 배열한 뒤 제출하세요.";
         SetPreferredHeight(instructionText.rectTransform, 42f);
 
         var tilesRoot = CreateUIObject("TilesRoot", wordsPanel.transform, typeof(HorizontalLayoutGroup), typeof(ContentSizeFitter));
@@ -2140,7 +2151,7 @@ public class MathMinigameController : MonoBehaviour
         resetRect.offsetMin = Vector2.zero;
         resetRect.offsetMax = Vector2.zero;
         resetLabel.fontSize = 24f;
-        resetLabel.text = "泥섏쓬 諛곗뿴";
+        resetLabel.text = "처음 배열";
         resetButton.onClick.AddListener(ResetEnglishOrderingLayout);
 
         var submitButton = CreateButton("SubmitButton", panel.transform, out var submitLabel);
@@ -2151,7 +2162,7 @@ public class MathMinigameController : MonoBehaviour
         submitRect.offsetMin = Vector2.zero;
         submitRect.offsetMax = Vector2.zero;
         submitLabel.fontSize = 24f;
-        submitLabel.text = "?쒖텧";
+        submitLabel.text = "제출";
         submitButton.onClick.AddListener(EvaluateEnglishOrderingAnswer);
 
         ResetEnglishOrderingLayout();
@@ -3085,7 +3096,7 @@ public class MathMinigameController : MonoBehaviour
         questionImage.color = Color.white;
 
         var answerLabel = CreateText("AnswerLabel", parent, 24f, FontStyles.Bold);
-        answerLabel.text = L("MINIGAME_MATH_ANSWER_SECTION", "?뺣떟 ?쒖텧", "Answer");
+        answerLabel.text = L("MINIGAME_MATH_ANSWER_SECTION", "정답 제출", "Answer");
         answerLabel.color = accentColor;
         answerLabel.rectTransform.anchorMin = new Vector2(0.08f, 0.10f);
         answerLabel.rectTransform.anchorMax = new Vector2(0.92f, 0.16f);
@@ -3114,7 +3125,7 @@ public class MathMinigameController : MonoBehaviour
         var submitButton = CreateButton("SubmitButton", answerRow.transform, out var submitLabel);
         submitButton.onClick.AddListener(SubmitAnswer);
         SetPreferredSize(submitButton.transform as RectTransform, 150f, 66f);
-        submitLabel.text = L("MINIGAME_MATH_SUBMIT", "?쒖텧", "Submit");
+        submitLabel.text = L("MINIGAME_MATH_SUBMIT", "제출", "Submit");
 
         feedbackText = CreateText("FeedbackText", parent, 22f, FontStyles.Bold);
         feedbackText.color = feedbackSuccessColor;
@@ -3219,8 +3230,8 @@ public class MathMinigameController : MonoBehaviour
         hintRect.offsetMax = Vector2.zero;
 
         note.text = L("MINIGAME_MATH_DRAW_TITLE", "풀이 쓰는 곳", "Work Area");
-        hintButtonLabel.text = L("MINIGAME_MATH_HINT_BUTTON_SHORT", "臾쇱뼱蹂닿린", "Hint");
-        clearLabel.text = L("MINIGAME_MATH_CLEAR", "吏?곌린", "Clear");
+        hintButtonLabel.text = L("MINIGAME_MATH_HINT_BUTTON_SHORT", "물어보기", "Hint");
+        clearLabel.text = L("MINIGAME_MATH_CLEAR", "지우기", "Clear");
     }
 
     private void BuildFriendBubble(Transform parent)
@@ -3318,7 +3329,7 @@ public class MathMinigameController : MonoBehaviour
             : question.title;
 
         progressText.text = string.Format(
-            L("MINIGAME_MATH_PROGRESS", "{0}  |  臾몄젣 {1}/{2}", "{0}  |  Question {1}/{2}"),
+            L("MINIGAME_MATH_PROGRESS", "{0}  |  문제 {1}/{2}", "{0}  |  Question {1}/{2}"),
             displayTitle,
             currentQuestionIndex + 1,
             questions.Count);
@@ -3328,7 +3339,7 @@ public class MathMinigameController : MonoBehaviour
         questionImage.enabled = question.questionSprite != null;
 
         hintButtonLabel.text = string.Format(
-            L("MINIGAME_MATH_HINT_BUTTON_FMT", "??移쒓뎄 ?뚰듃 ({0}/3)", "Hint ({0}/3)"),
+            L("MINIGAME_MATH_HINT_BUTTON_FMT", "반 친구 힌트 ({0}/3)", "Hint ({0}/3)"),
             Mathf.Min(revealedHintCount, 3));
 
         RefreshHints();
@@ -3383,14 +3394,14 @@ public class MathMinigameController : MonoBehaviour
                 builder.Append("\n\n");
 
             builder.Append(string.Format(
-                L("MINIGAME_MATH_HINT_FMT", "??移쒓뎄 {0}: {1}", "Classmate {0}: {1}"),
+                L("MINIGAME_MATH_HINT_FMT", "반 친구 {0}: {1}", "Classmate {0}: {1}"),
                 shown + 1,
                 hint));
             shown++;
         }
 
         if (builder.Length == 0)
-            builder.Append(L("MINIGAME_MATH_HINT_EMPTY", "?꾩쭅 ?뚰듃瑜?蹂댁? ?딆븯?댁슂.", "No hints revealed yet."));
+            builder.Append(L("MINIGAME_MATH_HINT_EMPTY", "아직 힌트를 보지 않았어요.", "No hints revealed yet."));
 
         hintsText.text = builder.ToString();
         if (hintsScrollRect != null)
@@ -3402,7 +3413,7 @@ public class MathMinigameController : MonoBehaviour
         bool hasMore = FindNextAvailableHintIndex(revealedHintCount) >= 0;
         hintButton.interactable = hasMore;
         hintButtonLabel.text = string.Format(
-            L("MINIGAME_MATH_HINT_BUTTON_FMT", "??移쒓뎄 ?뚰듃 ({0}/3)", "Hint ({0}/3)"),
+            L("MINIGAME_MATH_HINT_BUTTON_FMT", "반 친구 힌트 ({0}/3)", "Hint ({0}/3)"),
             shown);
     }
 
@@ -3445,14 +3456,14 @@ public class MathMinigameController : MonoBehaviour
         if (string.IsNullOrWhiteSpace(answer))
         {
             SetFeedback(
-                L("MINIGAME_MATH_EMPTY_ANSWER", "?뺣떟???낅젰??二쇱꽭??", "Please enter an answer."),
+                L("MINIGAME_MATH_EMPTY_ANSWER", "정답을 입력해 주세요.", "Please enter an answer."),
                 false);
             return;
         }
 
         if (IsAnswerCorrect(answer, questions[currentQuestionIndex]))
         {
-            SetFeedback(L("MINIGAME_MATH_CORRECT", "?뺣떟!", "Correct!"), true);
+            SetFeedback(L("MINIGAME_MATH_CORRECT", "정답!", "Correct!"), true);
 
             if (advanceRoutine != null)
                 StopCoroutine(advanceRoutine);
@@ -3461,7 +3472,7 @@ public class MathMinigameController : MonoBehaviour
         }
 
         SetFeedback(
-            L("MINIGAME_MATH_WRONG", "?? ?ㅼ떆 ??踰???대낫??", "Not quite. Try again."),
+            L("MINIGAME_MATH_WRONG", "앗, 다시 한 번 풀어봐요.", "Not quite. Try again."),
             false);
         RequestAnswerInputFocus();
     }
@@ -3651,6 +3662,9 @@ public class MathMinigameController : MonoBehaviour
 
     private void SetFeedback(string message, bool success)
     {
+        if (isAfterSchoolEnglishMode && !string.IsNullOrWhiteSpace(message))
+            PlayEnglishFeedbackSfx(success);
+
         if (feedbackText == null)
             return;
 
@@ -3734,6 +3748,8 @@ public class MathMinigameController : MonoBehaviour
 
     private void CleanupRuntimeObjects()
     {
+        StopEnglishLoopIfNeeded();
+
         if (friendBubbleRoutine != null)
         {
             StopCoroutine(friendBubbleRoutine);
@@ -3776,6 +3792,64 @@ public class MathMinigameController : MonoBehaviour
             Destroy(drawingTexture);
             drawingTexture = null;
         }
+    }
+
+    private void EnsureEnglishAudio()
+    {
+        if (englishLoopClip == null)
+            englishLoopClip = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/English/English_BGM");
+        if (englishSuccessSfx == null)
+            englishSuccessSfx = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/English/English_Success");
+        if (englishFailSfx == null)
+            englishFailSfx = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/English/English_Fail");
+
+        if (englishBgmSource == null)
+            englishBgmSource = gameObject.AddComponent<AudioSource>();
+
+        englishBgmSource.playOnAwake = false;
+        englishBgmSource.spatialBlend = 0f;
+
+        if (englishFeedbackSource == null)
+            englishFeedbackSource = gameObject.AddComponent<AudioSource>();
+
+        englishFeedbackSource.playOnAwake = false;
+        englishFeedbackSource.loop = false;
+        englishFeedbackSource.spatialBlend = 0f;
+        englishFeedbackSource.volume = 1f;
+    }
+
+    private void StartEnglishLoopIfNeeded()
+    {
+        EnsureEnglishAudio();
+        if (englishLoopClip == null)
+            return;
+
+        englishBgmSource.clip = englishLoopClip;
+        englishBgmSource.loop = true;
+        englishBgmSource.volume = AudioSettingsService.ScaleBgm(englishLoopVolume);
+        if (!englishBgmSource.isPlaying)
+            englishBgmSource.Play();
+    }
+
+    private void StopEnglishLoopIfNeeded()
+    {
+        if (englishBgmSource == null)
+            return;
+
+        if (englishBgmSource.isPlaying && englishBgmSource.clip == englishLoopClip)
+            englishBgmSource.Stop();
+
+        englishBgmSource.loop = false;
+        englishBgmSource.clip = null;
+    }
+
+    private void PlayEnglishFeedbackSfx(bool success)
+    {
+        EnsureEnglishAudio();
+        AudioClip clip = success ? englishSuccessSfx : englishFailSfx;
+        float volume = success ? englishSuccessSfxVolume : englishFailSfxVolume;
+        if (clip != null)
+            englishFeedbackSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(volume));
     }
 
     private void EnsureEventSystem()
@@ -4205,7 +4279,7 @@ public class MathMinigameController : MonoBehaviour
         var placeholder = CreateText("Placeholder", viewport.transform, 24f, FontStyles.Italic);
         placeholder.color = new Color(0.3f, 0.3f, 0.34f, 0.55f);
         placeholder.alignment = TextAlignmentOptions.MidlineLeft;
-        placeholder.text = L("MINIGAME_MATH_ANSWER_PLACEHOLDER", "?뺣떟 ?낅젰", "Enter answer");
+        placeholder.text = L("MINIGAME_MATH_ANSWER_PLACEHOLDER", "정답 입력", "Enter answer");
         StretchFull(placeholder.rectTransform);
         placeholder.margin = new Vector4(4f, 0f, 4f, 0f);
 
