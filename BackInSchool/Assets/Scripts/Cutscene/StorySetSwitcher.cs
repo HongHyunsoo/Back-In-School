@@ -51,6 +51,7 @@ public class StorySetSwitcher : MonoBehaviour
         RebuildSetLookup();
         EnsureAudioSource();
         ApplySet();
+        RefreshCharacterReveals();
     }
 
     private void OnEnable()
@@ -270,7 +271,10 @@ public class StorySetSwitcher : MonoBehaviour
             if (!revealSfxPlayedByBinding.ContainsKey(binding))
                 revealSfxPlayedByBinding[binding] = false;
 
-            bool isTargetFlow = isStory && string.Equals(flowId, binding.targetFlowId, StringComparison.Ordinal);
+            bool isTargetConversation = dm != null &&
+                string.Equals(currentConversationId, binding.targetFlowId, StringComparison.Ordinal);
+            bool isTargetFlow = isStory &&
+                (MatchesTargetFlowOrPrelude(flowId, binding.targetFlowId) || isTargetConversation);
             bool isHiddenFlow = MatchesAnyFlow(flowId, binding.hiddenFlowIds);
 
             if (!isTargetFlow)
@@ -280,8 +284,6 @@ public class StorySetSwitcher : MonoBehaviour
 
                 if (isHiddenFlow)
                     ApplyRevealVisibility(binding, false);
-                else
-                    ApplyRevealVisibility(binding, true);
 
                 continue;
             }
@@ -318,6 +320,16 @@ public class StorySetSwitcher : MonoBehaviour
         return false;
     }
 
+    private static bool MatchesTargetFlowOrPrelude(string flowId, string targetFlowId)
+    {
+        if (string.IsNullOrWhiteSpace(flowId) || string.IsNullOrWhiteSpace(targetFlowId))
+            return false;
+
+        return string.Equals(flowId, targetFlowId, StringComparison.Ordinal) ||
+               string.Equals(flowId, targetFlowId + "_NS", StringComparison.Ordinal) ||
+               string.Equals(flowId, targetFlowId + "_NO_SLIPPERS", StringComparison.Ordinal);
+    }
+
     private static void ApplyRevealVisibility(CharacterRevealBinding binding, bool visible)
     {
         var actors = FindObjectsByType<CharacterActor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -325,6 +337,9 @@ public class StorySetSwitcher : MonoBehaviour
         {
             CharacterActor actor = actors[i];
             if (actor == null || !string.Equals(actor.characterId, binding.characterId, StringComparison.Ordinal))
+                continue;
+
+            if (visible && !IsParentHierarchyActive(actor.transform))
                 continue;
 
             actor.gameObject.SetActive(visible);
@@ -338,6 +353,23 @@ public class StorySetSwitcher : MonoBehaviour
         }
     }
 
+    private static bool IsParentHierarchyActive(Transform transform)
+    {
+        if (transform == null)
+            return false;
+
+        Transform parent = transform.parent;
+        while (parent != null)
+        {
+            if (!parent.gameObject.activeSelf)
+                return false;
+
+            parent = parent.parent;
+        }
+
+        return true;
+    }
+
     private void PlayRevealSfx(CharacterRevealBinding binding)
     {
         if (binding == null || binding.revealSfx == null)
@@ -347,7 +379,11 @@ public class StorySetSwitcher : MonoBehaviour
             return;
 
         EnsureAudioSource();
-        audioSource.PlayOneShot(binding.revealSfx, binding.revealSfxVolume);
+        var dialogueManager = FindAnyObjectByType<DialogueManager>();
+        if (dialogueManager != null)
+            dialogueManager.MuteTypingSfxForSeconds(Mathf.Max(0.05f, binding.revealSfx.length));
+
+        audioSource.PlayOneShot(binding.revealSfx, AudioSettingsService.ScaleSfx(binding.revealSfxVolume));
         revealSfxPlayedByBinding[binding] = true;
     }
 

@@ -63,6 +63,7 @@ public class PlayerController : MonoBehaviour
     private float groundedStableTimer;
     private readonly RaycastHit2D[] horizontalMoveHits = new RaycastHit2D[4];
     private readonly ContactPoint2D[] wallContacts = new ContactPoint2D[8];
+    private readonly ContactPoint2D[] floorContacts = new ContactPoint2D[8];
     private static readonly int HashMoveSpeed = Animator.StringToHash("moveSpeed");
     private static readonly int HashIsGrounded = Animator.StringToHash("isGrounded");
     private static readonly int HashYVelocity = Animator.StringToHash("yVelocity");
@@ -72,6 +73,7 @@ public class PlayerController : MonoBehaviour
     public float HorizontalInput => moveInput;
     public bool IsGrounded => isGrounded;
     public bool IsGroundedStable => animGrounded;
+    public bool IsTouchingFloor => HasFloorContact();
     public float VerticalVelocity => rb != null ? rb.velocity.y : 0f;
     public bool ExternalInputLocked { get; set; }
 
@@ -169,6 +171,21 @@ public class PlayerController : MonoBehaviour
         float distance = Mathf.Max(0.02f, radius * 0.5f);
         RaycastHit2D hit = Physics2D.CircleCast(origin + (Vector2.up * 0.03f), radius, Vector2.down, distance, groundLayer);
         return hit.collider != null && hit.normal.y >= 0.55f;
+    }
+
+    private bool HasFloorContact()
+    {
+        if (rb == null)
+            return false;
+
+        int count = rb.GetContacts(floorContacts);
+        for (int i = 0; i < count; i++)
+        {
+            if (floorContacts[i].normal.y >= 0.55f)
+                return true;
+        }
+
+        return false;
     }
 
     private void RefreshWallContacts()

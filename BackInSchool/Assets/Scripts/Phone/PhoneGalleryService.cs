@@ -12,6 +12,7 @@ public sealed class PhoneGallerySaveData
 public class PhoneGalleryService : MonoBehaviour
 {
     private const string PrefKey = "PHONE_GALLERY_SAVE_V1";
+    private const string SilentUnlockLineId = "DAY1_CLASSOPEN_05";
 
     public static PhoneGalleryService Instance { get; private set; }
     public static bool IsShuttingDown { get; private set; }
@@ -197,7 +198,8 @@ public class PhoneGalleryService : MonoBehaviour
 
         Save();
         OnChanged?.Invoke();
-        PlayUnlockSfx();
+        if (!string.Equals(lineId, SilentUnlockLineId, StringComparison.OrdinalIgnoreCase))
+            PlayUnlockSfx();
     }
 
     private void UnlockAllImmediateEntries()

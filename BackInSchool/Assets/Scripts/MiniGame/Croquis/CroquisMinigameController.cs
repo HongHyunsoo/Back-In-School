@@ -1028,6 +1028,15 @@ public class CroquisMinigameController : MonoBehaviour
         if (loopClip == null)
             loopClip = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/Croquis/Croquis_BGM");
 
+        if (stageCompleteSfx == null)
+            stageCompleteSfx = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/PixelPaint/PixelPaint_Success");
+
+        if (successSfx == null)
+            successSfx = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/PixelPaint/PixelPaint_completed");
+
+        if (failSfx == null)
+            failSfx = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/English/English_Fail");
+
         if (audioSource == null)
             audioSource = GetComponent<AudioSource>();
         if (audioSource == null)

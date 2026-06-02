@@ -8,6 +8,7 @@
 ☑ PixelPaint 튜토리얼 후 캔버스를 초기화하지 않도록 수정
 ☑ PixelPaint 색상 선택 클릭이 뒤쪽 칸까지 전달되는 문제 수정
 
+[ ] 열쇠 소리 녹음 하고 적용
 [ ] 배경 사운드를 전체 씬에 적용
 [ ] 애니메이션 작업
 [ ] 스토브 미리 출시
@@ -135,7 +136,8 @@
 [ ] 선택지 / 다음 대사 효과음
 [ ] 캐릭터 등장 / 퇴장 효과음
 [ ] 캐릭터 리액션 효과음
-[ ] 걷는 컷신 발소리
+☑ Street 걷는 컷신 발소리 (Char/FootStep 재사용)
+☑ Street 차량 통과음 (Transition_Corrider_Sfx 재사용)
 [ ] 문 열림 효과음
 [ ] 수업 시작 / 종료, 조회, 종례, 방과후 전환음
 
@@ -160,14 +162,14 @@
 - MINIGAME/Tetris/Block_02.flac
 - MINIGAME/Tetris/GameOver.wav
 - MINIGAME/Tetris/Tetris_BGM.mp3
+- MINIGAME/Tetris/Tetris_Success.wav
 
 ☑ 블록 이동
 ☑ 블록 회전
 ☑ 블록 고정
 ☑ 실패
 ☑ 배경 루프
-[ ] 성공 효과음
-[ ] 줄 / 목표 달성 효과음
+☑ 성공 효과음 (Tetris_Success.wav)
 [ ] 낙하 / 충돌 강조음
 
 
@@ -180,11 +182,11 @@
 ☑ 그리기 / 입력음
 ☑ 배경 루프
 [ ] 포인트 성공음
-[ ] 단계 완료음
-[ ] 전체 성공음
-[ ] 실패음
+☑ 단계 완료음 (PixelPaint_Success 재사용)
+☑ 전체 성공음 (PixelPaint_completed 재사용)
+☑ 실패음 (English_Fail 재사용)
 [ ] 종이 넘김 효과음
-[ ] 학생 말풍선 등장음
+[ ] 학생 말풍선 등장음 (Blip)
 
 
 9. 등교 스페이스 연타 미니게임
@@ -200,20 +202,24 @@
 -----------------------
 보유 파일
 - MINIGAME/PixelPaint/BGM_PixelPaint.mp3
+- MINIGAME/PixelPaint/PixelPaint_Delete.wav
+- MINIGAME/PixelPaint/PixelPaint_Select.wav
+- MINIGAME/PixelPaint/PixelPaint_Success.wav
+- MINIGAME/PixelPaint/PixelPaint_completed.wav
 
 ☑ 배경 루프
-[ ] 칠하기 효과음
-[ ] 지우기 효과음
-[ ] 일부 완성 효과음
-[ ] 전체 성공음
-[ ] 색상 선택음
-[ ] 오답 / 정답 칠하기 구분음
+☑ 지우기 효과음 (PixelPaint_Delete.wav)
+☑ 일부 완성 효과음 (PixelPaint_Success.wav)
+☑ 전체 성공음 (PixelPaint_completed.wav)
+☑ 색상 선택음 (PixelPaint_Select.wav)
+[ ] 오답 / 정답 칠하기 구분음 (PixelPaint_Wrong)
 
 
 11. 영어 미니게임
 ----------------
 보유 파일
 - MINIGAME/English/English_BGM.mp3
+- MINIGAME/English/English_Click.wav
 - MINIGAME/English/English_Success.wav
 - MINIGAME/English/English_Fail.wav
 - MINIGAME/English/QuizVoice.ver2_01.mp3
@@ -223,11 +229,10 @@
 ☑ 배경 루프
 ☑ 정답 / 오답 효과음
 ☑ 듣기 음성 슬롯 3개
-[ ] 단어 매칭 드래그 시작 / 드롭 효과음
-[ ] 문장 순서 맞추기 선택 / 배치 효과음
-[ ] True / False 선택 효과음
-[ ] 듣기 재생 버튼 클릭음
-[ ] 문제 전환음
+☑ 단어 매칭 드래그 시작 / 드롭 효과음 (English_Click.wav)
+☑ 문장 순서 맞추기 선택 / 배치 효과음 (English_Click.wav)
+☑ True / False 선택 효과음 (English_Click.wav)
+☑ 듣기 재생 버튼 클릭음 (English_Click.wav)
 [ ] 전체 완료 효과음
 
 

@@ -143,7 +143,7 @@ public class LunchFreeTimeAudioController : MonoBehaviour
         if (playerController == null || movementSource == null)
             return;
 
-        bool grounded = playerController.IsGroundedStable;
+        bool grounded = playerController.IsTouchingFloor;
         if (!movementStateInitialized)
         {
             wasGrounded = grounded;

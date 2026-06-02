@@ -106,6 +106,8 @@ public class PixelPaintMinigameController : MonoBehaviour
     [Range(0f, 1f)] public float paintSfxVolume = 0.5f;
     public AudioClip eraseSfx;
     [Range(0f, 1f)] public float eraseSfxVolume = 0.5f;
+    public AudioClip selectSfx;
+    [Range(0f, 1f)] public float selectSfxVolume = 0.5f;
     public AudioClip puzzleSolvedSfx;
     [Range(0f, 1f)] public float puzzleSolvedSfxVolume = 0.85f;
     public AudioClip minigameSuccessSfx;
@@ -820,12 +822,7 @@ public class PixelPaintMinigameController : MonoBehaviour
             outline.effectDistance = new Vector2(3f, -3f);
 
             var button = btnGo.GetComponent<Button>();
-            button.onClick.AddListener(() =>
-            {
-                selectedColor = colorIndex;
-                RefreshHeader();
-                RefreshPaletteUI();
-            });
+            button.onClick.AddListener(() => SetSelectedColor(colorIndex));
 
             var textGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
             textGo.transform.SetParent(btnGo.transform, false);
@@ -951,6 +948,7 @@ public class PixelPaintMinigameController : MonoBehaviour
     private void SetSelectedColor(int colorIndex)
     {
         selectedColor = Mathf.Clamp(colorIndex, 1, palette.Length);
+        PlayOneShot(selectSfx, selectSfxVolume);
         RefreshHeader();
         RefreshPaletteUI();
     }
@@ -1424,6 +1422,18 @@ public class PixelPaintMinigameController : MonoBehaviour
     {
         if (loopClip == null)
             loopClip = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/PixelPaint/BGM_PixelPaint");
+
+        if (eraseSfx == null)
+            eraseSfx = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/PixelPaint/PixelPaint_Delete");
+
+        if (selectSfx == null)
+            selectSfx = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/PixelPaint/PixelPaint_Select");
+
+        if (puzzleSolvedSfx == null)
+            puzzleSolvedSfx = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/PixelPaint/PixelPaint_Success");
+
+        if (minigameSuccessSfx == null)
+            minigameSuccessSfx = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/PixelPaint/PixelPaint_completed");
 
         if (audioSource == null)
             audioSource = GetComponent<AudioSource>();

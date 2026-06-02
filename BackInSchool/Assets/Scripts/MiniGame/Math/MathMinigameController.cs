@@ -125,6 +125,8 @@ public class MathMinigameController : MonoBehaviour
     [Range(0f, 1f)] public float englishSuccessSfxVolume = 1f;
     public AudioClip englishFailSfx;
     [Range(0f, 1f)] public float englishFailSfxVolume = 1f;
+    public AudioClip englishClickSfx;
+    [Range(0f, 1f)] public float englishClickSfxVolume = 0.8f;
 
     [Header("Drawing Pad")]
     public Vector2Int drawingTextureSize = new Vector2Int(1024, 1024);
@@ -1811,6 +1813,7 @@ public class MathMinigameController : MonoBehaviour
         if (advancing || englishMatchedPairs.Contains(pairIndex))
             return;
 
+        PlayEnglishClickSfx();
         englishDraggingLeftPairIndex = pairIndex;
         englishMatchDropResolvedThisDrag = false;
         selectedLeftPairIndex = pairIndex;
@@ -1844,6 +1847,7 @@ public class MathMinigameController : MonoBehaviour
         if (englishDraggingLeftPairIndex < 0 || advancing)
             return;
 
+        PlayEnglishClickSfx();
         englishMatchDropResolvedThisDrag = true;
         selectedRightDisplayIndex = displayIndex;
         UpdateEnglishButtonStates();
@@ -2247,6 +2251,7 @@ public class MathMinigameController : MonoBehaviour
         if (handle == null || activeEnglishOrderingDragHandle == handle)
             return;
 
+        PlayEnglishClickSfx();
         activeEnglishOrderingDragHandle = handle;
         BeginEnglishOrderingDrag(handle, eventData);
     }
@@ -2325,6 +2330,7 @@ public class MathMinigameController : MonoBehaviour
         if (handle == null)
             return;
 
+        PlayEnglishClickSfx();
         EndEnglishOrderingDrag(handle, eventData);
         if (activeEnglishOrderingDragHandle == handle)
             activeEnglishOrderingDragHandle = null;
@@ -2709,6 +2715,7 @@ public class MathMinigameController : MonoBehaviour
 
     private void EvaluateEnglishTrueFalseAnswer(bool selected)
     {
+        PlayEnglishClickSfx();
         if (advancing)
             return;
 
@@ -2880,6 +2887,7 @@ public class MathMinigameController : MonoBehaviour
 
     private void PlayEnglishListeningAudio()
     {
+        PlayEnglishClickSfx();
         if (englishListeningQuestion == null || englishListeningQuestion.voiceClip == null)
             return;
 
@@ -2894,6 +2902,7 @@ public class MathMinigameController : MonoBehaviour
         if (advancing)
             return;
 
+        PlayEnglishClickSfx();
         englishListeningSelectedChoiceIndex = choiceIndex;
         UpdateEnglishListeningChoiceVisuals();
     }
@@ -3802,6 +3811,8 @@ public class MathMinigameController : MonoBehaviour
             englishSuccessSfx = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/English/English_Success");
         if (englishFailSfx == null)
             englishFailSfx = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/English/English_Fail");
+        if (englishClickSfx == null)
+            englishClickSfx = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/English/English_Click");
 
         if (englishBgmSource == null)
             englishBgmSource = gameObject.AddComponent<AudioSource>();
@@ -3850,6 +3861,13 @@ public class MathMinigameController : MonoBehaviour
         float volume = success ? englishSuccessSfxVolume : englishFailSfxVolume;
         if (clip != null)
             englishFeedbackSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(volume));
+    }
+
+    private void PlayEnglishClickSfx()
+    {
+        EnsureEnglishAudio();
+        if (englishClickSfx != null)
+            englishFeedbackSource.PlayOneShot(englishClickSfx, AudioSettingsService.ScaleSfx(englishClickSfxVolume));
     }
 
     private void EnsureEventSystem()

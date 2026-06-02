@@ -1205,6 +1205,9 @@ public class TetrisMinigameController : MonoBehaviour
         if (failSfx == null)
             failSfx = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/Tetris/GameOver");
 
+        if (successSfx == null)
+            successSfx = AudioSettingsService.LoadResourceClip("SFX/MINIGAME/Tetris/Tetris_Success");
+
         if (audioSource == null)
             audioSource = GetComponent<AudioSource>();
         if (audioSource == null)

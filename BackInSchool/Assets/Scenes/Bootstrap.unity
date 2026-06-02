@@ -2448,6 +2448,12 @@ MonoBehaviour:
   phoneUiMatchWidthOrHeight: 0.5
   phoneButtonClickClip: {fileID: 0}
   phoneButtonClickVolume: 0.85
+  phoneToggleClip: {fileID: 0}
+  phoneFocusClip: {fileID: 0}
+  phoneBackClip: {fileID: 0}
+  phoneApplyClip: {fileID: 0}
+  phoneBlipClip: {fileID: 0}
+  phoneUiSfxVolume: 0.85
 --- !u!114 &1437671237
 MonoBehaviour:
   m_ObjectHideFlags: 0

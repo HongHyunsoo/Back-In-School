@@ -110,11 +110,18 @@ public class StorySceneEntry : MonoBehaviour
 
     private void ApplyPreDialogueVisibilityOverrides(string conversationId)
     {
-        if (string.Equals(conversationId, "DAY1_CLASSOPEN", System.StringComparison.Ordinal) ||
+        if (IsDay1ClassOpenConversation(conversationId) ||
             string.Equals(conversationId, "DAY1_CLASSEND", System.StringComparison.Ordinal))
         {
             SetCharacterVisible("NAME_NUREONG", false);
         }
+    }
+
+    private static bool IsDay1ClassOpenConversation(string conversationId)
+    {
+        return string.Equals(conversationId, "DAY1_CLASSOPEN", System.StringComparison.Ordinal) ||
+               string.Equals(conversationId, "DAY1_CLASSOPEN_NS", System.StringComparison.Ordinal) ||
+               string.Equals(conversationId, "DAY1_CLASSOPEN_NO_SLIPPERS", System.StringComparison.Ordinal);
     }
 
     private static void SetCharacterVisible(string characterId, bool visible)
