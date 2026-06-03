@@ -137,7 +137,8 @@
 [ ] 캐릭터 등장 / 퇴장 효과음
 [ ] 캐릭터 리액션 효과음
 ☑ Street 걷는 컷신 발소리 (Char/FootStep 재사용)
-☑ Street 차량 통과음 (Transition_Corrider_Sfx 재사용)
+☑ Street 배경 루프 (BGM_Street)
+☑ Street 차량 통과음 (Car_Passing_02, fade in/out)
 [ ] 문 열림 효과음
 [ ] 수업 시작 / 종료, 조회, 종례, 방과후 전환음
 

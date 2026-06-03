@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -26,6 +27,8 @@ public class MainMenuController : MonoBehaviour
     public bool useUnscaledTimeForTransition = true;
     public float fadeOutDuration = 0.28f;
     public float fadeInDuration = 0.35f;
+    public bool zoomMainUiWithTransition = true;
+    public float targetUiZoomScale = 1.08f;
 
     [Header("Settings Buttons")]
     public Button backButton;
@@ -218,6 +221,8 @@ public class MainMenuController : MonoBehaviour
 
         Vector3 startScale = zoomTarget != null ? zoomTarget.localScale : Vector3.one;
         Vector3 endScale = startScale * Mathf.Clamp(targetZoomScale, 1f, 1.06f);
+        Transform uiZoomTarget = ResolveMainUiZoomTarget();
+        Vector3 uiStartScale = uiZoomTarget != null ? uiZoomTarget.localScale : Vector3.one;
 
         bool canZoomCamera = cam != null && cam.orthographic;
         float startSize = canZoomCamera ? cam.orthographicSize : 0f;
@@ -227,6 +232,10 @@ public class MainMenuController : MonoBehaviour
             float candidate = targetCameraOrthoSize > 0f ? targetCameraOrthoSize : startSize * 0.96f;
             desiredSize = Mathf.Lerp(startSize, candidate, 0.2f);
         }
+
+        float cameraZoomScale = canZoomCamera && desiredSize > 0.0001f ? startSize / desiredSize : 1f;
+        float uiScaleMultiplier = Mathf.Min(Mathf.Clamp(targetUiZoomScale, 1f, 1.2f), cameraZoomScale * Mathf.Clamp(targetZoomScale, 1f, 1.06f));
+        Vector3 uiEndScale = uiStartScale * uiScaleMultiplier;
 
         float elapsed = 0f;
         while (elapsed < duration)
@@ -238,11 +247,54 @@ public class MainMenuController : MonoBehaviour
             if (zoomTarget != null)
                 zoomTarget.localScale = Vector3.LerpUnclamped(startScale, endScale, eased);
 
+            if (uiZoomTarget != null)
+                uiZoomTarget.localScale = Vector3.LerpUnclamped(uiStartScale, uiEndScale, eased);
+
             if (canZoomCamera)
                 cam.orthographicSize = Mathf.LerpUnclamped(startSize, desiredSize, eased);
 
             yield return null;
         }
+    }
+
+    private Transform ResolveMainUiZoomTarget()
+    {
+        if (!zoomMainUiWithTransition)
+            return null;
+
+        if (mainPanel == null)
+            return null;
+
+        if (mainPanel.GetComponent<Canvas>() == null)
+            return mainPanel.transform;
+
+        Transform canvasTransform = mainPanel.transform;
+        var zoomRoot = new GameObject("__MainMenuUiZoomRoot", typeof(RectTransform));
+        var zoomRootRect = zoomRoot.GetComponent<RectTransform>();
+        zoomRootRect.SetParent(canvasTransform, false);
+        zoomRootRect.anchorMin = Vector2.zero;
+        zoomRootRect.anchorMax = Vector2.one;
+        zoomRootRect.pivot = new Vector2(0.5f, 0.5f);
+        zoomRootRect.anchoredPosition = Vector2.zero;
+        zoomRootRect.sizeDelta = Vector2.zero;
+        zoomRootRect.localScale = Vector3.one;
+
+        for (int i = 0; i < canvasTransform.childCount; i++)
+        {
+            Transform child = canvasTransform.GetChild(i);
+            if (child == null || child == zoomRootRect || !child.gameObject.activeInHierarchy)
+                continue;
+
+            if (settingsPanel != null && child == settingsPanel.transform)
+                continue;
+            if (creditsPanel != null && child == creditsPanel.transform)
+                continue;
+
+            child.SetParent(zoomRootRect, true);
+            i--;
+        }
+
+        return zoomRootRect;
     }
 
     private void SetMainButtonsInteractable(bool interactable)

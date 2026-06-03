@@ -7,7 +7,7 @@ using System.Linq;
 public class PlayerController : MonoBehaviour
 {
     [Header("Player Stats")]
-    public float walkSpeed = 5f;
+    public float walkSpeed = 4f;
     public float runSpeed = 8f;
     public float jumpForce = 12f;
 

@@ -144,7 +144,8 @@ public class SceneTransitionFader : MonoBehaviour
         audioListenerWasPaused = AudioListener.pause;
         audioListenerVolumeBeforeMute = AudioListener.volume;
         AudioListener.pause = true;
-        AudioListener.volume = 0f;
+        if (!HasTransitionSurvivorAudioPlaying())
+            AudioListener.volume = 0f;
         StopTransientAudioSources();
         transitionAudioMuted = true;
     }
@@ -169,11 +170,32 @@ public class SceneTransitionFader : MonoBehaviour
         for (int i = 0; i < sources.Length; i++)
         {
             AudioSource source = sources[i];
-            if (source == null || source.loop)
+            if (source == null || source.loop || ShouldSurviveTransitionMute(source))
                 continue;
 
             source.Stop();
         }
+    }
+
+    private static bool HasTransitionSurvivorAudioPlaying()
+    {
+        AudioSource[] sources = FindObjectsByType<AudioSource>(
+            FindObjectsInactive.Exclude,
+            FindObjectsSortMode.None);
+
+        for (int i = 0; i < sources.Length; i++)
+        {
+            AudioSource source = sources[i];
+            if (source != null && source.isPlaying && ShouldSurviveTransitionMute(source))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool ShouldSurviveTransitionMute(AudioSource source)
+    {
+        return source != null && source.GetComponent<LunchFreeTimeTimerController>() != null;
     }
 
     private IEnumerator Fade(float from, float to, float duration)

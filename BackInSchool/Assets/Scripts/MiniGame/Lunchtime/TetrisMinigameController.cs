@@ -13,6 +13,8 @@ using UnityEngine.Animations;
 /// </summary>
 public class TetrisMinigameController : MonoBehaviour
 {
+    private const float MinigameSfxBoost = 2f;
+
     private const string TutorialCompletedPrefKey = "DAY1_MINIGAME_TUTORIAL_TETRIS_DONE";
 
     [Header("Config (Optional)")]
@@ -28,8 +30,9 @@ public class TetrisMinigameController : MonoBehaviour
 
     [Header("Audio")]
     public AudioSource audioSource;
+    private AudioSource sfxSource;
     public AudioClip loopClip;
-    [Range(0f, 1f)] public float loopVolume = 0.35f;
+    [Range(0f, 1f)] public float loopVolume = 0.18f;
     public AudioClip moveSfx;
     [Range(0f, 1f)] public float moveSfxVolume = 0.6f;
     public AudioClip rotateSfx;
@@ -291,6 +294,10 @@ public class TetrisMinigameController : MonoBehaviour
     private void Update()
     {
         if (ended) return;
+
+        StartLoopIfNeeded();
+        if (MinigameSettingsPauseController.HandleEscapeOrPaused())
+            return;
 
         TickJelly();
         if (tutorialActive)
@@ -1216,6 +1223,14 @@ public class TetrisMinigameController : MonoBehaviour
         audioSource.playOnAwake = false;
         audioSource.loop = false;
         audioSource.spatialBlend = 0f;
+
+        if (sfxSource == null)
+            sfxSource = gameObject.AddComponent<AudioSource>();
+
+        sfxSource.playOnAwake = false;
+        sfxSource.loop = false;
+        sfxSource.spatialBlend = 0f;
+        sfxSource.volume = 1f;
     }
 
     private void StartLoopIfNeeded()
@@ -1248,7 +1263,7 @@ public class TetrisMinigameController : MonoBehaviour
         if (clip == null)
             return;
 
-        audioSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(volume));
+        sfxSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(Mathf.Max(0f, volume * MinigameSfxBoost)));
     }
 
     private void PlayLockSfx()

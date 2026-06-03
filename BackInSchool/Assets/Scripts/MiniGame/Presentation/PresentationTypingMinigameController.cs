@@ -119,11 +119,8 @@ public class PresentationTypingMinigameController : MonoBehaviour
         if (ended && phase != PresentationPhase.Ended)
             return;
 
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            FailPresentation();
+        if (MinigameSettingsPauseController.HandleEscapeOrPaused())
             return;
-        }
 
         if ((phase == PresentationPhase.FallingWords || phase == PresentationPhase.Sentence) &&
             (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)))

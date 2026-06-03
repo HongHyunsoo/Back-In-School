@@ -5,12 +5,15 @@ using UnityEngine.UI;
 
 public class CroquisMinigameController : MonoBehaviour
 {
+    private const float MinigameSfxBoost = 2f;
+
     private const string TutorialCompletedPrefKey = "DAY1_MINIGAME_TUTORIAL_CROQUIS_DONE";
 
     [Header("Audio")]
     public AudioSource audioSource;
+    private AudioSource sfxSource;
     public AudioClip loopClip;
-    [Range(0f, 1f)] public float loopVolume = 0.35f;
+    [Range(0f, 1f)] public float loopVolume = 0.18f;
     public AudioClip[] promptPressSfxClips;
     [Range(0f, 1f)] public float promptPressSfxVolume = 0.65f;
     public AudioClip promptSuccessSfx;
@@ -225,6 +228,10 @@ public class CroquisMinigameController : MonoBehaviour
     {
         if (ended) return;
 
+        StartLoopIfNeeded();
+        if (MinigameSettingsPauseController.HandleEscapeOrPaused())
+            return;
+
         if (stageTransitionPending)
         {
             TickBubble();
@@ -234,9 +241,6 @@ public class CroquisMinigameController : MonoBehaviour
         TickBubble();
         TickPromptPulse();
         HandleInput();
-
-        if (Input.GetKeyDown(KeyCode.Escape))
-            End(false);
     }
 
     private void HandleInput()
@@ -1045,6 +1049,14 @@ public class CroquisMinigameController : MonoBehaviour
         audioSource.playOnAwake = false;
         audioSource.loop = false;
         audioSource.spatialBlend = 0f;
+
+        if (sfxSource == null)
+            sfxSource = gameObject.AddComponent<AudioSource>();
+
+        sfxSource.playOnAwake = false;
+        sfxSource.loop = false;
+        sfxSource.spatialBlend = 0f;
+        sfxSource.volume = 1f;
     }
 
     private void StartLoopIfNeeded()
@@ -1077,7 +1089,7 @@ public class CroquisMinigameController : MonoBehaviour
         if (clip == null)
             return;
 
-        audioSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(volume));
+        sfxSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(Mathf.Max(0f, volume * MinigameSfxBoost)));
     }
 
     private void PlayPromptPressSfx()

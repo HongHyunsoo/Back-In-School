@@ -74,11 +74,38 @@ public class ChatRoomDetailUI : MonoBehaviour
 
     private void OnDisable()
     {
+        ResetViewDepth();
+
         if (scrollRoutine != null)
         {
             StopCoroutine(scrollRoutine);
             scrollRoutine = null;
         }
+    }
+
+    public void ResetViewDepth()
+    {
+        if (routine != null)
+        {
+            StopCoroutine(routine);
+            routine = null;
+        }
+
+        waitingTap = false;
+        queuedTap = false;
+        pendingLine = null;
+
+        var appMgr = FindAnyObjectByType<PhoneAppManager>();
+        if (appMgr != null)
+            appMgr.SetLocked(false);
+
+        if (btnSendNext != null)
+            btnSendNext.gameObject.SetActive(false);
+
+        if (screenRoomList != null)
+            screenRoomList.SetActive(true);
+        if (screenRoomDetail != null)
+            screenRoomDetail.SetActive(false);
     }
 
     private void RequestScrollToBottom()

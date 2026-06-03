@@ -7,10 +7,14 @@ using UnityEngine.UI;
 
 public class ArrivalSpaceMashMinigameController : MonoBehaviour
 {
+    private const string TetrisBgmResource = "SFX/MINIGAME/Tetris/Tetris_BGM";
+    private const float MinigameSfxBoost = 2f;
+
     [Header("Audio")]
     public AudioSource audioSource;
+    private AudioSource sfxSource;
     public AudioClip loopClip;
-    [Range(0f, 1f)] public float loopVolume = 0.45f;
+    [Range(0f, 1f)] public float loopVolume = 0.22f;
     public AudioClip pressSfx;
     [Range(0f, 1f)] public float pressSfxVolume = 0.7f;
     public AudioClip finalPhasePressSfx;
@@ -161,13 +165,14 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
         if (ended)
             return;
 
+        StartLoopIfNeeded();
+        if (MinigameSettingsPauseController.HandleEscapeOrPaused())
+            return;
+
         TickFinalPhaseFallback();
 
         if (Input.GetKeyDown(KeyCode.Space))
             HandleSpacePressed();
-
-        if (Input.GetKeyDown(KeyCode.Escape))
-            End(false);
     }
 
     private bool ShouldRunForCurrentFlow()
@@ -369,6 +374,9 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
 
     private void EnsureAudioSource()
     {
+        if (loopClip == null)
+            loopClip = AudioSettingsService.LoadResourceClip(TetrisBgmResource);
+
         if (audioSource == null)
             audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
@@ -377,6 +385,14 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
         audioSource.playOnAwake = false;
         audioSource.loop = false;
         audioSource.spatialBlend = 0f;
+
+        if (sfxSource == null)
+            sfxSource = gameObject.AddComponent<AudioSource>();
+
+        sfxSource.playOnAwake = false;
+        sfxSource.loop = false;
+        sfxSource.spatialBlend = 0f;
+        sfxSource.volume = 1f;
     }
 
     private void StartLoopIfNeeded()
@@ -409,7 +425,7 @@ public class ArrivalSpaceMashMinigameController : MonoBehaviour
         if (clip == null)
             return;
 
-        audioSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(volume));
+        sfxSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(Mathf.Max(0f, volume * MinigameSfxBoost)));
     }
 
     private void TryBeginFreeroamPreload()

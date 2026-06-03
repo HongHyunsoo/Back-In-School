@@ -17,6 +17,7 @@ public class PhoneInputOpener : MonoBehaviour
     private void Update()
     {
         if (PhoneSystem.Instance == null) return;
+        if (MinigameSettingsPauseController.IsPaused) return;
 
         KeyCode runtimeToggleKey = ToggleKey;
         if (Input.GetKeyDown(runtimeToggleKey))

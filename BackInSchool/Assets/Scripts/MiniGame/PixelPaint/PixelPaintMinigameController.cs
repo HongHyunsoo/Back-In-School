@@ -13,6 +13,8 @@ using UnityEditor;
 /// </summary>
 public class PixelPaintMinigameController : MonoBehaviour
 {
+    private const float MinigameSfxBoost = 2f;
+
     private const string TutorialCompletedPrefKey = "DAY1_MINIGAME_TUTORIAL_PIXELPAINT_DONE";
 
     public enum PuzzleSelectMode
@@ -100,8 +102,9 @@ public class PixelPaintMinigameController : MonoBehaviour
 
     [Header("Audio")]
     public AudioSource audioSource;
+    private AudioSource sfxSource;
     public AudioClip loopClip;
-    [Range(0f, 1f)] public float loopVolume = 0.3f;
+    [Range(0f, 1f)] public float loopVolume = 0.16f;
     public AudioClip paintSfx;
     [Range(0f, 1f)] public float paintSfxVolume = 0.5f;
     public AudioClip eraseSfx;
@@ -287,6 +290,10 @@ public class PixelPaintMinigameController : MonoBehaviour
     private void Update()
     {
         if (ended) return;
+
+        StartLoopIfNeeded();
+        if (MinigameSettingsPauseController.HandleEscapeOrPaused())
+            return;
 
         if (solvedWaitForContinue)
         {
@@ -1443,6 +1450,14 @@ public class PixelPaintMinigameController : MonoBehaviour
         audioSource.playOnAwake = false;
         audioSource.loop = false;
         audioSource.spatialBlend = 0f;
+
+        if (sfxSource == null)
+            sfxSource = gameObject.AddComponent<AudioSource>();
+
+        sfxSource.playOnAwake = false;
+        sfxSource.loop = false;
+        sfxSource.spatialBlend = 0f;
+        sfxSource.volume = 1f;
     }
 
     private void StartLoopIfNeeded()
@@ -1484,7 +1499,7 @@ public class PixelPaintMinigameController : MonoBehaviour
         if (clip == null)
             return;
 
-        audioSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(volume));
+        sfxSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(Mathf.Max(0f, volume * MinigameSfxBoost)));
     }
 
     private void CleanupRuntimeUI()

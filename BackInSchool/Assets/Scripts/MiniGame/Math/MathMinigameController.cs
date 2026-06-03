@@ -9,6 +9,8 @@ using UnityEngine.UI;
 
 public class MathMinigameController : MonoBehaviour
 {
+    private const float MinigameSfxBoost = 2f;
+
     [Serializable]
     public class EnglishMatchingPairDefinition
     {
@@ -120,7 +122,7 @@ public class MathMinigameController : MonoBehaviour
     public AudioSource englishBgmSource;
     public AudioSource englishFeedbackSource;
     public AudioClip englishLoopClip;
-    [Range(0f, 1f)] public float englishLoopVolume = 0.35f;
+    [Range(0f, 1f)] public float englishLoopVolume = 0.18f;
     public AudioClip englishSuccessSfx;
     [Range(0f, 1f)] public float englishSuccessSfxVolume = 1f;
     public AudioClip englishFailSfx;
@@ -460,6 +462,12 @@ public class MathMinigameController : MonoBehaviour
             return;
 
         if (isAfterSchoolEnglishMode)
+            StartEnglishLoopIfNeeded();
+
+        if (MinigameSettingsPauseController.HandleEscapeOrPaused())
+            return;
+
+        if (isAfterSchoolEnglishMode)
         {
             if (currentEnglishStage == 1 && activeEnglishOrderingDragHandle == null && Input.GetMouseButtonDown(0))
                 TryBeginEnglishOrderingDragFromMouse();
@@ -480,9 +488,6 @@ public class MathMinigameController : MonoBehaviour
                     EndEnglishOrderingPointerDrag(activeEnglishOrderingDragHandle, pointerData);
                 }
             }
-
-            if (Input.GetKeyDown(KeyCode.Escape))
-                End(false);
             return;
         }
 
@@ -491,9 +496,6 @@ public class MathMinigameController : MonoBehaviour
 
         if (!advancing && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)))
             SubmitAnswer();
-
-        if (Input.GetKeyDown(KeyCode.Escape))
-            End(false);
     }
 
     private bool ShouldRunForCurrentFlow()
@@ -3860,14 +3862,14 @@ public class MathMinigameController : MonoBehaviour
         AudioClip clip = success ? englishSuccessSfx : englishFailSfx;
         float volume = success ? englishSuccessSfxVolume : englishFailSfxVolume;
         if (clip != null)
-            englishFeedbackSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(volume));
+            englishFeedbackSource.PlayOneShot(clip, AudioSettingsService.ScaleSfx(Mathf.Max(0f, volume * MinigameSfxBoost)));
     }
 
     private void PlayEnglishClickSfx()
     {
         EnsureEnglishAudio();
         if (englishClickSfx != null)
-            englishFeedbackSource.PlayOneShot(englishClickSfx, AudioSettingsService.ScaleSfx(englishClickSfxVolume));
+            englishFeedbackSource.PlayOneShot(englishClickSfx, AudioSettingsService.ScaleSfx(Mathf.Max(0f, englishClickSfxVolume * MinigameSfxBoost)));
     }
 
     private void EnsureEventSystem()

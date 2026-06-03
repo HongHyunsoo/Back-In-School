@@ -58,6 +58,7 @@ public class PhoneAppManager : MonoBehaviour
     private readonly Dictionary<PhoneAppId, AppSplashEntry> splashByApp = new();
     private Coroutine openRoutine;
     private bool ruleTabsWired;
+    private bool minigameSettingsOnlyMode;
 
     public PhoneAppId CurrentApp { get; private set; } = PhoneAppId.Home;
     public bool IsLocked { get; private set; }
@@ -105,6 +106,8 @@ public class PhoneAppManager : MonoBehaviour
     public void OpenApp(PhoneAppId appId)
     {
         if (IsLocked) return;
+        if (minigameSettingsOnlyMode && appId != PhoneAppId.Settings)
+            return;
 
         if (!Day1TutorialController.IsPhoneAppAllowed(appId))
             return;
@@ -132,6 +135,8 @@ public class PhoneAppManager : MonoBehaviour
     public void BackToHome()
     {
         if (IsLocked) return;
+        if (minigameSettingsOnlyMode)
+            return;
 
         if (TryHandleCurrentAppBack())
             return;
@@ -149,6 +154,7 @@ public class PhoneAppManager : MonoBehaviour
 
     public void ResetToHomeForSceneChange()
     {
+        minigameSettingsOnlyMode = false;
         if (openRoutine != null)
         {
             StopCoroutine(openRoutine);
@@ -158,6 +164,38 @@ public class PhoneAppManager : MonoBehaviour
         HideAllSplashPanels();
         ShowHome();
         SetLocked(false);
+    }
+
+    public void OpenSettingsForMinigamePause()
+    {
+        minigameSettingsOnlyMode = true;
+        if (openRoutine != null)
+        {
+            StopCoroutine(openRoutine);
+            openRoutine = null;
+        }
+
+        HideAllSplashPanels();
+        if (homePanel != null) homePanel.SetActive(false);
+        if (appContainer != null) appContainer.SetActive(true);
+
+        foreach (var kv in appPanels)
+        {
+            if (kv.Value != null)
+                kv.Value.SetActive(kv.Key == PhoneAppId.Settings);
+        }
+
+        CurrentApp = PhoneAppId.Settings;
+        SetLocked(false);
+
+        var settingsController = GetComponent<PhoneSettingsAppController>();
+        if (settingsController != null)
+            settingsController.RefreshBindingsNow();
+    }
+
+    public void ClearMinigameSettingsOnlyMode()
+    {
+        minigameSettingsOnlyMode = false;
     }
 
     private bool TryHandleCurrentAppBack()

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -7,19 +8,26 @@ using UnityEngine.SceneManagement;
 public class StoryStreetAudioController : MonoBehaviour
 {
     private const string StreetObjectName = "Street";
-    private const string CarWhooshResource = "SFX/FREEROAM_SFX/Transition_Corrider_Sfx";
+    private const string StreetBgmResource = "SFX/Ambient/BGM_Street";
+    private const string CarWhooshResource = "SFX/Story/Car_Passing_02";
     private const string FootstepResourcePrefix = "SFX/Char/FootStep/SFX_FootStep_";
 
-    [SerializeField] [Range(0f, 1f)] private float carWhooshVolume = 0.35f;
+    [SerializeField] [Range(0f, 1f)] private float streetBgmVolume = 1f;
+    [SerializeField] [Range(0f, 1f)] private float carWhooshVolume = 0.18f;
     [SerializeField] [Range(0f, 1f)] private float footstepVolume = 0.28f;
     [SerializeField] [Min(0.1f)] private float footstepIntervalSeconds = 0.42f;
-    [SerializeField] private float carPassingWorldX = 0f;
+    [SerializeField] private float carPassingWorldX = 7f;
+    [SerializeField] [Min(0f)] private float carFadeInSeconds = 0.25f;
+    [SerializeField] [Min(0f)] private float carFadeOutSeconds = 2.4f;
 
     private readonly List<CarTileState> carTiles = new();
     private readonly List<AudioClip> footstepClips = new();
+    private AudioSource bgmSource;
     private AudioSource carSource;
     private AudioSource footstepSource;
+    private AudioClip streetBgmClip;
     private AudioClip carWhooshClip;
+    private Coroutine carRoutine;
     private float nextFootstepAt;
     private int lastFootstepIndex = -1;
     private bool wasStreetActive;
@@ -67,11 +75,23 @@ public class StoryStreetAudioController : MonoBehaviour
 
     private void Awake()
     {
+        bgmSource = CreateAudioSource("StreetBgm");
         carSource = CreateAudioSource("StreetCarSfx");
         footstepSource = CreateAudioSource("StreetFootstepSfx");
+        streetBgmClip = AudioSettingsService.LoadResourceClip(StreetBgmResource);
         carWhooshClip = AudioSettingsService.LoadResourceClip(CarWhooshResource);
         LoadFootsteps();
         CacheCarTiles();
+    }
+
+    private void OnEnable()
+    {
+        StartStreetAudio();
+    }
+
+    private void OnDisable()
+    {
+        StopStreetAudio();
     }
 
     private void Update()
@@ -87,6 +107,7 @@ public class StoryStreetAudioController : MonoBehaviour
         {
             RefreshCarTilePositions();
             nextFootstepAt = Time.unscaledTime;
+            StartStreetAudio();
             wasStreetActive = true;
         }
 
@@ -104,6 +125,34 @@ public class StoryStreetAudioController : MonoBehaviour
         source.loop = false;
         source.spatialBlend = 0f;
         return source;
+    }
+
+    private void StartStreetAudio()
+    {
+        if (bgmSource == null || streetBgmClip == null)
+            return;
+
+        bgmSource.clip = streetBgmClip;
+        bgmSource.loop = true;
+        bgmSource.volume = AudioSettingsService.ScaleBgm(streetBgmVolume);
+        if (!bgmSource.isPlaying)
+            bgmSource.Play();
+    }
+
+    private void StopStreetAudio()
+    {
+        wasStreetActive = false;
+        if (bgmSource != null)
+            bgmSource.Stop();
+        if (footstepSource != null)
+            footstepSource.Stop();
+        if (carSource != null)
+            carSource.Stop();
+        if (carRoutine != null)
+        {
+            StopCoroutine(carRoutine);
+            carRoutine = null;
+        }
     }
 
     private void LoadFootsteps()
@@ -167,10 +216,63 @@ public class StoryStreetAudioController : MonoBehaviour
                 (state.previousWorldX < carPassingWorldX && currentX >= carPassingWorldX);
 
             if (crossedCenter && Mathf.Abs(currentX - state.previousWorldX) < 5f)
-                PlayOneShot(carSource, carWhooshClip, carWhooshVolume);
+                PlayCarPassingSfx();
 
             state.previousWorldX = currentX;
         }
+    }
+
+    private void PlayCarPassingSfx()
+    {
+        if (carSource == null || carWhooshClip == null)
+            return;
+
+        if (carRoutine != null)
+            return;
+
+        carRoutine = StartCoroutine(CoPlayCarPassingSfx());
+    }
+
+    private IEnumerator CoPlayCarPassingSfx()
+    {
+        carSource.Stop();
+        carSource.clip = carWhooshClip;
+        carSource.loop = false;
+        carSource.volume = 0f;
+        carSource.Play();
+
+        float clipLength = Mathf.Max(0.01f, carWhooshClip.length);
+        float fadeIn = Mathf.Min(Mathf.Max(0f, carFadeInSeconds), clipLength * 0.45f);
+        float fadeOut = Mathf.Min(Mathf.Max(0f, carFadeOutSeconds), clipLength * 0.45f);
+        float hold = Mathf.Max(0f, clipLength - fadeIn - fadeOut);
+
+        yield return CoFadeCarVolume(0f, carWhooshVolume, fadeIn);
+        if (hold > 0f)
+            yield return new WaitForSecondsRealtime(hold);
+        yield return CoFadeCarVolume(carWhooshVolume, 0f, fadeOut);
+
+        carSource.Stop();
+        carRoutine = null;
+    }
+
+    private IEnumerator CoFadeCarVolume(float from, float to, float duration)
+    {
+        if (duration <= 0f)
+        {
+            carSource.volume = AudioSettingsService.ScaleSfx(to);
+            yield break;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            carSource.volume = AudioSettingsService.ScaleSfx(Mathf.Lerp(from, to, t));
+            yield return null;
+        }
+
+        carSource.volume = AudioSettingsService.ScaleSfx(to);
     }
 
     private void UpdateFootsteps()

@@ -93,11 +93,27 @@ public class PhoneSystem : MonoBehaviour
             PlayPhoneToggleSfx();
     }
 
+    public void OpenSettingsOnlyForMinigamePause()
+    {
+        Open();
+
+        if (phoneUIInstance == null)
+            return;
+
+        EnsureRuntimeComponents();
+        var appManager = phoneUIInstance.GetComponent<PhoneAppManager>();
+        if (appManager != null)
+            appManager.OpenSettingsForMinigamePause();
+    }
+
     public void Close()
     {
         if (phoneUIInstance != null && phoneUIInstance.activeSelf)
         {
             phoneUIInstance.SetActive(false);
+            var appManager = phoneUIInstance.GetComponent<PhoneAppManager>();
+            if (appManager != null)
+                appManager.ClearMinigameSettingsOnlyMode();
             PlayPhoneToggleSfx();
         }
     }
