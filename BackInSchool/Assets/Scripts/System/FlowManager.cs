@@ -31,6 +31,12 @@ public class FlowManager : MonoBehaviour
     [Header("Debug")]
     public bool autoStartOnPlay = false;
 
+    [Header("Demo End")]
+    [SerializeField] private string demoEndMessage = "데모 버전 끝.";
+    [SerializeField] private float demoEndFadeOutSeconds = 0.8f;
+    [SerializeField] private float demoEndMessageHoldSeconds = 1.4f;
+    [SerializeField] private float demoEndMainMenuFadeInSeconds = 0.35f;
+
     [Header("School Rules")]
     [SerializeField] private bool isWearingSlippers;
     [SerializeField] private bool changedToSlippersToday;
@@ -39,6 +45,7 @@ public class FlowManager : MonoBehaviour
     Dictionary<int, List<FlowEvent>> timeline;
     int shoeStateDay = -1;
     bool noSlippersPenaltyAppliedToday;
+    bool demoEndingStarted;
 
     private void Awake()
     {
@@ -186,6 +193,7 @@ public class FlowManager : MonoBehaviour
         if (stepIndex >= list.Count)
         {
             Debug.Log($"[FlowManager] Day {day} 완료");
+            PlayDemoEnding();
             return;
         }
 
@@ -340,6 +348,7 @@ public class FlowManager : MonoBehaviour
 
     public void ResetSchoolRuleRuntimeState()
     {
+        demoEndingStarted = false;
         shoeStateDay = -1;
         isWearingSlippers = false;
         changedToSlippersToday = false;
@@ -348,6 +357,20 @@ public class FlowManager : MonoBehaviour
         PlayerPrefs.DeleteKey(StoryAppendConversationPrefKey);
         PlayerPrefs.DeleteKey(LunchFreeTimeStartMinutePrefKey);
         PlayerPrefs.DeleteKey(LunchFreeTimeStartDayPrefKey);
+    }
+
+    void PlayDemoEnding()
+    {
+        if (demoEndingStarted)
+            return;
+
+        demoEndingStarted = true;
+        SceneTransitionFader.LoadSceneWithMessageThenFade(
+            "MainMenu",
+            demoEndMessage,
+            demoEndFadeOutSeconds,
+            demoEndMessageHoldSeconds,
+            demoEndMainMenuFadeInSeconds);
     }
 
     public bool TryChangeToSlippers()

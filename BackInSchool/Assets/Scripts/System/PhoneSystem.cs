@@ -125,7 +125,27 @@ public class PhoneSystem : MonoBehaviour
         if (phoneAudioSource != null)
             phoneAudioSource.Stop();
 
+        if (scene.IsValid() && scene.name == "MainMenu")
+        {
+            CloseSilentlyForSceneChange();
+            return;
+        }
+
         ResetPhoneUiScreenState();
+    }
+
+    private void CloseSilentlyForSceneChange()
+    {
+        if (phoneUIInstance == null)
+            return;
+
+        phoneUIInstance.SetActive(false);
+        var appManager = phoneUIInstance.GetComponent<PhoneAppManager>();
+        if (appManager != null)
+        {
+            appManager.ClearMinigameSettingsOnlyMode();
+            appManager.ResetToHomeForSceneChange();
+        }
     }
 
     private void ResetPhoneUiScreenState()

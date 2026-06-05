@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -16,6 +17,7 @@ public class SceneTransitionFader : MonoBehaviour
 
     private Canvas canvas;
     private Image fadeImage;
+    private TextMeshProUGUI messageText;
     private Coroutine running;
 
     private bool fadeInOnNextScene;
@@ -57,6 +59,23 @@ public class SceneTransitionFader : MonoBehaviour
         }
 
         yield return fader.CoLoadScene(sceneName, fadeOutDuration, fadeInDuration);
+    }
+
+    public static void LoadSceneWithMessageThenFade(
+        string sceneName,
+        string message,
+        float fadeOutDuration = 0.8f,
+        float messageHoldDuration = 1.4f,
+        float fadeInDuration = DefaultFadeInDuration)
+    {
+        var fader = EnsureInstance();
+        if (fader == null)
+        {
+            SceneManager.LoadScene(sceneName);
+            return;
+        }
+
+        fader.StartCoroutine(fader.CoLoadSceneWithMessage(sceneName, message, fadeOutDuration, messageHoldDuration, fadeInDuration));
     }
 
     private void Awake()
@@ -102,6 +121,24 @@ public class SceneTransitionFader : MonoBehaviour
         fadeImage.color = new Color(0f, 0f, 0f, 0f);
         fadeImage.raycastTarget = false;
         fadeImage.enabled = false;
+
+        var messageGO = new GameObject("MessageText", typeof(RectTransform), typeof(TextMeshProUGUI));
+        messageGO.transform.SetParent(transform, false);
+
+        var messageRect = messageGO.GetComponent<RectTransform>();
+        messageRect.anchorMin = Vector2.zero;
+        messageRect.anchorMax = Vector2.one;
+        messageRect.offsetMin = Vector2.zero;
+        messageRect.offsetMax = Vector2.zero;
+
+        messageText = messageGO.GetComponent<TextMeshProUGUI>();
+        messageText.alignment = TextAlignmentOptions.Center;
+        messageText.fontSize = 46f;
+        messageText.font = ResolveMessageFont();
+        messageText.color = new Color(1f, 1f, 1f, 0f);
+        messageText.raycastTarget = false;
+        messageText.enabled = false;
+
         canvas.enabled = false;
     }
 
@@ -234,6 +271,8 @@ public class SceneTransitionFader : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        HideMessage();
+
         if (!fadeInOnNextScene)
             return;
 
@@ -256,5 +295,76 @@ public class SceneTransitionFader : MonoBehaviour
         PrepareFadeInOnNextScene(fadeInDuration);
         yield return FadeOut(fadeOutDuration);
         SceneManager.LoadScene(sceneName);
+    }
+
+    private IEnumerator CoLoadSceneWithMessage(
+        string sceneName,
+        string message,
+        float fadeOutDuration,
+        float messageHoldDuration,
+        float fadeInDuration)
+    {
+        PrepareFadeInOnNextScene(fadeInDuration);
+        yield return FadeOut(fadeOutDuration);
+        ShowMessage(message);
+
+        float hold = Mathf.Max(0f, messageHoldDuration);
+        if (hold > 0f)
+            yield return new WaitForSecondsRealtime(hold);
+
+        SceneManager.LoadScene(sceneName);
+    }
+
+    private void ShowMessage(string message)
+    {
+        if (canvas != null)
+            canvas.enabled = true;
+
+        if (fadeImage != null)
+        {
+            fadeImage.enabled = true;
+            fadeImage.color = new Color(0f, 0f, 0f, 1f);
+        }
+
+        if (messageText == null)
+            return;
+
+        messageText.text = message ?? string.Empty;
+        messageText.color = new Color(1f, 1f, 1f, 1f);
+        messageText.enabled = true;
+    }
+
+    private void HideMessage()
+    {
+        if (messageText == null)
+            return;
+
+        messageText.enabled = false;
+        messageText.text = string.Empty;
+        messageText.color = new Color(1f, 1f, 1f, 0f);
+    }
+
+    private static TMP_FontAsset ResolveMessageFont()
+    {
+        TMP_FontAsset[] loadedFonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
+        for (int i = 0; i < loadedFonts.Length; i++)
+        {
+            TMP_FontAsset candidate = loadedFonts[i];
+            if (candidate == null)
+                continue;
+
+            string name = candidate.name;
+            if (name.Equals("Galmuri11-Bold SDF", System.StringComparison.OrdinalIgnoreCase) ||
+                name.IndexOf("Galmuri11-Bold", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                name.Equals("Galmuri11 SDF", System.StringComparison.OrdinalIgnoreCase) ||
+                name.IndexOf("Galmuri11", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                name.Equals("DungGeunMo SDF", System.StringComparison.OrdinalIgnoreCase) ||
+                name.IndexOf("DungGeunMo", System.StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return candidate;
+            }
+        }
+
+        return TMP_Settings.defaultFontAsset;
     }
 }
