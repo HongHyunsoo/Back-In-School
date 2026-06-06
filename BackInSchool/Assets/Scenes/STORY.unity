@@ -34003,6 +34003,9 @@ MonoBehaviour:
   line31DoorPassingDelaySeconds: 3
   line31AdvanceDelayAfterPassingSeconds: 3
   keyFadeOutSeconds: 1
+  keyStartVolumeMultiplier: 0.12
+  keyFadeInSeconds: 3
+  keyFadeOutAfterPassingSeconds: 2.5
   autoAdvancedLineInputCooldownSeconds: 0.35
   doorCloseTarget: {fileID: 1181473018}
   doorCloseObjectName: DoorClose
@@ -34013,7 +34016,7 @@ MonoBehaviour:
   doorPassingSpeed: 0.3
   doorSpriteResourcePath: Object/DoorClose
   manualDoorFrameSeconds: 0.08
-  keySound: {fileID: 8300000, guid: 92735fdd7f5bd1546af183851c0d4283, type: 3}
+  keySound: {fileID: 8300000, guid: 778a3a811bf34654b833fe0953f2c0dd, type: 3}
   keySoundVolume: 1
   doorCloseSound: {fileID: 8300000, guid: a2d4f3640bfa73a41a3d15416c11e5a8, type: 3}
   doorCloseSoundVolume: 0.4

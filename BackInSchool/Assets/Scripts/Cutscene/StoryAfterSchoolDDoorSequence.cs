@@ -36,6 +36,9 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
     [SerializeField] private float line31DoorPassingDelaySeconds = 3f;
     [SerializeField] private float line31AdvanceDelayAfterPassingSeconds = 3f;
     [SerializeField] private float keyFadeOutSeconds = 1f;
+    [SerializeField] [Range(0f, 1f)] private float keyStartVolumeMultiplier = 0.12f;
+    [SerializeField] private float keyFadeInSeconds = 3f;
+    [SerializeField] private float keyFadeOutAfterPassingSeconds = 2.5f;
     [SerializeField] private float autoAdvancedLineInputCooldownSeconds = 0.35f;
 
     [Header("Door Target")]
@@ -216,7 +219,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
                 dialogueManager.MuteTypingSfxForSeconds(doorCloseDelaySeconds + 0.6f);
                 dialogueManager.SetSpeechBubbleVisible(false);
             }
-            StartKeyFadeOut();
+            StartKeyFadeOut(keyFadeOutSeconds);
             if (doorCloseCoroutine != null)
                 StopCoroutine(doorCloseCoroutine);
             doorCloseCoroutine = StartCoroutine(CoPlayDoorClose());
@@ -328,11 +331,13 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
 
         yield return new WaitForSecondsRealtime(Mathf.Max(0f, line31DoorPassingDelaySeconds));
 
+        FadeKeyLoopToFullVolume(0.15f);
+
         Transform target = ResolveDoorCloseTarget();
         if (target != null && doorPassingClip != null)
             yield return StartCoroutine(CoSampleClip(target, doorPassingClip, doorPassingSpeed));
 
-        StopKeyLoopImmediate();
+        StartKeyFadeOut(keyFadeOutAfterPassingSeconds);
 
         yield return new WaitForSecondsRealtime(Mathf.Max(0f, line31AdvanceDelayAfterPassingSeconds));
 
@@ -713,12 +718,14 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         }
 
         keyLoopSource.clip = keySound;
-        keyLoopSource.volume = AudioSettingsService.ScaleSfx(Mathf.Clamp01(keySoundVolume));
+        keyLoopSource.volume = GetScaledKeyVolume(keyStartVolumeMultiplier);
         if (!keyLoopSource.isPlaying)
             keyLoopSource.Play();
+
+        FadeKeyLoopToFullVolume(keyFadeInSeconds);
     }
 
-    private void StartKeyFadeOut()
+    private void FadeKeyLoopToFullVolume(float durationSeconds)
     {
         EnsureAudioSource();
         if (keyLoopSource == null || !keyLoopSource.isPlaying)
@@ -726,27 +733,47 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
 
         if (keyFadeCoroutine != null)
             StopCoroutine(keyFadeCoroutine);
-        keyFadeCoroutine = StartCoroutine(CoFadeOutKeyLoop());
+        keyFadeCoroutine = StartCoroutine(CoFadeKeyLoopTo(GetScaledKeyVolume(1f), durationSeconds, false));
     }
 
-    private IEnumerator CoFadeOutKeyLoop()
+    private void StartKeyFadeOut(float durationSeconds)
+    {
+        EnsureAudioSource();
+        if (keyLoopSource == null || !keyLoopSource.isPlaying)
+            return;
+
+        if (keyFadeCoroutine != null)
+            StopCoroutine(keyFadeCoroutine);
+        keyFadeCoroutine = StartCoroutine(CoFadeKeyLoopTo(0f, durationSeconds, true));
+    }
+
+    private IEnumerator CoFadeKeyLoopTo(float targetVolume, float durationSeconds, bool stopWhenDone)
     {
         if (keyLoopSource == null)
             yield break;
 
         float startVolume = keyLoopSource.volume;
-        float duration = Mathf.Max(0.01f, keyFadeOutSeconds);
+        float duration = Mathf.Max(0.01f, durationSeconds);
         float elapsed = 0f;
 
         while (elapsed < duration)
         {
             elapsed += Time.unscaledDeltaTime;
-            keyLoopSource.volume = Mathf.Lerp(startVolume, 0f, Mathf.Clamp01(elapsed / duration));
+            keyLoopSource.volume = Mathf.Lerp(startVolume, targetVolume, Mathf.Clamp01(elapsed / duration));
             yield return null;
         }
 
-        StopKeyLoopImmediate();
+        if (stopWhenDone)
+            StopKeyLoopImmediate();
+        else if (keyLoopSource != null)
+            keyLoopSource.volume = targetVolume;
+
         keyFadeCoroutine = null;
+    }
+
+    private float GetScaledKeyVolume(float multiplier)
+    {
+        return AudioSettingsService.ScaleSfx(Mathf.Clamp01(keySoundVolume) * Mathf.Clamp01(multiplier));
     }
 
     private void StopKeyLoopImmediate()
