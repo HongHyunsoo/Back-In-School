@@ -34026,6 +34026,8 @@ MonoBehaviour:
   subwayPassingVolume: 1
   subwayPassingFadeDelaySeconds: 3
   subwayPassingFadeOutSeconds: 1.2
+  subwayWaitingBgm: {fileID: 8300000, guid: 638a9b809ac22164da76eb9e99eb9352, type: 3}
+  subwayWaitingBgmVolume: 0.75
   subwayApproachTarget: {fileID: 275015068}
   subwayApproachObjectName: Subway_approach
   subwayApproachOnceClip: {fileID: 7400000, guid: b4dd2fae5aff98b40bf52826c4167a88, type: 2}

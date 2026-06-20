@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class FlowDebugUIController : MonoBehaviour
@@ -56,8 +57,10 @@ public class FlowDebugUIController : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(toggleKey))
+        if (Input.GetKeyDown(toggleKey) || (toggleKey != KeyCode.F11 && Input.GetKeyDown(KeyCode.F11)))
             TogglePanel();
+
+        HandleStorySceneFallbackClicks();
     }
 
     private void SetupDropdown()
@@ -121,6 +124,21 @@ public class FlowDebugUIController : MonoBehaviour
         var graphic = panelRoot.GetComponent<Graphic>();
         if (graphic != null)
             graphic.raycastTarget = false;
+
+        Canvas canvas = panelRoot.GetComponent<Canvas>();
+        if (canvas == null)
+            canvas = panelRoot.AddComponent<Canvas>();
+
+        if (canvas != null)
+        {
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = 10000;
+        }
+
+        if (panelRoot.GetComponent<GraphicRaycaster>() == null)
+            panelRoot.AddComponent<GraphicRaycaster>();
+
+        panelRoot.transform.SetAsLastSibling();
     }
 
     private void BindButtons()
@@ -168,6 +186,55 @@ public class FlowDebugUIController : MonoBehaviour
             lunchTimeAddButton.onClick.RemoveListener(OnClickLunchTimeAdd);
             lunchTimeAddButton.onClick.AddListener(OnClickLunchTimeAdd);
         }
+    }
+
+    private void HandleStorySceneFallbackClicks()
+    {
+        if (panelRoot == null || !panelRoot.activeInHierarchy || !Input.GetMouseButtonDown(0))
+            return;
+
+        if (!string.Equals(SceneManager.GetActiveScene().name, "STORY", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        BindButtons();
+
+        if (IsPointerInsideButton(skipButton))
+        {
+            OnClickSkip();
+            return;
+        }
+
+        if (IsPointerInsideButton(jumpButton))
+        {
+            OnClickJump();
+            return;
+        }
+
+        if (IsPointerInsideButton(lunchTimeSkipButton))
+        {
+            OnClickLunchTimeSkip();
+            return;
+        }
+
+        if (IsPointerInsideButton(lunchTimeAddButton))
+            OnClickLunchTimeAdd();
+    }
+
+    private bool IsPointerInsideButton(Button button)
+    {
+        if (button == null || !button.isActiveAndEnabled || !button.interactable)
+            return false;
+
+        RectTransform rect = button.transform as RectTransform;
+        if (rect == null)
+            return false;
+
+        Canvas canvas = button.GetComponentInParent<Canvas>();
+        Camera eventCamera = null;
+        if (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+            eventCamera = canvas.worldCamera;
+
+        return RectTransformUtility.RectangleContainsScreenPoint(rect, Input.mousePosition, eventCamera);
     }
 
     private Button FindButtonByName(string targetName)

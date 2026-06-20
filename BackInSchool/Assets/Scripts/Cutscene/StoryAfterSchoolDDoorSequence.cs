@@ -5,6 +5,8 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public class StoryAfterSchoolDDoorSequence : MonoBehaviour
 {
+    private const string SubwayWaitingBgmResource = "SFX/Ambient/BGM_SubwayWating";
+
     [System.Serializable]
     private class MoveInstruction
     {
@@ -63,6 +65,8 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
     [SerializeField] [Range(0f, 1f)] private float subwayPassingVolume = 1f;
     [SerializeField] private float subwayPassingFadeDelaySeconds = 3f;
     [SerializeField] private float subwayPassingFadeOutSeconds = 1.2f;
+    [SerializeField] private AudioClip subwayWaitingBgm;
+    [SerializeField] [Range(0f, 1f)] private float subwayWaitingBgmVolume = 0.75f;
 
     [Header("Subway Approach")]
     [SerializeField] private Transform subwayApproachTarget;
@@ -89,6 +93,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
     private AudioSource doorCloseSource;
     private AudioSource keyLoopSource;
     private AudioSource subwayPassingSource;
+    private AudioSource subwayWaitingBgmSource;
     private Coroutine keySequenceCoroutine;
     private Coroutine doorCloseCoroutine;
     private Coroutine line31MoveCoroutine;
@@ -157,6 +162,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         subwayPassingFadeCoroutine = null;
         subwayApproachCoroutine = null;
         StopSubwayPassingImmediate();
+        StopSubwayWaitingBgm();
     }
 
     private void Update()
@@ -637,6 +643,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         if (audioSource != null)
         {
             EnsureKeyLoopSource();
+            EnsureSubwayWaitingBgmSource();
             EnsureSubwayPassingSource();
             EnsureDoorCloseSource();
             return;
@@ -653,6 +660,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         audioSource.ignoreListenerPause = true;
 
         EnsureKeyLoopSource();
+        EnsureSubwayWaitingBgmSource();
         EnsureSubwayPassingSource();
         EnsureDoorCloseSource();
     }
@@ -663,7 +671,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
             return;
 
         AudioSource[] sources = GetComponents<AudioSource>();
-        doorCloseSource = sources.FirstOrDefault(source => source != audioSource && source != keyLoopSource && source != subwayPassingSource);
+        doorCloseSource = sources.FirstOrDefault(source => source != audioSource && source != keyLoopSource && source != subwayPassingSource && source != subwayWaitingBgmSource);
         if (doorCloseSource == null)
             doorCloseSource = gameObject.AddComponent<AudioSource>();
 
@@ -695,7 +703,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
             return;
 
         AudioSource[] sources = GetComponents<AudioSource>();
-        subwayPassingSource = sources.FirstOrDefault(source => source != audioSource && source != keyLoopSource);
+        subwayPassingSource = sources.FirstOrDefault(source => source != audioSource && source != keyLoopSource && source != subwayWaitingBgmSource);
         if (subwayPassingSource == null)
             subwayPassingSource = gameObject.AddComponent<AudioSource>();
 
@@ -703,6 +711,18 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         subwayPassingSource.loop = false;
         subwayPassingSource.spatialBlend = 0f;
         subwayPassingSource.ignoreListenerPause = true;
+    }
+
+    private void EnsureSubwayWaitingBgmSource()
+    {
+        if (subwayWaitingBgmSource != null)
+            return;
+
+        subwayWaitingBgmSource = gameObject.AddComponent<AudioSource>();
+        subwayWaitingBgmSource.playOnAwake = false;
+        subwayWaitingBgmSource.loop = true;
+        subwayWaitingBgmSource.spatialBlend = 0f;
+        subwayWaitingBgmSource.ignoreListenerPause = true;
     }
 
     private void StartKeyLoop()
@@ -835,6 +855,35 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         subwayPassingSource.Stop();
         subwayPassingSource.clip = null;
         subwayPassingSource.volume = 0f;
+    }
+
+    private void StartSubwayWaitingBgm()
+    {
+        EnsureAudioSource();
+        if (subwayWaitingBgmSource == null)
+            return;
+
+        if (subwayWaitingBgm == null)
+            subwayWaitingBgm = AudioSettingsService.LoadResourceClip(SubwayWaitingBgmResource);
+
+        if (subwayWaitingBgm == null)
+            return;
+
+        subwayWaitingBgmSource.clip = subwayWaitingBgm;
+        subwayWaitingBgmSource.loop = true;
+        subwayWaitingBgmSource.volume = AudioSettingsService.ScaleBgm(Mathf.Clamp01(subwayWaitingBgmVolume));
+        if (!subwayWaitingBgmSource.isPlaying)
+            subwayWaitingBgmSource.Play();
+    }
+
+    private void StopSubwayWaitingBgm()
+    {
+        if (subwayWaitingBgmSource == null)
+            return;
+
+        subwayWaitingBgmSource.Stop();
+        subwayWaitingBgmSource.clip = null;
+        subwayWaitingBgmSource.volume = 0f;
     }
 
     private void StartSubwayApproachAnimation()
@@ -1108,6 +1157,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
             return;
 
         SetSubwayApproachVisible(false);
+        StartSubwayWaitingBgm();
         afterSchoolFPrepared = true;
     }
 
@@ -1161,6 +1211,7 @@ public class StoryAfterSchoolDDoorSequence : MonoBehaviour
         afterSchoolFPrepared = false;
         StopKeyLoopImmediate();
         StopSubwayPassingImmediate();
+        StopSubwayWaitingBgm();
         if (subwayPassingFadeCoroutine != null)
         {
             StopCoroutine(subwayPassingFadeCoroutine);
